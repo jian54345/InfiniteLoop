@@ -223,7 +223,7 @@ def build_ascnet(dotnet: str, env: dict[str, str]) -> None:
     """Build once under a cross-process lock; dotnet run then only executes outputs."""
     project = "AscNet/AscNet.csproj"
     with serialized_build_lock():
-        cmd = [dotnet, "build", project]
+        cmd = [dotnet, "build", "-c", "Release", project]
         print("+ " + " ".join(cmd), flush=True)
         completed = subprocess.run(cmd, cwd=ROOT, env=env)
         if completed.returncode:
@@ -231,7 +231,7 @@ def build_ascnet(dotnet: str, env: dict[str, str]) -> None:
 
 
 def ascnet_run_command(dotnet: str, sdk_url: str) -> list[str]:
-    return [dotnet, "run", "--no-build", "--project", "AscNet/AscNet.csproj", "--", "--urls", sdk_url]
+    return [dotnet, "run", "-c", "Release", "--no-build", "--project", "AscNet/AscNet.csproj", "--", "--urls", sdk_url]
 
 
 def popen(cmd: list[str], *, env: dict[str, str] | None = None) -> subprocess.Popen[bytes]:
