@@ -389,7 +389,12 @@ namespace AscNet.SDKServer.Controllers
                     "http://prod-zspnsalicdn.kurogame.com/prod",
                     "http://prod-zspnstxcdn.kurogame.com/prod",
                     2),
-                "com.kurogame.punishing.grayraven.en" or "com.kurogame.gplay.punishing.grayraven.en" when currentClient => (
+                // Ì¨·þ
+				"com.kurogame.punishing.grayraven.tw" when currentClient => (
+                    "http://prod-twcdn-ak.pgr-game.com/prod",
+                    "http://prod-twcdn-aliyun.kurogame.net/prod",
+                    5),
+				"com.kurogame.punishing.grayraven.en" or "com.kurogame.gplay.punishing.grayraven.en" when currentClient => (
                     "http://prod-encdn-ak.pgr-game.com/prod",
                     "http://prod-encdn-aliyun.kurogame.net/prod",
                     5),
