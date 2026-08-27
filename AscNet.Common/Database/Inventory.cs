@@ -11,8 +11,8 @@ namespace AscNet.Common.Database
     #pragma warning disable CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider declaring as nullable.
     public partial class Inventory
     {
-        public const long GlobalItemMaxCount = 999;
-        public const long MoneyItemMaxCount = 999_999_999;
+        public const long GlobalItemMaxCount = 9999999;
+        public const long MoneyItemMaxCount = 9999999;
 
         #region CommonItems
         public const int Coin = 1;
