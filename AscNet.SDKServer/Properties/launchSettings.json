@@ -2,11 +2,11 @@
   "profiles": {
     "AscNet.SDKServer": {
       "commandName": "Project",
-      "launchBrowser": true,
+      "launchBrowser": false,
       "environmentVariables": {
         "ASPNETCORE_ENVIRONMENT": "Development"
       },
-      "applicationUrl": "https://localhost:52155;http://localhost:52156"
+      "applicationUrl": "http://127.0.0.1:8080"
     }
   }
 }
