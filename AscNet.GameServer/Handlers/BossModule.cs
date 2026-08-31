@@ -617,7 +617,7 @@ namespace AscNet.GameServer.Handlers
                     ChallengeLevelType = challenge?.LevelType ?? 0,
                     ChallengeSectionId = challenge?.SectionId ?? 0,
                     ChallengeFeatureGroupId = challenge?.FeatureGroupId ?? 0,
-                    ChallengeTotalScore = ChallengeTotal(state, challenge?.LevelType ?? 0),
+                    ChallengeTotalScore = ChallengeDisplayTotal(state, challenge?.LevelType ?? 0),
                     ChallengeStageHistoryList = state.BossChallengeHistory
                         .OrderBy(record => record.StageId)
                         .Select(record => new NotifyFubenBossSingleData.NotifyFubenBossSingleDataChallengeStageHistory
@@ -702,7 +702,13 @@ namespace AscNet.GameServer.Handlers
             return (challengeGrade.LevelType, selectedSection.TableId, featureGroupId);
         }
  
-        private static int ChallengeTotal(SimulatedBattlefieldState state, int levelType)
+        private static int ChallengeDisplayTotal(SimulatedBattlefieldState state, int levelType)
+        {
+            if (levelType <= 0) return 0;
+            return state.BossChallengeHistory.Sum(record => record.Score);
+        }
+
+        private static int ChallengeRankTotal(SimulatedBattlefieldState state, int levelType)
         {
             if (levelType <= 0) return 0;
             int take = ChallengeGrades.Value.FirstOrDefault(row => row.LevelType == levelType)?.RankStageNum ?? 0;
@@ -1567,12 +1573,12 @@ namespace AscNet.GameServer.Handlers
         }
         private static RankSnapshot BuildChallengeRankSnapshot(Player player, int stageId)
         {
+            int Score(SimulatedBattlefieldState value) => stageId == 0 ? ChallengeRankTotal(value, 9) : value.BossChallengeHistory.FirstOrDefault(record => record.StageId == stageId)?.Score ?? 0;
             SimulatedBattlefieldState state = player.SimulatedBattlefield;
             List<Player> participants;
             try { participants = Player.collection.Find(candidate => candidate.SimulatedBattlefield.BossActivityNo == state.BossActivityNo).ToList(); }
             catch { participants = [player]; }
             if (participants.All(candidate => candidate.PlayerData.Id != player.PlayerData.Id)) participants.Add(player);
-            int Score(SimulatedBattlefieldState value) => stageId == 0 ? ChallengeTotal(value, 9) : value.BossChallengeHistory.FirstOrDefault(record => record.StageId == stageId)?.Score ?? 0;
             List<(Player Player, int Score)> standings = participants.Select(candidate => (candidate, Score(candidate.SimulatedBattlefield)))
                 .Where(entry => entry.Item2 > 0).OrderByDescending(entry => entry.Item2)
                 .ThenBy(entry => entry.candidate.SimulatedBattlefield.BossLastScoreTime).ThenBy(entry => entry.candidate.PlayerData.Id).ToList();

@@ -28070,7 +28070,25 @@ namespace AscNet.Test
                 "Pain Cage direct BuffGroup keeps empty choice map");
             player.SimulatedBattlefield.BossChallengeHistory.Add(new AscNet.Common.Database.BossSingleChallengeHistoryRecordState { StageId = challengeStageId + 1, Score = intensiveResult.TotalScore + 1 });
             player.SimulatedBattlefield.BossChallengeHistory.Add(new AscNet.Common.Database.BossSingleChallengeHistoryRecordState { StageId = challengeStageId + 2, Score = intensiveResult.TotalScore - 1 });
-            AssertEqual(intensiveResult.TotalScore + intensiveResult.TotalScore + 1, BuildLogin(player, null).FubenBossSingleData.ChallengeTotalScore, "Pain Cage intensive top-two total");
+            int[] intensiveScores = player.SimulatedBattlefield.BossChallengeHistory.Select(row => row.Score).ToArray();
+            AssertEqual(3, intensiveScores.Distinct().Count(), "Pain Cage intensive regression uses three distinct scores");
+            AssertEqual(intensiveScores.Sum(), BuildLogin(player, null).FubenBossSingleData.ChallengeTotalScore, "Pain Cage intensive display total sums all stages");
+            const int intensiveRankPacketId = 82_036;
+            InvokeRegisteredRequestHandler(
+                nameof(BossSingleGetChallengeRankRequest),
+                harness.Session,
+                intensiveRankPacketId,
+                new BossSingleGetChallengeRankRequest { StageId = 0 });
+            BossSingleGetChallengeRankResponse intensiveRank =
+                ReadResponsePayload<BossSingleGetChallengeRankResponse>(
+                    harness,
+                    intensiveRankPacketId,
+                    nameof(BossSingleGetChallengeRankResponse),
+                    "Pain Cage intensive aggregate rank");
+            AssertEqual(0, intensiveRank.Code, "Pain Cage intensive aggregate rank code");
+            int rankStageCount = challengeGrades.Single(row => row.LevelType == challengeLogin.FubenBossSingleData.ChallengeLevelType).RankStageNum;
+            AssertEqual(intensiveScores.OrderByDescending(score => score).Take(rankStageCount).Sum(), intensiveRank.Score,
+                "Pain Cage intensive aggregate rank retains table top-N total");
             AscNet.Common.Database.Player intensiveReload = MongoDB.Bson.Serialization.BsonSerializer.Deserialize<AscNet.Common.Database.Player>(player.ToBsonDocument());
             AssertEqual(3, intensiveReload.SimulatedBattlefield.BossChallengeHistory.Count, "Pain Cage intensive relog history");
             BossSingleChallengeBuffGroupTable challengeBuffChoice = TableReaderV2
