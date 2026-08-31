@@ -140,6 +140,7 @@ namespace AscNet.Common.Database
         public int BuffGroup { get; set; }
 
         [BsonElement("buff_choices")]
+        [BsonDictionaryOptions(DictionaryRepresentation.ArrayOfDocuments)]
         public Dictionary<int, int> BuffChoices { get; set; } = new();
     }
 

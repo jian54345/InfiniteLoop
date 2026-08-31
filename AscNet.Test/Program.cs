@@ -28100,6 +28100,11 @@ namespace AscNet.Test
             Dictionary<int, int> persistedChoices = (Dictionary<int, int>)persistedChoiceHistory["BuffChoices"];
             AssertEqual(1, persistedChoices[challengeBuffChoice.Index],
                 "Pain Cage intensive history persists selected BuffChoices");
+            AscNet.Common.Database.Player choiceReload = MongoDB.Bson.Serialization.BsonSerializer
+                .Deserialize<AscNet.Common.Database.Player>(player.ToBsonDocument());
+            AssertEqual(1, choiceReload.SimulatedBattlefield.BossChallengeHistory
+                .Single(row => row.StageId == challengeStageId).BuffChoices[challengeBuffChoice.Index],
+                "Pain Cage intensive BuffChoices BSON round-trip");
             player.SimulatedBattlefield.BossLevelType = preIntensiveLevelType;
             player.SimulatedBattlefield.BossList = preIntensiveBossList;
             player.SimulatedBattlefield.BossStageRecords = preIntensiveRecords;
