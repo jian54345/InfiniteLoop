@@ -5,7 +5,11 @@ using AscNet.Common.Util;
 using AscNet.GameServer.Handlers;
 using AscNet.Table.V2.share.character;
 using AscNet.Table.V2.share.character.enhanceskill;
+using AscNet.Table.V2.share.character.grade;
+using AscNet.Table.V2.share.character.quality;
+
 namespace AscNet.GameServer.Commands;
+
 [CommandName("character")]
 internal sealed class CharacterCommand : Command
 {
@@ -18,31 +22,34 @@ internal sealed class CharacterCommand : Command
         Op = args.Length > 0
             ? args[0]
             : string.Empty;
+
         Target = args.Length > 1
             ? args[1]
             : string.Empty;
+
         ModifyType = args.Length > 2
             ? args[2]
             : string.Empty;
+
         Value = args.Length > 3
             ? args[3]
             : string.Empty;
     }
+
     public override string Help =>
         "Usage:\n" +
         "character add <id|all>\n" +
         "character modify <id|all> level <value>\n" +
-        "character modify <id|all> skillLevel <value>\n" +
         "character modify <id|all> max";
+
     private string Op { get; set; } = string.Empty;
+
     private string Target { get; set; } = string.Empty;
+
     private string ModifyType { get; set; } = string.Empty;
+
     private string Value { get; set; } = string.Empty;
-    private const int MaxCharacterQuality = 6;
-    private const int MaxCharacterStar = 6;
-    private const int MaxCharacterGrade = 14;
-    private const int MaxCharacterLiberateLevel = 5;
-    private const int MaxCharacterTrustLevel = 6;
+
     public override void Execute()
     {
         if (string.IsNullOrWhiteSpace(Op)
@@ -51,19 +58,23 @@ internal sealed class CharacterCommand : Command
             throw new ArgumentException(
                 Help);
         }
+
         switch (Op.ToLowerInvariant())
         {
             case "add":
                 AddCharacter();
                 break;
+
             case "modify":
                 ModifyCharacter();
                 break;
+
             default:
                 throw new ArgumentException(
                     Help);
         }
     }
+
     private void AddCharacter()
     {
         if (Target.Equals(
@@ -75,6 +86,7 @@ internal sealed class CharacterCommand : Command
                     .Select(character =>
                         character.Id)
                     .ToHashSet();
+
             IEnumerable<Reward> rewards =
                 TableReaderV2
                     .Parse<CharacterTable>()
@@ -90,11 +102,14 @@ internal sealed class CharacterCommand : Command
                             Id = character.Id,
                             Type = RewardType.Character
                         });
+
             RewardHandler.GiveRewards(
                 rewards,
                 session);
+
             return;
         }
+
         if (!TryParseCharacterId(
                 Target,
                 out uint characterId))
@@ -102,11 +117,13 @@ internal sealed class CharacterCommand : Command
             throw new ArgumentException(
                 "Invalid character ID!");
         }
+
         CharacterTable? characterTable =
             TableReaderV2
                 .Parse<CharacterTable>()
                 .FirstOrDefault(row =>
                     row.Id == checked((int)characterId));
+
         if (characterTable is null
             || !Character.IsOwnableCharacter(
                 characterId))
@@ -114,6 +131,7 @@ internal sealed class CharacterCommand : Command
             throw new ArgumentException(
                 "Character ID was not found or is not ownable!");
         }
+
         RewardHandler.GiveRewards(
             [
                 new Reward
@@ -124,10 +142,12 @@ internal sealed class CharacterCommand : Command
             ],
             session);
     }
+
     private void ModifyCharacter()
     {
         CharacterData[] characters =
             GetTargetCharacters();
+
         if (ModifyType.Equals(
                 "max",
                 StringComparison.OrdinalIgnoreCase))
@@ -137,10 +157,13 @@ internal sealed class CharacterCommand : Command
                 throw new ArgumentException(
                     "Usage: character modify <id|all> max");
             }
+
             ModifyMax(
                 characters);
+
             return;
         }
+
         if (ModifyType.Equals(
                 "level",
                 StringComparison.OrdinalIgnoreCase))
@@ -152,40 +175,23 @@ internal sealed class CharacterCommand : Command
                 throw new ArgumentException(
                     "Usage: character modify <id|all> level <value>");
             }
+
             foreach (CharacterData character in characters)
             {
                 character.Level = level;
                 character.Exp = 0;
             }
+
             SaveAndNotify(
                 characters);
+
             return;
         }
-        if (ModifyType.Equals(
-                "skillLevel",
-                StringComparison.OrdinalIgnoreCase))
-        {
-            if (!TryParsePositiveInt(
-                    Value,
-                    out int skillLevel))
-            {
-                throw new ArgumentException(
-                    "Usage: character modify <id|all> skillLevel <value>");
-            }
-            foreach (CharacterData character in characters)
-            {
-                SetSkillLevel(
-                    character,
-                    skillLevel,
-					true);
-            }
-            SaveAndNotify(
-                characters);
-            return;
-        }
+
         throw new ArgumentException(
             Help);
     }
+
     private void ModifyMax(
         IReadOnlyCollection<CharacterData> characters)
     {
@@ -199,11 +205,13 @@ internal sealed class CharacterCommand : Command
                 .ToDictionary(
                     group => group.Key,
                     group => group.First());
+
         foreach (CharacterData character in characters)
         {
             character.SkillList ??= new();
             character.EnhanceSkillList ??= new();
             character.MagicList ??= new();
+
             // 角色等级使用配置最高等级。
             if (characterRows.TryGetValue(
                     checked((int)character.Id),
@@ -212,116 +220,159 @@ internal sealed class CharacterCommand : Command
                 int maxLevel =
                     Character.GetCharacterMaxLevel(
                         characterRow.LevelUpTemplateId);
+
                 if (maxLevel > 0)
                 {
                     character.Level = maxLevel;
                 }
             }
+
             character.Exp = 0;
-            // 角色养成项目全部提升到最高值。
-            character.Quality =
-                MaxCharacterQuality;
-            character.Star =
-                MaxCharacterStar;
-            character.Grade =
-                MaxCharacterGrade;
-            character.LiberateLv =
-                MaxCharacterLiberateLevel;
-            character.TrustLv =
-                MaxCharacterTrustLevel;
+
+            // Quality 使用该角色配置中的最高值。
+            int maxQuality =
+                GetCharacterMaxQuality(
+                    checked((int)character.Id));
+
+            if (maxQuality > 0)
+            {
+                character.Quality = maxQuality;
+            }
+
+            // Grade 使用该角色配置中的最高值。
+            int maxGrade =
+                GetCharacterMaxGrade(
+                    checked((int)character.Id));
+
+            if (maxGrade > 0)
+            {
+                character.Grade = maxGrade;
+            }
+
+            // TrustLv 固定为 6。
+            character.TrustLv = 6;
             character.TrustExp = 0;
+
+            // Star 不再由 max 指令修改。
+            // LiberateLv 不再由 max 指令修改。
+
             // 解锁品质限制技能。
             session.character.UnlockQualityGatedSkills(
                 character);
+
             // 解锁所有配置中的跃升技能。
             if (UnlockEnhanceSkills(character))
             {
                 character.IsEnhanceSkillNotice = true;
             }
+
             // 所有已有技能提升到各自配置最高等级。
             SetSkillLevel(
                 character,
                 int.MaxValue);
         }
+
         SaveAndNotify(
             characters);
     }
+
+    private static int GetCharacterMaxQuality(
+        int characterId)
+    {
+        return TableReaderV2
+            .Parse<CharacterQualityTable>()
+            .Where(row =>
+                row.CharacterId == characterId)
+            .Select(row =>
+                row.Quality)
+            .DefaultIfEmpty(1)
+            .Max();
+    }
+
+    private static int GetCharacterMaxGrade(
+        int characterId)
+    {
+        return TableReaderV2
+            .Parse<CharacterGradeTable>()
+            .Where(row =>
+                row.CharacterId == characterId)
+            .Select(row =>
+                row.Grade)
+            .DefaultIfEmpty(1)
+            .Max();
+    }
+
     private static void SetSkillLevel(
-    CharacterData character,
-    int requestedLevel,
-    bool ignoreMaxLevel = false)
-{
-    character.SkillList ??= new();
-    character.EnhanceSkillList ??= new();
-    character.MagicList ??= new();
+        CharacterData character,
+        int requestedLevel)
+    {
+        character.SkillList ??= new();
+        character.EnhanceSkillList ??= new();
+        character.MagicList ??= new();
 
-    requestedLevel = Math.Max(requestedLevel, 1);
+        requestedLevel =
+            Math.Max(
+                requestedLevel,
+                1);
 
-    SetSkillListLevel(
-        character.SkillList,
-        requestedLevel,
-        Character.CharacterSkillMaxLevel,
-        ignoreMaxLevel);
+        SetSkillListLevel(
+            character.SkillList,
+            requestedLevel,
+            Character.CharacterSkillMaxLevel);
 
-    SetSkillListLevel(
-        character.EnhanceSkillList,
-        requestedLevel,
-        Character.EnhanceSkillMaxLevel,
-        ignoreMaxLevel);
+        SetSkillListLevel(
+            character.EnhanceSkillList,
+            requestedLevel,
+            Character.EnhanceSkillMaxLevel);
 
-    SetSkillListLevel(
-        character.MagicList,
-        requestedLevel,
-        Character.CharacterSkillMaxLevel,
-        ignoreMaxLevel);
-}
+        SetSkillListLevel(
+            character.MagicList,
+            requestedLevel,
+            Character.CharacterSkillMaxLevel);
+    }
 
     private static void SetSkillListLevel(
-    IEnumerable<CharacterSkill>? skills,
-    int requestedLevel,
-    Func<int, int> getMaxLevel,
-    bool ignoreMaxLevel)
-{
-    if (skills is null)
+        IEnumerable<CharacterSkill>? skills,
+        int requestedLevel,
+        Func<int, int> getMaxLevel)
     {
-        return;
+        if (skills is null)
+        {
+            return;
+        }
+
+        foreach (CharacterSkill skill in skills)
+        {
+            if (skill is null || skill.Id == 0)
+            {
+                continue;
+            }
+
+            int maxLevel =
+                getMaxLevel(
+                    checked((int)skill.Id));
+
+            if (maxLevel <= 0)
+            {
+                continue;
+            }
+
+            skill.Level =
+                Math.Clamp(
+                    requestedLevel,
+                    1,
+                    maxLevel);
+        }
     }
 
-    foreach (CharacterSkill skill in skills)
-    {
-        if (skill is null || skill.Id == 0)
-        {
-            continue;
-        }
-
-        if (ignoreMaxLevel)
-        {
-            skill.Level = requestedLevel;
-            continue;
-        }
-
-        int maxLevel =
-            getMaxLevel(
-                checked((int)skill.Id));
-
-        if (maxLevel <= 0)
-        {
-            continue;
-        }
-
-        skill.Level =
-            Math.Clamp(
-                requestedLevel,
-                1,
-                maxLevel);
-    }
-}
     private static bool UnlockEnhanceSkills(
         CharacterData character)
     {
         character.EnhanceSkillList ??= new();
+
         int characterId =
             checked((int)character.Id);
+
         HashSet<int> groupIds =
             TableReaderV2
                 .Parse<EnhanceSkillTable>()
@@ -332,13 +383,16 @@ internal sealed class CharacterCommand : Command
                 .Where(groupId =>
                     groupId > 0)
                 .ToHashSet();
+
         List<EnhanceSkillGroupTable> groups =
             TableReaderV2
                 .Parse<EnhanceSkillGroupTable>()
                 .Where(row =>
                     groupIds.Contains(row.Id))
                 .ToList();
+
         bool changed = false;
+
         foreach (EnhanceSkillGroupTable group in groups)
         {
             int skillId =
@@ -347,31 +401,38 @@ internal sealed class CharacterCommand : Command
                         id > 0)
                     .Distinct()
                     .FirstOrDefault();
+
             if (skillId <= 0)
             {
                 continue;
             }
+
             if (character.EnhanceSkillList.Any(
                     skill =>
                         skill.Id == (uint)skillId))
             {
                 continue;
             }
+
             if (Character.OrderedEnhanceSkillUpgrades(
                     skillId).Count == 0)
             {
                 continue;
             }
+
             character.EnhanceSkillList.Add(
                 new CharacterSkill
                 {
                     Id = (uint)skillId,
                     Level = 1
                 });
+
             changed = true;
         }
+
         return changed;
     }
+
     private CharacterData[] GetTargetCharacters()
     {
         if (Target.Equals(
@@ -383,13 +444,16 @@ internal sealed class CharacterCommand : Command
                     .Where(character =>
                         character is not null)
                     .ToArray();
+
             if (characters.Length == 0)
             {
                 throw new ArgumentException(
                     "No owned characters were found!");
             }
+
             return characters;
         }
+
         if (!TryParseCharacterId(
                 Target,
                 out uint characterId))
@@ -397,18 +461,22 @@ internal sealed class CharacterCommand : Command
             throw new ArgumentException(
                 "Invalid character ID!");
         }
+
         CharacterData[] target =
             session.character.Characters
                 .Where(character =>
                     character.Id == characterId)
                 .ToArray();
+
         if (target.Length == 0)
         {
             throw new ArgumentException(
                 "Target character was not found!");
         }
+
         return target;
     }
+
     private void SaveAndNotify(
         IEnumerable<CharacterData> characters)
     {
@@ -417,22 +485,28 @@ internal sealed class CharacterCommand : Command
                 .Where(character =>
                     character is not null)
                 .ToArray();
+
         if (target.Length == 0)
         {
             throw new ArgumentException(
                 "No characters modified!");
         }
+
         session.character.Save();
+
         NotifyCharacterDataList notify =
             new();
+
         foreach (CharacterData character in target)
         {
             notify.CharacterDataList.Add(
                 character);
         }
+
         session.SendPush(
             notify);
     }
+
     private static bool TryParseCharacterId(
         string value,
         out uint characterId)
@@ -444,6 +518,7 @@ internal sealed class CharacterCommand : Command
             out characterId)
             && characterId > 0;
     }
+
     private static bool TryParsePositiveInt(
         string value,
         out int result)
