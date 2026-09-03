@@ -1,0 +1,49 @@
+﻿AscNet.Common\Database\Character.cs:13:using AscNet.Table.V2.share.character.quality;
+AscNet.Common\Database\Character.cs:14:using AscNet.Table.V2.share.character.grade;
+AscNet.Common\Database\Character.cs:472:                    if (character.Quality <= 0)
+AscNet.Common\Database\Character.cs:474:                        character.Quality = firstQualityRow.Quality;
+AscNet.Common\Database\Character.cs:485:                if (character.Grade <= 0)
+AscNet.Common\Database\Character.cs:487:                    character.Grade = 1;
+AscNet.Common\Database\Character.cs:491:                if (character.TrustLv <= 0)
+AscNet.Common\Database\Character.cs:493:                    character.TrustLv = 1;
+AscNet.Common\Database\Character.cs:497:                if (character.LiberateLv <= 0)
+AscNet.Common\Database\Character.cs:499:                    character.LiberateLv = 1;
+AscNet.Common\Database\Character.cs:1240:                    && character.LiberateLv >= condition.Params[1],
+AscNet.Common\Database\Character.cs:1243:                13105 => character.Quality > condition.Params[0]
+AscNet.Common\Database\Character.cs:1244:                    || character.Quality == condition.Params[0]
+AscNet.Common\Database\Character.cs:1245:                    && (condition.Params.Count <= 2 || character.Star >= condition.Params[2]),
+
+
+AscNet.GameServer\Game\DrawManager.cs:7:using AscNet.Table.V2.share.character.quality;
+
+
+AscNet.GameServer\Game\LottoManager.cs:5:using AscNet.Table.V2.share.character.quality;
+
+
+AscNet.GameServer\Handlers\AccountModule.cs:1562:                Quality = character.Quality,
+AscNet.GameServer\Handlers\AccountModule.cs:1564:                Star = character.Star,
+AscNet.GameServer\Handlers\AccountModule.cs:1565:                Grade = character.Grade,
+AscNet.GameServer\Handlers\AccountModule.cs:1576:                TrustLv = character.TrustLv,
+AscNet.GameServer\Handlers\AccountModule.cs:1579:                LiberateLv = character.LiberateLv,
+
+
+AscNet.GameServer\Handlers\BiancaTheatreModule.cs:7:using AscNet.Table.V2.share.character.quality;
+
+
+AscNet.GameServer\Handlers\DrawModule.cs:5:using AscNet.Table.V2.share.character.quality;
+
+
+AscNet.GameServer\Handlers\ExhibitionModule.cs:40:                && character.LiberateLv < precedingReward.LevelId)
+AscNet.GameServer\Handlers\ExhibitionModule.cs:129:            character!.LiberateLv = Math.Max(character.LiberateLv, exhibitionReward.LevelId);
+
+
+AscNet.GameServer\Handlers\RewardHandler.cs:8:using AscNet.Table.V2.share.character.quality;
+
+
+AscNet.GameServer\Handlers\TaskModule.cs:1711:                13104 => CharacterMeets(session, parameters[0], character => character.TrustLv >= parameters[1]),
+AscNet.GameServer\Handlers\TaskModule.cs:1713:                13106 => CharacterMeets(session, parameters[1], character => character.Quality >= parameters[0]),
+AscNet.GameServer\Handlers\TaskModule.cs:1714:                13107 => CharacterMeets(session, parameters[1], character => character.LiberateLv >= parameters[0]),
+AscNet.GameServer\Handlers\TaskModule.cs:1767:                character.Quality >= requiredQuality && character.Level >= requiredLevel);
+AscNet.GameServer\Handlers\TaskModule.cs:1778:            return session.character.Characters.Count(character => character.TrustLv >= requiredTrust);
+
+
