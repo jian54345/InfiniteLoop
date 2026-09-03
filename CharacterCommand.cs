@@ -7,7 +7,7 @@ using AscNet.Table.V2.share.character;
 using AscNet.Table.V2.share.character.enhanceskill;
 using AscNet.Table.V2.share.character.grade;
 using AscNet.Table.V2.share.character.quality;
-
+using AscNet.Table.V2.share.exhibition;
 namespace AscNet.GameServer.Commands;
 
 [CommandName("character")]
@@ -193,88 +193,101 @@ internal sealed class CharacterCommand : Command
     }
 
     private void ModifyMax(
-        IReadOnlyCollection<CharacterData> characters)
+    IReadOnlyCollection<CharacterData> characters)
+{
+    Dictionary<int, CharacterTable> characterRows =
+        TableReaderV2
+            .Parse<CharacterTable>()
+            .Where(row => row.Id > 0)
+            .GroupBy(row => row.Id)
+            .ToDictionary(
+                group => group.Key,
+                group => group.First());
+
+    foreach (CharacterData character in characters)
     {
-        Dictionary<int, CharacterTable> characterRows =
-            TableReaderV2
-                .Parse<CharacterTable>()
-                .Where(row =>
-                    row.Id > 0)
-                .GroupBy(row =>
-                    row.Id)
-                .ToDictionary(
-                    group => group.Key,
-                    group => group.First());
+        character.SkillList ??= [];
+        character.EnhanceSkillList ??= [];
+        character.MagicList ??= [];
 
-        foreach (CharacterData character in characters)
+        /*
+         * Level
+         */
+        if (characterRows.TryGetValue(
+                checked((int)character.Id),
+                out CharacterTable? characterRow))
         {
-            character.SkillList ??= new();
-            character.EnhanceSkillList ??= new();
-            character.MagicList ??= new();
+            int maxLevel =
+                Character.GetCharacterMaxLevel(
+                    characterRow.LevelUpTemplateId);
 
-            // 角色等级使用配置最高等级。
-            if (characterRows.TryGetValue(
-                    checked((int)character.Id),
-                    out CharacterTable? characterRow))
+            if (maxLevel > 0)
             {
-                int maxLevel =
-                    Character.GetCharacterMaxLevel(
-                        characterRow.LevelUpTemplateId);
-
-                if (maxLevel > 0)
-                {
-                    character.Level = maxLevel;
-                }
+                character.Level = maxLevel;
             }
-
-            character.Exp = 0;
-
-            // Quality 使用该角色配置中的最高值。
-            int maxQuality =
-                GetCharacterMaxQuality(
-                    checked((int)character.Id));
-
-            if (maxQuality > 0)
-            {
-                character.Quality = maxQuality;
-            }
-
-            // Grade 使用该角色配置中的最高值。
-            int maxGrade =
-                GetCharacterMaxGrade(
-                    checked((int)character.Id));
-
-            if (maxGrade > 0)
-            {
-                character.Grade = maxGrade;
-            }
-
-            // TrustLv 固定为 6。
-            character.TrustLv = 6;
-            character.TrustExp = 0;
-
-            // Star 不再由 max 指令修改。
-            // LiberateLv 不再由 max 指令修改。
-
-            // 解锁品质限制技能。
-            session.character.UnlockQualityGatedSkills(
-                character);
-
-            // 解锁所有配置中的跃升技能。
-            if (UnlockEnhanceSkills(character))
-            {
-                character.IsEnhanceSkillNotice = true;
-            }
-
-            // 所有已有技能提升到各自配置最高等级。
-            SetSkillLevel(
-                character,
-                int.MaxValue);
         }
 
-        SaveAndNotify(
-            characters);
+        character.Exp = 0;
+
+        /*
+         * Quality
+         */
+        character.Quality =
+            GetCharacterMaxQuality(
+                checked((int)character.Id));
+
+        /*
+         * Grade
+         */
+        character.Grade =
+            GetCharacterMaxGrade(
+                checked((int)character.Id));
+
+        /*
+         * Trust
+         */
+        character.TrustLv = 6;
+        character.TrustExp = 0;
+
+        /*
+         * Star 不修改
+         */
+
+        /*
+         * LiberateLv
+         *
+         * 一次性处理所有未领取阶段。
+         */
+        LiberateCharacterMax(
+            character);
+
+        /*
+         * Quality 技能
+         */
+        session.character.UnlockQualityGatedSkills(
+            character);
+
+        /*
+         * Enhance 技能
+         */
+        if (UnlockEnhanceSkills(character))
+        {
+            character.IsEnhanceSkillNotice = true;
+        }
+
+        /*
+         * 技能配置最高
+         */
+        SetSkillLevel(
+            character,
+            int.MaxValue);
     }
+
+    /*
+     * 最后统一保存。
+     */
+    session.character.Save();
+}
 
     private static int GetCharacterMaxQuality(
         int characterId)
@@ -302,7 +315,115 @@ internal sealed class CharacterCommand : Command
             .Max();
     }
 
-    private static void SetSkillLevel(
+    private void LiberateCharacterMax(
+    CharacterData character)
+{
+    List<ExhibitionRewardTable> rewards =
+        TableReaderV2
+            .Parse<ExhibitionRewardTable>()
+            .Where(row =>
+                row.CharacterId ==
+                    checked((int)character.Id)
+                && row.LevelId >
+                    character.LiberateLv)
+            .OrderBy(row =>
+                row.LevelId)
+            .ToList();
+
+    if (rewards.Count == 0)
+    {
+        return;
+    }
+
+    List<int> gatheredRewardIds = [];
+
+    foreach (ExhibitionRewardTable reward in rewards)
+    {
+        /*
+         * 只处理当前角色尚未领取的解放奖励。
+         */
+        if (session.player.IsGatherRewardReceived(
+                reward.Id))
+        {
+            continue;
+        }
+
+        /*
+         * 发放该阶段奖励。
+         *
+         * 这里直接调用服务器现有 RewardHandler，
+         * 不伪造 GatherRewardRequest。
+         */
+        if (reward.RewardId > 0)
+        {
+            List<RewardGoods> rewardGoods =
+                RewardHandler.GetRewardGoods(
+                    reward.RewardId);
+
+            if (rewardGoods.Count > 0)
+            {
+                RewardHandler.GiveRewards(
+                    rewardGoods,
+                    session);
+            }
+        }
+
+        /*
+         * 标记 GatherReward 已领取。
+         */
+        session.player.AddGatherReward(
+            reward.Id);
+
+        gatheredRewardIds.Add(
+            reward.Id);
+
+        /*
+         * 角色解放等级提升。
+         */
+        character.LiberateLv =
+            Math.Max(
+                character.LiberateLv,
+                reward.LevelId);
+    }
+
+    if (gatheredRewardIds.Count == 0)
+    {
+        return;
+    }
+
+    /*
+     * 保存一次。
+     */
+    session.player.Save();
+    session.character.Save();
+
+    /*
+     * 所有解放阶段处理完成后，
+     * 只发送一次角色数据。
+     */
+    session.SendPush(
+        new NotifyCharacterDataList
+        {
+            CharacterDataList =
+            {
+                character
+            }
+        });
+
+    /*
+     * 一次性发送所有 GatherReward 状态。
+     */
+    foreach (int rewardId in gatheredRewardIds)
+    {
+        session.SendPush(
+            new NotifyGatherReward
+            {
+                Id = rewardId
+            });
+    }
+}
+	
+	private static void SetSkillLevel(
         CharacterData character,
         int requestedLevel)
     {
