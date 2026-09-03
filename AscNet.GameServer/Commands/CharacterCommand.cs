@@ -1,4 +1,4 @@
-using System.Globalization;
+﻿using System.Globalization;
 using AscNet.Common.Database;
 using AscNet.Common.MsgPack;
 using AscNet.Common.Util;
@@ -41,8 +41,7 @@ internal sealed class CharacterCommand : Command
         "Usage:\n" +
         "character add <id|all>\n" +
         "character modify <id|all> level <value>\n" +
-        "character modify <id|all> max" +
-        "character modify <id|all> min";
+        "character modify <id|all> max";
 
     private string Op { get; set; } = string.Empty;
 
@@ -167,20 +166,6 @@ internal sealed class CharacterCommand : Command
         }
 
         if (ModifyType.Equals(
-        "min",
-        StringComparison.OrdinalIgnoreCase))
-{
-    if (!string.IsNullOrWhiteSpace(Value))
-    {
-        throw new ArgumentException(
-            "Usage: character modify <id|all> min");
-    }
-
-    ModifyMin(characters);
-
-    return;
-}
-		if (ModifyType.Equals(
                 "level",
                 StringComparison.OrdinalIgnoreCase))
         {
@@ -345,212 +330,7 @@ internal sealed class CharacterCommand : Command
         session);
 }
 
-    private void ModifyMin(
-    IReadOnlyCollection<CharacterData> characters)
-{
-    Dictionary<int, CharacterTable> characterRows =
-        TableReaderV2
-            .Parse<CharacterTable>()
-            .Where(row =>
-                row.Id > 0)
-            .GroupBy(row =>
-                row.Id)
-            .ToDictionary(
-                group => group.Key,
-                group => group.First());
-
-    foreach (CharacterData character in characters)
-    {
-        character.SkillList ??= new();
-        character.EnhanceSkillList ??= new();
-        character.MagicList ??= new();
-
-        /*
-         * ============================================================
-         * 1. Level
-         * ============================================================
-         *
-         * 使用 CharacterLevelUpTemplate 配置中的最低有效等级。
-         */
-        if (characterRows.TryGetValue(
-                checked((int)character.Id),
-                out CharacterTable? characterRow))
-        {
-            int minLevel =
-                Character.characterLevelUpTemplates
-                    .Where(row =>
-                        row.Type ==
-                            characterRow.LevelUpTemplateId
-                        && row.Level > 0)
-                    .Select(row =>
-                        row.Level)
-                    .DefaultIfEmpty(1)
-                    .Min();
-
-            character.Level = minLevel;
-        }
-        else
-        {
-            character.Level = 1;
-        }
-
-        character.Exp = 0;
-
-        /*
-         * ============================================================
-         * 2. Quality
-         * ============================================================
-         */
-        int minQuality =
-            TableReaderV2
-                .Parse<CharacterQualityTable>()
-                .Where(row =>
-                    row.CharacterId ==
-                        checked((int)character.Id))
-                .Select(row =>
-                    row.Quality)
-                .DefaultIfEmpty(1)
-                .Min();
-
-        character.Quality = minQuality;
-
-        /*
-         * ============================================================
-         * 3. Grade
-         * ============================================================
-         */
-        int minGrade =
-            TableReaderV2
-                .Parse<CharacterGradeTable>()
-                .Where(row =>
-                    row.CharacterId ==
-                        checked((int)character.Id))
-                .Select(row =>
-                    row.Grade)
-                .DefaultIfEmpty(1)
-                .Min();
-
-        character.Grade = minGrade;
-
-        /*
-         * ============================================================
-         * 4. Trust
-         * ============================================================
-         */
-        character.TrustLv = 1;
-        character.TrustExp = 0;
-
-        /*
-         * ============================================================
-         * 5. Star / Liberate / GatherRewards
-         *
-         * Star 不修改。
-         * LiberateLv 不修改。
-         * GatherRewards 不修改。
-         * ============================================================
-         */
-
-        /*
-         * ============================================================
-         * 6. 普通技能恢复到“初始状态”
-         * ============================================================
-         *
-         * 不直接 Clear 后留空。
-         *
-         * Character.cs 的正常角色初始化逻辑：
-         *
-         * CharacterSkillTable
-         *      ↓
-         * SkillGroupId
-         *      ↓
-         * CharacterSkillGroupTable
-         *      ↓
-         * 每个技能组的第一个 SkillId
-         *      ↓
-         * Level = 1
-         *
-         * 这里按照相同逻辑重新建立基础技能。
-         */
-        character.SkillList.Clear();
-
-        var characterSkill =
-            TableReaderV2
-                .Parse<AscNet.Table.V2.share.character.skill.CharacterSkillTable>()
-                .FirstOrDefault(row =>
-                    row.CharacterId ==
-                        checked((int)character.Id));
-
-        if (characterSkill is not null)
-        {
-            foreach (int skillGroupId in
-                characterSkill.SkillGroupId
-                    .Where(id =>
-                        id > 0)
-                    .Distinct())
-            {
-                var skillGroup =
-                    TableReaderV2
-                        .Parse<AscNet.Table.V2.share.character.skill.CharacterSkillGroupTable>()
-                        .FirstOrDefault(row =>
-                            row.Id ==
-                                skillGroupId);
-
-                if (skillGroup is null)
-                {
-                    continue;
-                }
-
-                int skillId =
-                    skillGroup.SkillId
-                        .FirstOrDefault();
-
-                if (skillId <= 0)
-                {
-                    continue;
-                }
-
-                character.SkillList.Add(
-                    new()
-                    {
-                        Id = checked((uint)skillId),
-                        Level = 1
-                    });
-            }
-        }
-
-        /*
-         * ============================================================
-         * 7. EnhanceSkill 全部恢复锁定
-         * ============================================================
-         *
-         * Character.cs 的 NormalizeEnhanceSkillsForCharacter()
-         * 明确规定：
-         *
-         * “Never grants locked groups”
-         *
-         * 因此清空后就是锁定状态。
-         */
-        character.EnhanceSkillList.Clear();
-
-        /*
-         * ============================================================
-         * 8. MagicSkill 恢复为空
-         * ============================================================
-         */
-        character.MagicList.Clear();
-
-        /*
-         * ============================================================
-         * 9. EnhanceSkill 提示状态清除
-         * ============================================================
-         */
-        character.IsEnhanceSkillNotice = false;
-    }
-
-    SaveAndNotify(
-        characters);
-}
-	private void LiberateCharacterMax(
+    private void LiberateCharacterMax(
     CharacterData character,
     RewardApplicationResult batchResult)
 {
