@@ -1,0 +1,617 @@
+﻿AscNet.Common\Common.cs:40:                    object? values = typeof(TableReaderV2).GetMethod("Parse")?.MakeGenericMethod(type).Invoke(null, null);
+AscNet.Common\Database\Character.cs:31:            HashSet<int> ids = TableReaderV2.Parse<CharacterTable>()
+AscNet.Common\Database\Character.cs:34:            ids.IntersectWith(TableReaderV2.Parse<CharacterSkillTable>()
+AscNet.Common\Database\Character.cs:36:            ids.IntersectWith(TableReaderV2.Parse<CharacterQualityTable>()
+AscNet.Common\Database\Character.cs:38:            ids.IntersectWith(TableReaderV2.Parse<CharacterGradeTable>()
+AscNet.Common\Database\Character.cs:83:            EquipTable? exact = TableReaderV2.Parse<EquipTable>()
+AscNet.Common\Database\Character.cs:93:            return TableReaderV2.Parse<EquipBreakThroughTable>()
+AscNet.Common\Database\Character.cs:105:            EquipResonanceTable? resonanceTable = TableReaderV2.Parse<EquipResonanceTable>()
+AscNet.Common\Database\Character.cs:122:                validAttributeTemplates.UnionWith(TableReaderV2.Parse<AttribPoolTable>()
+AscNet.Common\Database\Character.cs:141:            EquipTable? equipTable = TableReaderV2.Parse<EquipTable>()
+AscNet.Common\Database\Character.cs:195:            CharacterSkillTable? characterSkills = TableReaderV2.Parse<CharacterSkillTable>()
+AscNet.Common\Database\Character.cs:201:                .Select(groupId => TableReaderV2.Parse<CharacterSkillGroupTable>().Find(group => group.Id == groupId))
+AscNet.Common\Database\Character.cs:213:            Dictionary<uint, EquipTable> ownableEquipTemplates = TableReaderV2.Parse<EquipTable>()
+AscNet.Common\Database\Character.cs:364:            Dictionary<int, PartnerTable> partnerRowsById = TableReaderV2.Parse<PartnerTable>()
+AscNet.Common\Database\Character.cs:407:            Dictionary<int, CharacterTable> characterRowsById = TableReaderV2.Parse<CharacterTable>()
+AscNet.Common\Database\Character.cs:409:            Dictionary<int, CharacterSkillTable> skillRowsByCharacterId = TableReaderV2.Parse<CharacterSkillTable>()
+AscNet.Common\Database\Character.cs:411:            ILookup<int, CharacterQualityTable> qualityRowsByCharacterId = TableReaderV2.Parse<CharacterQualityTable>()
+AscNet.Common\Database\Character.cs:413:            Dictionary<int, EquipTable> equipRowsById = TableReaderV2.Parse<EquipTable>()
+AscNet.Common\Database\Character.cs:415:            Dictionary<int, FashionTable> fashionRowsById = TableReaderV2.Parse<FashionTable>()
+AscNet.Common\Database\Character.cs:418:                TableReaderV2.Parse<CharacterSkillGroupTable>());
+AscNet.Common\Database\Character.cs:438:            foreach (FashionColorTable color in TableReaderV2.Parse<FashionColorTable>())
+AscNet.Common\Database\Character.cs:644:            PartnerSkillTable? skillConfig = TableReaderV2.Parse<PartnerSkillTable>()
+AscNet.Common\Database\Character.cs:649:            return TableReaderV2.Parse<PartnerMainSkillGroupTable>()
+AscNet.Common\Database\Character.cs:656:            PartnerSkillTable? skillConfig = TableReaderV2.Parse<PartnerSkillTable>()
+AscNet.Common\Database\Character.cs:662:            return TableReaderV2.Parse<PartnerMainSkillGroupTable>()
+AscNet.Common\Database\Character.cs:670:            return TableReaderV2.Parse<PartnerSkillEffectTable>()
+AscNet.Common\Database\Character.cs:680:                TableReaderV2.Parse<CharacterSkillGroupTable>());
+AscNet.Common\Database\Character.cs:707:                .Parse<CharacterSkillUpgradeTable>()
+AscNet.Common\Database\Character.cs:789:            CharacterSkillTable? skillTable = TableReaderV2.Parse<CharacterSkillTable>()
+AscNet.Common\Database\Character.cs:794:                TableReaderV2.Parse<CharacterSkillGroupTable>());
+AscNet.Common\Database\Character.cs:796:                .Parse<CharacterSkillUpgradeTable>()
+AscNet.Common\Database\Character.cs:809:            List<CharacterSkillGroupTable> skillGroupRows = TableReaderV2.Parse<CharacterSkillGroupTable>();
+AscNet.Common\Database\Character.cs:822:                TableReaderV2.Parse<CharacterSkillTable>()
+AscNet.Common\Database\Character.cs:874:            return TableReaderV2.Parse<EnhanceSkillUpgradeTable>()
+AscNet.Common\Database\Character.cs:899:            EnhanceSkillTable? enhanceRow = TableReaderV2.Parse<EnhanceSkillTable>()
+AscNet.Common\Database\Character.cs:907:                    EnhanceSkillGroupTable? group = TableReaderV2.Parse<EnhanceSkillGroupTable>()
+AscNet.Common\Database\Character.cs:987:                .Parse<CharacterQualityTable>()
+AscNet.Common\Database\Character.cs:992:                .Parse<CharacterQualityFragmentTable>()
+AscNet.Common\Database\Character.cs:1009:            CharacterTable? character = TableReaderV2.Parse<CharacterTable>().Find(x => x.Id == id);
+AscNet.Common\Database\Character.cs:1010:            CharacterSkillTable? characterSkill = TableReaderV2.Parse<CharacterSkillTable>().Find(x => x.CharacterId == id);
+AscNet.Common\Database\Character.cs:1011:            CharacterQualityTable? characterQuality = TableReaderV2.Parse<CharacterQualityTable>().OrderBy(x => x.Quality).FirstOrDefault(x => x.CharacterId == id);
+AscNet.Common\Database\Character.cs:1066:            var characterData = TableReaderV2.Parse<CharacterTable>().FirstOrDefault(x => x.Id == characterId);
+AscNet.Common\Database\Character.cs:1129:            TableReaderV2.Parse<CharacterSkillGroupTable>()
+AscNet.Common\Database\Character.cs:1141:            return TableReaderV2.Parse<CharacterSkillLevelEffectTable>()
+AscNet.Common\Database\Character.cs:1178:                        CharacterSkillUpgradeTable? skillUpgrade = TableReaderV2.Parse<CharacterSkillUpgradeTable>().Find(x => x.SkillId == skillId && x.Level == level);
+AscNet.Common\Database\Character.cs:1216:            Dictionary<int, ConditionTable> conditions = TableReaderV2.Parse<ConditionTable>()
+AscNet.Common\Database\Character.cs:1230:                return ParseConditionOr(condition.Formula, ref position, character, playerLevel, conditions, depth + 1)
+AscNet.Common\Database\Character.cs:1253:        private static bool ParseConditionOr(string formula, ref int position, CharacterData character, long? playerLevel,
+AscNet.Common\Database\Character.cs:1256:            bool result = ParseConditionAnd(formula, ref position, character, playerLevel, conditions, depth);
+AscNet.Common\Database\Character.cs:1260:                bool right = ParseConditionAnd(formula, ref position, character, playerLevel, conditions, depth);
+AscNet.Common\Database\Character.cs:1266:        private static bool ParseConditionAnd(string formula, ref int position, CharacterData character, long? playerLevel,
+AscNet.Common\Database\Character.cs:1269:            bool result = ParseConditionPrimary(formula, ref position, character, playerLevel, conditions, depth);
+AscNet.Common\Database\Character.cs:1273:                bool right = ParseConditionPrimary(formula, ref position, character, playerLevel, conditions, depth);
+AscNet.Common\Database\Character.cs:1279:        private static bool ParseConditionPrimary(string formula, ref int position, CharacterData character, long? playerLevel,
+AscNet.Common\Database\Character.cs:1287:                bool result = ParseConditionOr(formula, ref position, character, playerLevel, conditions, depth);
+AscNet.Common\Database\Character.cs:1303:            EquipTable? equip = TableReaderV2.Parse<EquipTable>().Find(x => x.Id == equipId && IsOwnableEquipTemplate(x));
+AscNet.Common\Database\Character.cs:1405:            PartnerSkillTable? skillConfig = TableReaderV2.Parse<PartnerSkillTable>()
+AscNet.Common\Database\Character.cs:1408:            PartnerMainSkillGroupTable? mainSkillGroup = TableReaderV2.Parse<PartnerMainSkillGroupTable>()
+AscNet.Common\Database\Character.cs:1413:                : TableReaderV2.Parse<CharacterTable>()
+AscNet.Common\Database\Inventory.cs:50:            TableReaderV2.Parse<ItemTable>().Select(item => item.Id).ToHashSet());
+AscNet.Common\Database\Inventory.cs:99:            ItemTable? itemTable = TableReaderV2.Parse<ItemTable>().Find(x => x.Id == itemId);
+AscNet.Common\Database\Player.cs:405:            List<HeadPortraitTable> initialHeads = TableReaderV2.Parse<HeadPortraitTable>()
+AscNet.Common\Database\Stage.cs:34:            foreach (var guideFight in TableReaderV2.Parse<GuideFightTable>())
+AscNet.Common\Util\JsonSnapshot.cs:11:                ? JObject.Parse(File.ReadAllText(path))
+AscNet.Common\Util\JsonSnapshot.cs:70:                dynamic key = int.TryParse(property.Name, out int numericKey)
+AscNet.Common\Util\Miscs.cs:5:        public static int ParseIntOr(string? s, int d = 0)
+AscNet.Common\Util\Miscs.cs:7:            if (int.TryParse(s, out var parsed))
+AscNet.Common\Util\TableReader.cs:46:        public static List<T> Parse<T>() where T : ITable
+AscNet.Common\Util\TableReader.cs:115:                            prop.PropertyType.GetMethod("Add").Invoke(prop.GetValue(obj), new object[] { int.Parse(value) });
+AscNet.Common\Util\TableReader.cs:133:                            prop.SetValue(obj, int.Parse(values[i]));
+AscNet.GameServer\Commands\BlackCardCommand.cs:25:                    : Miscs.ParseIntOr(Amount);
+AscNet.GameServer\Commands\CharacterCommand.cs:24:            int id = Miscs.ParseIntOr(Target);
+AscNet.GameServer\Commands\CharacterCommand.cs:34:                        IEnumerable<Reward> rewards = TableReaderV2.Parse<CharacterTable>()
+AscNet.GameServer\Commands\CoatingCommand.cs:25:            int characterId = Miscs.ParseIntOr(Target);
+AscNet.GameServer\Commands\CoatingCommand.cs:37:                        ? TableReaderV2.Parse<FashionTable>()
+AscNet.GameServer\Commands\CoatingCommand.cs:39:                        : TableReaderV2.Parse<FashionTable>()
+AscNet.GameServer\Commands\CoatingCommand.cs:52:                    foreach (int colorId in TableReaderV2.Parse<FashionColorTable>()
+AscNet.GameServer\Commands\CoatingCommand.cs:67:                        IEnumerable<int> weaponFashionIds = TableReaderV2.Parse<ItemTable>()
+AscNet.GameServer\Commands\EquipCommand.cs:45:                        foreach (EquipTable equip in TableReaderV2.Parse<EquipTable>()
+AscNet.GameServer\Commands\EquipCommand.cs:58:                        var equip = TableReaderV2.Parse<EquipTable>().Find(x => x.Id == Miscs.ParseIntOr(Target)) ?? throw new ServerCodeException("Equip by id not found", 20021001);
+AscNet.GameServer\Commands\EquipCommand.cs:79:            Dictionary<uint, EquipTable> equipRowsById = TableReaderV2.Parse<EquipTable>()
+AscNet.GameServer\Commands\ItemCommand.cs:54:                int amount = useMaxCount ? 0 : Miscs.ParseIntOr(Amount);
+AscNet.GameServer\Commands\ItemCommand.cs:56:                foreach (ItemTable itemTable in TableReaderV2.Parse<ItemTable>())
+AscNet.GameServer\Commands\ItemCommand.cs:73:                int itemId = Miscs.ParseIntOr(Target);
+AscNet.GameServer\Commands\ItemCommand.cs:74:                if (!TableReaderV2.Parse<ItemTable>().Any(x => x.Id == itemId))
+AscNet.GameServer\Commands\ItemCommand.cs:77:                notifyItemData.ItemDataList.Add(session.inventory.Do(itemId, Miscs.ParseIntOr(Amount)));
+AscNet.GameServer\Commands\ItemCommand.cs:104:                int itemId = Miscs.ParseIntOr(Target);
+AscNet.GameServer\Commands\ItemCommand.cs:105:                if (!TableReaderV2.Parse<ItemTable>().Any(x => x.Id == itemId))
+AscNet.GameServer\Commands\ItemCommand.cs:121:            Dictionary<int, ItemTable> itemTables = TableReaderV2.Parse<ItemTable>().ToDictionary(x => x.Id);
+AscNet.GameServer\Commands\ItemCommand.cs:159:                int itemId = Miscs.ParseIntOr(Target);
+AscNet.GameServer\Commands\LevelCommand.cs:20:            List<PlayerTable> playerLevels = TableReaderV2.Parse<PlayerTable>();
+AscNet.GameServer\Commands\LevelCommand.cs:21:            int level = Miscs.ParseIntOr(Level);
+AscNet.GameServer\Commands\SceneCommand.cs:25:            List<int> catalogIds = TableReaderV2.Parse<BackgroundTable>()
+AscNet.GameServer\Commands\StageCommand.cs:22:                foreach (var stageData in TableReaderV2.Parse<StageTable>().Where(x => x.StageId >= 10000000 && x.StageId <= 20000000))
+AscNet.GameServer\Commands\StageCommand.cs:47:                StageTable? stageData = TableReaderV2.Parse<StageTable>().Find(x => x.StageId == int.Parse(TargetStage));
+AscNet.GameServer\Game\ActivityScheduleService.cs:21:        TableReaderV2.Parse<ActivityScheduleTable>()
+AscNet.GameServer\Game\ActivityScheduleService.cs:59:        foreach (DyeMergeChapterTable chapter in TableReaderV2.Parse<DyeMergeChapterTable>())
+AscNet.GameServer\Game\DrawManager.cs:19:    private static readonly List<DrawSceneTable> DrawScenes = TableReaderV2.Parse<DrawSceneTable>();
+AscNet.GameServer\Game\DrawManager.cs:20:    private static readonly List<DrawPreviewTable> DrawPreviews = TableReaderV2.Parse<DrawPreviewTable>();
+AscNet.GameServer\Game\DrawManager.cs:21:    private static readonly List<DrawPredictTable> DrawPredictions = TableReaderV2.Parse<DrawPredictTable>();
+AscNet.GameServer\Game\DrawManager.cs:23:    private static readonly List<CharacterTable> Characters = TableReaderV2.Parse<CharacterTable>();
+AscNet.GameServer\Game\DrawManager.cs:24:    private static readonly List<CharacterQualityTable> CharacterQualities = TableReaderV2.Parse<CharacterQualityTable>();
+AscNet.GameServer\Game\DrawManager.cs:25:    private static readonly List<EquipTable> Equips = TableReaderV2.Parse<EquipTable>();
+AscNet.GameServer\Game\DrawManager.cs:26:    private static readonly List<ItemTable> Items = TableReaderV2.Parse<ItemTable>();
+AscNet.GameServer\Game\DrawManager.cs:27:    private static readonly HashSet<int> DrawWaferShowIds = TableReaderV2.Parse<DrawWaferShowTable>().Select(x => x.Id).ToHashSet();
+AscNet.GameServer\Game\DrawManager.cs:28:    private static readonly List<PartnerTable> Partners = TableReaderV2.Parse<PartnerTable>();
+AscNet.GameServer\Game\DrawManager.cs:34:    private static readonly List<DrawServerCatalogTable> DrawServerCatalog = TableReaderV2.Parse<DrawServerCatalogTable>();
+AscNet.GameServer\Game\LottoManager.cs:22:        TableReaderV2.Parse<CharacterQualityTable>()
+AscNet.GameServer\Game\LottoManager.cs:26:        TableReaderV2.Parse<EquipTable>().ToDictionary(row => row.Id, row => row.Quality));
+AscNet.GameServer\Game\LottoManager.cs:28:        TableReaderV2.Parse<ItemTable>().ToDictionary(row => row.Id, row => row.Quality));
+AscNet.GameServer\Game\LottoManager.cs:76:            WheelchairManualActivityTable[] activities = TableReaderV2.Parse<WheelchairManualActivityTable>()
+AscNet.GameServer\Game\LottoManager.cs:83:            LottoTable? lotto = TableReaderV2.Parse<LottoTable>()
+AscNet.GameServer\Game\LottoManager.cs:88:            LottoPrimaryTable[] primaries = TableReaderV2.Parse<LottoPrimaryTable>()
+AscNet.GameServer\Game\LottoManager.cs:94:            Dictionary<int, LottoRewardTable> rewards = TableReaderV2.Parse<LottoRewardTable>()
+AscNet.GameServer\Game\LottoManager.cs:100:            HashSet<int> buyTicketRules = TableReaderV2.Parse<LottoBuyTicketRuleTable>()
+AscNet.GameServer\Handlers\AccountModule.cs:497:                && TableReaderV2.Parse<AscNet.Table.V2.share.activitybrief.ActivityBriefStoryTable>()
+AscNet.GameServer\Handlers\AccountModule.cs:558:            foreach (PassportActivityTable passport in TableReaderV2.Parse<PassportActivityTable>()
+AscNet.GameServer\Handlers\AccountModule.cs:564:                PassportTaskGroupTable[] rounds = TableReaderV2.Parse<PassportTaskGroupTable>()
+AscNet.GameServer\Handlers\AccountModule.cs:586:            Dictionary<int, ActivityBriefGroupTable> groups = TableReaderV2.Parse<ActivityBriefGroupTable>()
+AscNet.GameServer\Handlers\AccountModule.cs:588:            foreach (ActivityBriefTable brief in TableReaderV2.Parse<ActivityBriefTable>().Where(brief => brief.TimeId > 0))
+AscNet.GameServer\Handlers\AccountModule.cs:614:            Dictionary<int, TeachingActivityTable> teachingActivities = TableReaderV2.Parse<TeachingActivityTable>()
+AscNet.GameServer\Handlers\AccountModule.cs:616:            Dictionary<int, SkipFunctionalTable> skipFunctions = TableReaderV2.Parse<SkipFunctionalTable>()
+AscNet.GameServer\Handlers\AccountModule.cs:619:            foreach (NewActivityCalendarActivityTable calendar in TableReaderV2.Parse<NewActivityCalendarActivityTable>()
+AscNet.GameServer\Handlers\AccountModule.cs:641:            foreach (SignInTable signIn in TableReaderV2.Parse<SignInTable>()
+AscNet.GameServer\Handlers\AccountModule.cs:649:                foreach (ActivityBtnTable button in TableReaderV2.Parse<ActivityBtnTable>()
+AscNet.GameServer\Handlers\AccountModule.cs:671:            int[] bigWorldFunctionIds = TableReaderV2.Parse<SkipFunctionalTable>()
+AscNet.GameServer\Handlers\AccountModule.cs:677:            int[] bigWorldTimeIds = TableReaderV2.Parse<BigWorldCourseVersionTable>()
+AscNet.GameServer\Handlers\AccountModule.cs:696:                TableReaderV2.Parse<PurchasePackageYKUiConfigTable>();
+AscNet.GameServer\Handlers\AccountModule.cs:698:            int monthlyUiType = TableReaderV2.Parse<SignCardTable>()
+AscNet.GameServer\Handlers\AccountModule.cs:801:            return TableReaderV2.Parse<FashionColorTable>()
+AscNet.GameServer\Handlers\AccountModule.cs:829:            HashSet<int> backgroundIds = TableReaderV2.Parse<BackgroundTable>()
+AscNet.GameServer\Handlers\AccountModule.cs:1197:            List<SimulateTrainMonsterTable> simulateTrainBosses = TableReaderV2.Parse<SimulateTrainMonsterTable>()
+AscNet.GameServer\Handlers\AccountModule.cs:1243:            foreach (ExhibitionRewardTable reward in TableReaderV2.Parse<ExhibitionRewardTable>().Where(reward =>
+AscNet.GameServer\Handlers\AccountModule.cs:1297:                UnlockEmojis = TableReaderV2.Parse<EmojiTable>().Select(x => new NotifyChatLoginData.NotifyChatLoginDataUnlockEmoji() { Id = (uint)x.Id }).ToList()
+AscNet.GameServer\Handlers\AccountModule.cs:1510:            foreach (ExhibitionRewardTable exhibitionReward in TableReaderV2.Parse<ExhibitionRewardTable>().Where(reward =>
+AscNet.GameServer\Handlers\AccountModule.cs:1534:            foreach (HeadPortraitTable head in TableReaderV2.Parse<HeadPortraitTable>().Where(head => head.IsInit == 1))
+AscNet.GameServer\Handlers\AccountModule.cs:1537:            Dictionary<int, FashionTable> fashions = TableReaderV2.Parse<FashionTable>()
+AscNet.GameServer\Handlers\AccountModule.EventPayloads.cs:28:            List<NewActivityCalendarActivityTable> openActivities = TableReaderV2.Parse<NewActivityCalendarActivityTable>()
+AscNet.GameServer\Handlers\AccountModule.EventPayloads.cs:60:            WheelchairManualActivityTable activity = TableReaderV2.Parse<WheelchairManualActivityTable>().Single();
+AscNet.GameServer\Handlers\AccountModule.EventPayloads.cs:61:            HashSet<int> periodIds = TableReaderV2.Parse<WheelchairManualGuideActivityPeriodTable>()
+AscNet.GameServer\Handlers\AccountModule.EventPayloads.cs:70:                OpenActivityIds = TableReaderV2.Parse<WheelchairManualGuideActivityTable>()
+AscNet.GameServer\Handlers\ArenaModule.cs:118:        private static readonly Lazy<List<ChallengeAreaTable>> Challenges = new(() => TableReaderV2.Parse<ChallengeAreaTable>());
+AscNet.GameServer\Handlers\ArenaModule.cs:119:        private static readonly Lazy<Dictionary<int, AreaStageTable>> AreaStages = new(() => TableReaderV2.Parse<AreaStageTable>().ToDictionary(x => x.Id));
+AscNet.GameServer\Handlers\ArenaModule.cs:120:        private static readonly Lazy<Dictionary<int, MarkTable>> Marks = new(() => TableReaderV2.Parse<MarkTable>().ToDictionary(x => x.MarkId));
+AscNet.GameServer\Handlers\ArenaModule.cs:121:        private static readonly Lazy<Dictionary<int, ChatBoardTable>> ChatBoards = new(() => TableReaderV2.Parse<ChatBoardTable>().ToDictionary(x => x.Id));
+AscNet.GameServer\Handlers\ArenaModule.cs:123:            TableReaderV2.Parse<ArenaGroupFightEventTable>()
+AscNet.GameServer\Handlers\ArenaModule.cs:302:            List<int> arenaLevels = TableReaderV2.Parse<ArenaLevelTable>().Select(x => x.Id).Distinct().OrderBy(x => x).ToList();
+AscNet.GameServer\Handlers\ArenaModule.cs:611:            ArenaLevelTable level = TableReaderV2.Parse<ArenaLevelTable>().Single(x => x.Name == initialName);
+AscNet.GameServer\Handlers\ArenaModule.cs:625:                .Select(value => int.TryParse(value, out int areaId) ? areaId : 0)
+AscNet.GameServer\Handlers\ArenaModule.cs:632:                    .Select(value => int.TryParse(value, out int areaId) ? areaId : 0)
+AscNet.GameServer\Handlers\ArenaModule.cs:774:            double Term(string token) => values.TryGetValue(token, out double found) ? found : double.TryParse(token, out double number) ? number : 0;
+AscNet.GameServer\Handlers\ArenaStageDataset.cs:14:        TableReaderV2.Parse<AreaStageTable>()
+AscNet.GameServer\Handlers\AssignModule.cs:40:        List<AssignChapterTable> chapters = TableReaderV2.Parse<AssignChapterTable>()
+AscNet.GameServer\Handlers\AssignModule.cs:43:        Dictionary<int, AssignGroupTable> groupConfigs = TableReaderV2.Parse<AssignGroupTable>()
+AscNet.GameServer\Handlers\AssignModule.cs:55:            TableReaderV2.Parse<AssignTeamInfoTable>().ToDictionary(team => team.Id));
+AscNet.GameServer\Handlers\AudioPlayerModule.cs:23:            TableReaderV2.Parse<MusicPlayerConfigTable>()
+AscNet.GameServer\Handlers\AudioPlayerModule.cs:27:            TableReaderV2.Parse<MusicPlayerAlbumTable>().ToDictionary(row => row.Id));
+AscNet.GameServer\Handlers\AudioPlayerModule.cs:29:            TableReaderV2.Parse<ConditionTable>().ToDictionary(row => row.Id));
+AscNet.GameServer\Handlers\AudioPlayerModule.cs:31:            TableReaderV2.Parse<BackgroundTable>()
+AscNet.GameServer\Handlers\AwarenessModule.cs:29:        List<AwarenessChapterTable> chapters = TableReaderV2.Parse<AwarenessChapterTable>().OrderBy(x => x.Site).ToList();
+AscNet.GameServer\Handlers\AwarenessModule.cs:30:        return new(chapters, chapters.ToDictionary(x => x.Id), TableReaderV2.Parse<AwarenessTeamInfoTable>().ToDictionary(x => x.Id));
+AscNet.GameServer\Handlers\BfrtModule.cs:12:    private static List<BfrtGroupTable> Groups => TableReaderV2.Parse<BfrtGroupTable>();
+AscNet.GameServer\Handlers\BfrtModule.cs:149:        BfrtChapterTable? chapter = TableReaderV2.Parse<BfrtChapterTable>().FirstOrDefault(row => row.ChapterId == request.BfrtChapterId && row.GroupId.Contains(request.BfrtGroupId));
+AscNet.GameServer\Handlers\BfrtModule.cs:181:        BfrtCourseRewardTable? row = TableReaderV2.Parse<BfrtCourseRewardTable>()
+AscNet.GameServer\Handlers\BfrtModule.cs:200:        BfrtChapterTable? chapter = TableReaderV2.Parse<BfrtChapterTable>().FirstOrDefault(row => row.ChapterId == request.BfrtChapterId);
+AscNet.GameServer\Handlers\BiancaTheatreModule.cs:228:            bool validCharacter = TableReaderV2.Parse<CharacterTable>().Any(character => character.Id == request.CharacterId);
+AscNet.GameServer\Handlers\BiancaTheatreModule.cs:275:            HashSet<int> knownCharacterIds = TableReaderV2.Parse<CharacterTable>()
+AscNet.GameServer\Handlers\BiancaTheatreModule.cs:278:            HashSet<int> knownRobotIds = TableReaderV2.Parse<AscNet.Table.V2.share.robot.RobotTable>()
+AscNet.GameServer\Handlers\BiancaTheatreModule.cs:292:                    AscNet.Table.V2.share.robot.RobotTable? robot = TableReaderV2.Parse<AscNet.Table.V2.share.robot.RobotTable>()
+AscNet.GameServer\Handlers\BiancaTheatreModule.cs:457:            CharacterTable? character = TableReaderV2.Parse<CharacterTable>().FirstOrDefault(row => row.Id == characterId);
+AscNet.GameServer\Handlers\BiancaTheatreModule.cs:458:            CharacterSkillTable? characterSkill = TableReaderV2.Parse<CharacterSkillTable>().FirstOrDefault(row => row.CharacterId == characterId);
+AscNet.GameServer\Handlers\BiancaTheatreModule.cs:459:            CharacterQualityTable? characterQuality = TableReaderV2.Parse<CharacterQualityTable>()
+AscNet.GameServer\Handlers\BiancaTheatreModule.cs:514:            IEnumerable<CharacterTable> candidates = TableReaderV2.Parse<CharacterTable>()
+AscNet.GameServer\Handlers\BiancaTheatreModule.cs:652:            return uint.Parse(text[..Math.Min(6, text.Length)]);
+AscNet.GameServer\Handlers\BossInshotModule.cs:41:    private static readonly Lazy<List<BossInshotActivityTable>> Activities = new(() => TableReaderV2.Parse<BossInshotActivityTable>());
+AscNet.GameServer\Handlers\BossInshotModule.cs:42:    private static readonly Lazy<Dictionary<int, BossInshotTowerTable>> Towers = new(() => TableReaderV2.Parse<BossInshotTowerTable>().ToDictionary(x => x.Id));
+AscNet.GameServer\Handlers\BossInshotModule.cs:43:    private static readonly Lazy<Dictionary<int, BossInshotTowerStageTable>> TowerStages = new(() => TableReaderV2.Parse<BossInshotTowerStageTable>().ToDictionary(x => x.StageId));
+AscNet.GameServer\Handlers\BossInshotModule.cs:44:    private static readonly Lazy<Dictionary<int, BossInshotStageTable>> Stages = new(() => TableReaderV2.Parse<BossInshotStageTable>().ToDictionary(x => x.StageId));
+AscNet.GameServer\Handlers\BossInshotModule.cs:45:    private static readonly Lazy<Dictionary<int, BossInshotCharacterTable>> Characters = new(() => TableReaderV2.Parse<BossInshotCharacterTable>().ToDictionary(x => x.Id));
+AscNet.GameServer\Handlers\BossInshotModule.cs:46:    private static readonly Lazy<Dictionary<int, RobotTable>> Robots = new(() => TableReaderV2.Parse<RobotTable>().ToDictionary(x => x.Id));
+AscNet.GameServer\Handlers\BossInshotModule.cs:47:    private static readonly Lazy<List<BossInshotTalentTable>> Talents = new(() => TableReaderV2.Parse<BossInshotTalentTable>());
+AscNet.GameServer\Handlers\BossInshotModule.cs:48:    private static readonly Lazy<Dictionary<int, BossInshotScoreTable>> Scores = new(() => TableReaderV2.Parse<BossInshotScoreTable>().ToDictionary(x => x.Id));
+AscNet.GameServer\Handlers\BossInshotModule.cs:49:    private static readonly Lazy<Dictionary<int, ConditionTable>> Conditions = new(() => TableReaderV2.Parse<ConditionTable>().ToDictionary(x => x.Id));
+AscNet.GameServer\Handlers\BossInshotModule.cs:52:        HashSet<int> functionIds = TableReaderV2.Parse<SkipFunctionalTable>()
+AscNet.GameServer\Handlers\BossInshotModule.cs:56:        return TableReaderV2.Parse<FunctionalOpenTable>()
+AscNet.GameServer\Handlers\BossInshotModule.cs:158:                    return int.TryParse(value, out int child)
+AscNet.GameServer\Handlers\BossInshotModule.cs:1093:                    return int.TryParse(value, out int child) && (ConditionSatisfied(state, child, visiting) != negate);
+AscNet.GameServer\Handlers\BossModule.cs:192:            TableReaderV2.Parse<BossSingleGradeTable>().OrderBy(row => row.LevelType).ToList());
+AscNet.GameServer\Handlers\BossModule.cs:194:            TableReaderV2.Parse<BossSingleGroupTable>().ToDictionary(row => row.Id));
+AscNet.GameServer\Handlers\BossModule.cs:196:            TableReaderV2.Parse<BossSingleSectionTable>());
+AscNet.GameServer\Handlers\BossModule.cs:198:            TableReaderV2.Parse<BossSingleChallengeGradeTable>());
+AscNet.GameServer\Handlers\BossModule.cs:201:            List<BossSingleChallengeFeatureTable> features = TableReaderV2.Parse<BossSingleChallengeFeatureTable>();
+AscNet.GameServer\Handlers\BossModule.cs:202:            List<BossSingleChallengeBuffGroupTable> buffs = TableReaderV2.Parse<BossSingleChallengeBuffGroupTable>();
+AscNet.GameServer\Handlers\BossModule.cs:203:            return TableReaderV2.Parse<BossSingleChallengeFeatureGroupTable>()
+AscNet.GameServer\Handlers\BossModule.cs:215:            TableReaderV2.Parse<BossSingleStageTable>().ToDictionary(row => row.StageId));
+AscNet.GameServer\Handlers\BossModule.cs:217:            TableReaderV2.Parse<BossSingleScoreRuleTable>().ToDictionary(row => row.Id));
+AscNet.GameServer\Handlers\BossModule.cs:219:            TableReaderV2.Parse<BossSingleScoreRewardTable>()
+AscNet.GameServer\Handlers\BossModule.cs:224:            TableReaderV2.Parse<BossSingleTrialGradeTable>());
+AscNet.GameServer\Handlers\BossModule.cs:226:            TableReaderV2.Parse<BossSingleRewardGoodsTable>());
+AscNet.GameServer\Handlers\BossModule.cs:228:            TableReaderV2.Parse<BossSingleConfigTable>().Single(row => row.Id == 1));
+AscNet.GameServer\Handlers\BossModule.cs:230:            TableReaderV2.Parse<BossActivityTable>());
+AscNet.GameServer\Handlers\BossModule.cs:232:            TableReaderV2.Parse<BossSectionTable>());
+AscNet.GameServer\Handlers\BossModule.cs:234:            TableReaderV2.Parse<BossChallengeTable>().ToDictionary(row => row.Id));
+AscNet.GameServer\Handlers\BossModule.cs:766:                .Parse<BossSingleChallengeBuffGroupTable>()
+AscNet.GameServer\Handlers\BossModule.cs:771:                if (!int.TryParse(Convert.ToString(key, CultureInfo.InvariantCulture), out int index)
+AscNet.GameServer\Handlers\BossModule.cs:772:                    || !int.TryParse(Convert.ToString(selectedIndexValue, CultureInfo.InvariantCulture), out int selectedIndex))
+AscNet.GameServer\Handlers\BossModule.cs:796:                BossSingleChallengeFeatureTable? feature = TableReaderV2.Parse<BossSingleChallengeFeatureTable>()
+AscNet.GameServer\Handlers\BossModule.cs:1045:            double bossStep = ParseCoefficient(rule.BossLoseHp, coefficientIndex);
+AscNet.GameServer\Handlers\BossModule.cs:1047:            double timeCoefficient = ParseCoefficient(rule.LeftTimeScore, coefficientIndex);
+AscNet.GameServer\Handlers\BossModule.cs:1048:            double hpCoefficient = ParseCoefficient(rule.CharLeftHpSocre, coefficientIndex);
+AscNet.GameServer\Handlers\BossModule.cs:1683:        private static double ParseCoefficient(IReadOnlyList<string> values, int index)
+AscNet.GameServer\Handlers\BossModule.cs:1686:                || !double.TryParse(values[index], NumberStyles.Float, CultureInfo.InvariantCulture, out double value))
+AscNet.GameServer\Handlers\ChatModule.cs:355:                OrderEmojiPackageIds = TableReaderV2.Parse<EmojiPackTable>().Select(x => x.Id).ToList()
+AscNet.GameServer\Handlers\DlcModule.cs:246:        private static readonly Lazy<JObject> BigWorldEnterWorldFixture = new(() => JObject.Parse(MessagePackSerializer.ConvertToJson(BigWorldEnterWorldPayload.Value)));
+AscNet.GameServer\Handlers\DlcModule.cs:725:            JObject mapData = JObject.Parse(MessagePackSerializer.ConvertToJson(mapDataPayload));
+AscNet.GameServer\Handlers\DlcModule.cs:732:                if (int.TryParse(property.Name, out int levelId) && property.Value.Type == JTokenType.Integer)
+AscNet.GameServer\Handlers\DlcModule.cs:750:                int order = int.TryParse(property.Name, out int parsedOrder) ? parsedOrder : int.MaxValue;
+AscNet.GameServer\Handlers\DlcModule.cs:1599:                || !int.TryParse(path[2], out int levelId))
+AscNet.GameServer\Handlers\DormModule.Characters.cs:40:        DormCharacterFondleTable? row = TableReaderV2.Parse<DormCharacterFondleTable>().FirstOrDefault(x => x.CharacterId == request.CharacterId);
+AscNet.GameServer\Handlers\DormModule.Characters.cs:57:        DormCharacterFondleTable? row = TableReaderV2.Parse<DormCharacterFondleTable>().FirstOrDefault(x => x.CharacterId == request.CharacterId);
+AscNet.GameServer\Handlers\DormModule.Characters.cs:96:        DormCharacterEventTable? row = TableReaderV2.Parse<DormCharacterEventTable>()
+AscNet.GameServer\Handlers\DormModule.Characters.cs:147:        Dictionary<int, DormCharacterWorkTable> rows = TableReaderV2.Parse<DormCharacterWorkTable>().ToDictionary(x => x.DormitoryNum);
+AscNet.GameServer\Handlers\DormModule.cs:174:        Dictionary<uint, DormCharacterFondleTable> fondles = TableReaderV2.Parse<DormCharacterFondleTable>()
+AscNet.GameServer\Handlers\DormModule.cs:266:        DormitoryTable? config = TableReaderV2.Parse<DormitoryTable>().FirstOrDefault(row => row.Id == request.DormitoryId);
+AscNet.GameServer\Handlers\DormModule.cs:350:        List<DormCharacterWorkTable> table = TableReaderV2.Parse<DormCharacterWorkTable>();
+AscNet.GameServer\Handlers\DormModule.cs:402:        Dictionary<int, DormCharacterWorkTable> workByRoom = TableReaderV2.Parse<DormCharacterWorkTable>().ToDictionary(row => row.DormitoryNum);
+AscNet.GameServer\Handlers\DormModule.cs:486:        Dictionary<int, RewardGoodsTable> goods = TableReaderV2.Parse<RewardGoodsTable>().ToDictionary(row => row.Id);
+AscNet.GameServer\Handlers\DormModule.cs:487:        return TableReaderV2.Parse<RewardTable>()
+AscNet.GameServer\Handlers\DormModule.cs:510:        Dictionary<int, DormCharacterEventTable> rows = TableReaderV2.Parse<DormCharacterEventTable>()
+AscNet.GameServer\Handlers\DormModule.cs:605:        HashSet<uint> definedFurniture = TableReaderV2.Parse<FurnitureTable>().Select(row => (uint)row.Id).ToHashSet();
+AscNet.GameServer\Handlers\DormModule.cs:607:        foreach (DormitoryTable table in TableReaderV2.Parse<DormitoryTable>().Where(row => row.IsFree == 1))
+AscNet.GameServer\Handlers\DormModule.cs:640:                int[] position = initial[index].Position.Split('|').Select(int.Parse).ToArray();
+AscNet.GameServer\Handlers\DormModule.cs:680:            DormCharacterRecoveryTable? row = TableReaderV2.Parse<DormCharacterRecoveryTable>()
+AscNet.GameServer\Handlers\DormModule.cs:714:    private static Dictionary<string, int> Config() => TableReaderV2.Parse<ConfigTable>()
+AscNet.GameServer\Handlers\DormModule.cs:718:        .ToDictionary(row => row.Key, row => int.Parse(row.Value, CultureInfo.InvariantCulture));
+AscNet.GameServer\Handlers\DormModule.Events.cs:20:        Dictionary<uint, List<DormCharacterEventTable>> events = TableReaderV2.Parse<DormCharacterEventTable>()
+AscNet.GameServer\Handlers\DormModule.Furniture.cs:29:        TableReaderV2.Parse<FurnitureTable>(), TableReaderV2.Parse<FurnitureTypeTable>(), TableReaderV2.Parse<FurnitureCreateAttrTable>(),
+AscNet.GameServer\Handlers\DormModule.Furniture.cs:30:        TableReaderV2.Parse<FurnitureLevelTable>(), TableReaderV2.Parse<FurnitureRewardTable>(), TableReaderV2.Parse<FurnitureExtraAttrTable>(),
+AscNet.GameServer\Handlers\DormModule.Furniture.cs:31:        TableReaderV2.Parse<FurnitureBaseAttrTable>(), TableReaderV2.Parse<FurnitureAdditionalAttrTable>(), TableReaderV2.Parse<FurniturePutNumTable>(), TableReaderV2.Parse<FurnitureSuitTable>()));
+AscNet.GameServer\Handlers\DormModule.Furniture.cs:143:            rewards = pending.Goods.Select(saved => TableReaderV2.Parse<RewardGoodsTable>()
+AscNet.GameServer\Handlers\DormModule.Quests.cs:64:        checked((uint)TableReaderV2.Parse<AlarmClockTable>()
+AscNet.GameServer\Handlers\DormModule.Quests.cs:151:                QuestTable quest = TableReaderV2.Parse<QuestTable>().Single(row => row.Id == board.QuestId);
+AscNet.GameServer\Handlers\DormModule.Quests.cs:171:        Dictionary<int, QuestTable> quests = TableReaderV2.Parse<QuestTable>().ToDictionary(row => row.Id);
+AscNet.GameServer\Handlers\DormModule.Quests.cs:349:        Dictionary<int, QuestPoolTable> pools = TableReaderV2.Parse<QuestPoolTable>().ToDictionary(row => row.Id);
+AscNet.GameServer\Handlers\DormModule.Quests.cs:350:        Dictionary<int, QuestTable> quests = TableReaderV2.Parse<QuestTable>().ToDictionary(row => row.Id);
+AscNet.GameServer\Handlers\DormModule.Quests.cs:391:        Dictionary<int, QuestTable> quests = TableReaderV2.Parse<QuestTable>().ToDictionary(row => row.Id);
+AscNet.GameServer\Handlers\DormModule.Quests.cs:392:        QuestPoolTable? pool = TableReaderV2.Parse<QuestPoolTable>().FirstOrDefault(row => row.Id == terminal.SpecialQuest);
+AscNet.GameServer\Handlers\DormModule.Quests.cs:401:        List<QuestFileTable> files = TableReaderV2.Parse<QuestFileTable>().Where(file => file.FilePoolId == poolId && !owned.Contains(file.Id) && (file.PreFileId is null || file.PreFileId == 0 || owned.Contains(file.PreFileId.Value)) && ConditionsSatisfied(session, file.Condition, quest, team)).ToList();
+AscNet.GameServer\Handlers\DormModule.Quests.cs:412:        Dictionary<int, QuestTable> quests = TableReaderV2.Parse<QuestTable>().ToDictionary(quest => quest.Id);
+AscNet.GameServer\Handlers\DormModule.Quests.cs:432:        Dictionary<int, DormCharacterStyleTable> styles = TableReaderV2.Parse<DormCharacterStyleTable>().ToDictionary(style => style.Id);
+AscNet.GameServer\Handlers\DormModule.Quests.cs:438:        Dictionary<int, AscNet.Table.V2.share.condition.ConditionTable> conditions = TableReaderV2.Parse<AscNet.Table.V2.share.condition.ConditionTable>().ToDictionary(condition => condition.Id);
+AscNet.GameServer\Handlers\DormModule.Quests.cs:442:            20105 => condition.Params.Count > 1 && session.player.Dorm.Quest.FinishQuests.Sum(row => row.Count > 1 && TableReaderV2.Parse<QuestTable>().FirstOrDefault(quest => quest.Id == row[0])?.Type == condition.Params[0] ? row[1] : 0) >= condition.Params[1],
+AscNet.GameServer\Handlers\DormModule.Quests.cs:450:    private static QuestTerminalTable? Terminal(int level) => TableReaderV2.Parse<QuestTerminalTable>().FirstOrDefault(row => row.Lv == level);
+AscNet.GameServer\Handlers\DormModule.Rooms.cs:46:        DormitoryTable? room = TableReaderV2.Parse<DormitoryTable>().FirstOrDefault(x => x.Id == request.DormitoryId);
+AscNet.GameServer\Handlers\DormModule.Rooms.cs:76:        DormitoryTable? room = TableReaderV2.Parse<DormitoryTable>().FirstOrDefault(x => x.Id == request.DormitoryId);
+AscNet.GameServer\Handlers\DormModule.Rooms.cs:77:        Dictionary<uint, FurnitureTable> tables = TableReaderV2.Parse<FurnitureTable>().ToDictionary(x => (uint)x.Id);
+AscNet.GameServer\Handlers\DormModule.Rooms.cs:173:    private static Dictionary<string, int> DormConfig() => TableReaderV2.Parse<ConfigTable>().Where(x => x.Key.StartsWith("Dorm", StringComparison.Ordinal)).ToDictionary(x => x.Key, x => int.TryParse(x.Value, NumberStyles.Integer, CultureInfo.InvariantCulture, out int value) ? value : 0);
+AscNet.GameServer\Handlers\DormModule.Rooms.cs:175:    { Dictionary<uint, FurnitureTable> furniture = TableReaderV2.Parse<FurnitureTable>().ToDictionary(x => (uint)x.Id); FurnitureExtraAttrTable? initial = TableReaderV2.Parse<FurnitureExtraAttrTable>().FirstOrDefault(x => x.Id == DormConfig().GetValueOrDefault("DormInitFurnitureAttr")); Dictionary<int, int> baseAttr = TableReaderV2.Parse<FurnitureBaseAttrTable>().ToDictionary(x => x.Id, x => x.Value); List<int> bases = initial?.AttrIds.Take(3).Concat(Enumerable.Repeat(0, 3)).Take(3).ToList() ?? []; int total = initial is null ? 0 : baseAttr.GetValueOrDefault(initial.BaseAttrId); return room.InitFurniture.Zip(room.InitFurniturePos, (id, pos) => (id, pos)).Where(x => x.id > 0 && furniture.ContainsKey((uint)x.id)).Select(x => { int[] p = x.pos.Split('|').Select(int.Parse).ToArray(); return new PlayerDormFurniture { Id = state.NextFurnitureId++, ConfigId = (uint)x.id, X = p[0], Y = p[1], Angle = p[2], DormitoryId = room.Id, AttrList = Split(total, bases).ToList(), BaseAttrList = bases.ToList() }; }).ToList(); }
+AscNet.GameServer\Handlers\DrawModule.cs:248:        private static readonly Lazy<Dictionary<int, int>> CharacterMinQualityById = new(() => TableReaderV2.Parse<CharacterQualityTable>()
+AscNet.GameServer\Handlers\DrawModule.cs:251:        private static readonly Lazy<Dictionary<int, int>> EquipQualityById = new(() => TableReaderV2.Parse<EquipTable>()
+AscNet.GameServer\Handlers\DrawModule.cs:253:        private static readonly Lazy<Dictionary<int, int>> ItemQualityById = new(() => TableReaderV2.Parse<ItemTable>()
+AscNet.GameServer\Handlers\DrawModule.cs:260:            DrawCanLiverActivityTable? activity = TableReaderV2.Parse<DrawCanLiverActivityTable>()
+AscNet.GameServer\Handlers\Drops\DropsHandler.cs:160:            EquipTable[] memoryPool = TableReaderV2.Parse<EquipTable>().Where(x => x.Type == 0 && x.Quality == quality).ToArray();
+AscNet.GameServer\Handlers\DyeMergeModule.cs:35:    private static readonly Lazy<List<DyeMergeActivityTable>> Activities = new(() => TableReaderV2.Parse<DyeMergeActivityTable>());
+AscNet.GameServer\Handlers\DyeMergeModule.cs:36:    private static readonly Lazy<Dictionary<int, DyeMergeChapterTable>> Chapters = new(() => TableReaderV2.Parse<DyeMergeChapterTable>().ToDictionary(row => row.Id));
+AscNet.GameServer\Handlers\DyeMergeModule.cs:37:    private static readonly Lazy<Dictionary<int, DyeMergeStageTable>> Stages = new(() => TableReaderV2.Parse<DyeMergeStageTable>().ToDictionary(row => row.Id));
+AscNet.GameServer\Handlers\DyeMergeModule.cs:38:    private static readonly Lazy<Dictionary<int, ConditionTable>> Conditions = new(() => TableReaderV2.Parse<ConditionTable>().ToDictionary(row => row.Id));
+AscNet.GameServer\Handlers\EquipModule.cs:374:                    TableReaderV2.Parse<EquipTable>(),
+AscNet.GameServer\Handlers\EquipModule.cs:375:                    TableReaderV2.Parse<EquipBreakThroughTable>(),
+AscNet.GameServer\Handlers\EquipModule.cs:389:                ItemTable? itemTable = TableReaderV2.Parse<ItemTable>().FirstOrDefault(x => x.Id == item.Key);
+AscNet.GameServer\Handlers\EquipModule.cs:452:                EquipTargetTable? target = TableReaderV2.Parse<EquipTargetTable>()
+AscNet.GameServer\Handlers\EquipModule.cs:504:            List<ItemTable> itemTables = TableReaderV2.Parse<ItemTable>();
+AscNet.GameServer\Handlers\EquipModule.cs:505:            List<EquipBreakThroughTable> equipBreakThroughTables = TableReaderV2.Parse<EquipBreakThroughTable>();
+AscNet.GameServer\Handlers\EquipModule.cs:506:            List<EquipTable> equipTables = TableReaderV2.Parse<EquipTable>();
+AscNet.GameServer\Handlers\EquipModule.cs:938:            List<EquipTable> equipTables = TableReaderV2.Parse<EquipTable>();
+AscNet.GameServer\Handlers\EquipModule.cs:950:                : TableReaderV2.Parse<CharacterTable>().FirstOrDefault(character => character.Id == request.CharacterId);
+AscNet.GameServer\Handlers\EquipModule.cs:1153:            List<EquipTable> equipTables = TableReaderV2.Parse<EquipTable>();
+AscNet.GameServer\Handlers\EquipModule.cs:1154:            List<EquipResonanceTable> resonanceTables = TableReaderV2.Parse<EquipResonanceTable>();
+AscNet.GameServer\Handlers\EquipModule.cs:1156:                TableReaderV2.Parse<EquipResonanceUseItemTable>();
+AscNet.GameServer\Handlers\EquipModule.cs:1189:            List<AttribPoolTable> attribPools = TableReaderV2.Parse<AttribPoolTable>();
+AscNet.GameServer\Handlers\EquipModule.cs:1191:                TableReaderV2.Parse<CharacterSkillPoolTable>();
+AscNet.GameServer\Handlers\EquipModule.cs:1192:            List<CharacterSkillTable> characterSkills = TableReaderV2.Parse<CharacterSkillTable>();
+AscNet.GameServer\Handlers\EquipModule.cs:1194:                TableReaderV2.Parse<CharacterSkillGroupTable>();
+AscNet.GameServer\Handlers\EquipModule.cs:1415:                ? TableReaderV2.Parse<CharacterSkillTable>()
+AscNet.GameServer\Handlers\EquipModule.cs:1418:            List<EquipTable> equipTables = TableReaderV2.Parse<EquipTable>();
+AscNet.GameServer\Handlers\EquipModule.cs:1419:            List<EquipResonanceTable> resonanceTables = TableReaderV2.Parse<EquipResonanceTable>();
+AscNet.GameServer\Handlers\EquipModule.cs:1420:            List<AttribPoolTable> attribPoolTables = TableReaderV2.Parse<AttribPoolTable>();
+AscNet.GameServer\Handlers\EquipModule.cs:1422:                TableReaderV2.Parse<EquipResonanceUseItemTable>();
+AscNet.GameServer\Handlers\EquipModule.cs:1425:                    ? TableReaderV2.Parse<CharacterSkillPoolTable>()
+AscNet.GameServer\Handlers\EquipModule.cs:1429:                    ? TableReaderV2.Parse<CharacterSkillGroupTable>()
+AscNet.GameServer\Handlers\EquipModule.cs:1598:            EquipConfigTable? discount = TableReaderV2.Parse<EquipConfigTable>()
+AscNet.GameServer\Handlers\EquipModule.cs:1626:            EquipAwakeTable? recipe = TableReaderV2.Parse<EquipAwakeTable>()
+AscNet.GameServer\Handlers\EquipModule.cs:1870:                : TableReaderV2.Parse<WeaponOverrunTable>()
+AscNet.GameServer\Handlers\EquipModule.cs:1910:                : TableReaderV2.Parse<WeaponOverrunTable>()
+AscNet.GameServer\Handlers\EquipModule.cs:1918:            bool validSuit = TableReaderV2.Parse<EquipTable>()
+AscNet.GameServer\Handlers\EquipModule.cs:1970:            EquipTable? equipTable = TableReaderV2.Parse<EquipTable>()
+AscNet.GameServer\Handlers\EquipModule.cs:2063:            Dictionary<string, string> config = TableReaderV2.Parse<ConfigTable>()
+AscNet.GameServer\Handlers\EquipModule.cs:2066:            if (!int.TryParse(config.GetValueOrDefault("EquipRecycleItemId"), NumberStyles.Integer, CultureInfo.InvariantCulture, out recycleItemId)
+AscNet.GameServer\Handlers\EquipModule.cs:2067:                || !int.TryParse(config.GetValueOrDefault("EquipRecycleItemPercent"), NumberStyles.Integer, CultureInfo.InvariantCulture, out int recyclePercent)
+AscNet.GameServer\Handlers\EquipModule.cs:2068:                || !int.TryParse(config.GetValueOrDefault("EquipExpInheritPercent"), NumberStyles.Integer, CultureInfo.InvariantCulture, out int inheritPercent)
+AscNet.GameServer\Handlers\EquipModule.cs:2083:            List<EquipTable> equipTables = TableReaderV2.Parse<EquipTable>();
+AscNet.GameServer\Handlers\EquipModule.cs:2125:            ItemTable? recycleItem = TableReaderV2.Parse<ItemTable>()
+AscNet.GameServer\Handlers\EquipModule.cs:2283:            List<EquipTable> equipTables = TableReaderV2.Parse<EquipTable>();
+AscNet.GameServer\Handlers\EquipModule.cs:2284:            List<EquipBreakThroughTable> breakthroughTables = TableReaderV2.Parse<EquipBreakThroughTable>();
+AscNet.GameServer\Handlers\EquipModule.cs:2285:            List<EquipDecomposeTable> decomposeTables = TableReaderV2.Parse<EquipDecomposeTable>();
+AscNet.GameServer\Handlers\EquipModule.cs:2286:            List<ItemTable> itemTables = TableReaderV2.Parse<ItemTable>();
+AscNet.GameServer\Handlers\EquipModule.cs:2288:                .Parse<EquipDecomposeConfigTable>()
+AscNet.GameServer\Handlers\EquipModule.cs:2330:                    || !decimal.TryParse(
+AscNet.GameServer\Handlers\ExhibitionModule.cs:35:            ExhibitionRewardTable? precedingReward = TableReaderV2.Parse<ExhibitionRewardTable>()
+AscNet.GameServer\Handlers\ExhibitionModule.cs:55:                TableReaderV2.Parse<ConditionTable>().FirstOrDefault(
+AscNet.GameServer\Handlers\ExhibitionModule.cs:63:                    13114 when condition.Params.Count == 1 => TableReaderV2.Parse<ExhibitionRewardTable>().Any(
+AscNet.GameServer\Handlers\ExhibitionModule.cs:74:            Dictionary<uint, EquipTable> templates = TableReaderV2.Parse<EquipTable>()
+AscNet.GameServer\Handlers\ExhibitionModule.cs:85:            Dictionary<uint, EquipTable> templates = TableReaderV2.Parse<EquipTable>()
+AscNet.GameServer\Handlers\ExhibitionModule.cs:100:            ExhibitionRewardTable? exhibitionReward = TableReaderV2.Parse<ExhibitionRewardTable>().Find(x => x.Id == req.Id);
+AscNet.GameServer\Handlers\ExploreModule.cs:13:    private static IReadOnlyList<ExploreChapterTable> Chapters => TableReaderV2.Parse<ExploreChapterTable>();
+AscNet.GameServer\Handlers\ExploreModule.cs:14:    private static IReadOnlyList<ExploreNodeTable> Nodes => TableReaderV2.Parse<ExploreNodeTable>();
+AscNet.GameServer\Handlers\ExploreModule.cs:15:    private static IReadOnlyList<ExploreBuffItemTable> Buffs => TableReaderV2.Parse<ExploreBuffItemTable>();
+AscNet.GameServer\Handlers\FashionModule.cs:145:            var fashionRows = TableReaderV2.Parse<FashionTable>();
+AscNet.GameServer\Handlers\FashionModule.cs:193:            FashionTable? fashionRow = TableReaderV2.Parse<FashionTable>().Find(candidate => candidate.Id == request.FashionId);
+AscNet.GameServer\Handlers\FashionModule.cs:292:            FashionTable? fashionRow = TableReaderV2.Parse<FashionTable>()
+AscNet.GameServer\Handlers\FashionModule.cs:296:                : TableReaderV2.Parse<FashionColorTable>().Find(candidate =>
+AscNet.GameServer\Handlers\FashionModule.cs:321:                .Where(colorId => TableReaderV2.Parse<FashionColorTable>().Any(candidate =>
+AscNet.GameServer\Handlers\FashionModule.cs:341:            FashionTable? fashionRow = TableReaderV2.Parse<FashionTable>().Find(x => x.Id == req.FashionId);
+AscNet.GameServer\Handlers\FashionModule.cs:343:                ? TableReaderV2.Parse<CharacterTable>().Find(x => x.Id == fashionRow.CharacterId)
+AscNet.GameServer\Handlers\FashionModule.cs:372:                foreach (int colorId in TableReaderV2.Parse<FashionColorTable>()
+AscNet.GameServer\Handlers\FashionStoryModule.cs:21:        TableReaderV2.Parse<FashionStoryTable>().ToDictionary(row => row.Id));
+AscNet.GameServer\Handlers\FashionStoryModule.cs:23:        TableReaderV2.Parse<FashionStorySingleLineTable>().ToDictionary(row => row.Id));
+AscNet.GameServer\Handlers\FashionStoryModule.cs:25:        TableReaderV2.Parse<FashionStoryStageTable>().ToDictionary(row => row.StageId));
+AscNet.GameServer\Handlers\FashionStoryModule.cs:27:        TableReaderV2.Parse<ConditionTable>().ToDictionary(row => row.Id));
+AscNet.GameServer\Handlers\FashionStoryModule.cs:29:        TableReaderV2.Parse<FunctionalOpenTable>().ToDictionary(row => row.Id));
+AscNet.GameServer\Handlers\FashionStoryModule.cs:31:        TableReaderV2.Parse<SkipFunctionalTable>().ToDictionary(row => row.SkipId));
+AscNet.GameServer\Handlers\FashionStoryModule.cs:33:        TableReaderV2.Parse<EventCatalogTable>()
+AscNet.GameServer\Handlers\FashionStoryModule.cs:110:                    return int.TryParse(value, out int child)
+AscNet.GameServer\Handlers\FightModule.cs:335:        private static readonly Lazy<HashSet<uint>> MainLine2AchievementStageIds = new(() => TableReaderV2.Parse<MainLine2StageTable>()
+AscNet.GameServer\Handlers\FightModule.cs:339:            TableReaderV2.Parse<MainLineChapterTable>()
+AscNet.GameServer\Handlers\FightModule.cs:347:            TableReaderV2.Parse<TeamConfigTable>().ToDictionary(row => row.Key, row => row.Value));
+AscNet.GameServer\Handlers\FightModule.cs:349:            TableReaderV2.Parse<TeamPrefabTagTable>().Select(row => row.Id).ToHashSet());
+AscNet.GameServer\Handlers\FightModule.cs:351:            TableReaderV2.Parse<EquipTable>().ToDictionary(row => (uint)row.Id));
+AscNet.GameServer\Handlers\FightModule.cs:353:            TableReaderV2.Parse<EquipResonanceTable>().ToDictionary(row => row.Id));
+AscNet.GameServer\Handlers\FightModule.cs:355:            TableReaderV2.Parse<WeaponSkillPoolTable>()
+AscNet.GameServer\Handlers\FightModule.cs:361:            TableReaderV2.Parse<CharacterSkillTable>().ToDictionary(row => row.CharacterId));
+AscNet.GameServer\Handlers\FightModule.cs:363:            TableReaderV2.Parse<CharacterSkillGroupTable>().ToDictionary(row => row.Id));
+AscNet.GameServer\Handlers\FightModule.cs:365:            TableReaderV2.Parse<CharacterGeneralSkillTable>().ToDictionary(row => row.Id));
+AscNet.GameServer\Handlers\FightModule.cs:367:            TableReaderV2.Parse<PartnerSkillTable>().ToDictionary(row => row.PartnerId));
+AscNet.GameServer\Handlers\FightModule.cs:369:            TableReaderV2.Parse<PartnerMainSkillGroupTable>().ToDictionary(row => row.Id));
+AscNet.GameServer\Handlers\FightModule.cs:371:            TableReaderV2.Parse<PartnerPassiveSkillGroupTable>().ToDictionary(row => row.Id));
+AscNet.GameServer\Handlers\FightModule.cs:373:            TableReaderV2.Parse<PartnerQualityTable>()
+AscNet.GameServer\Handlers\FightModule.cs:734:                    CharacterSkillTable? characterSkill = TableReaderV2.Parse<CharacterSkillTable>().Find(x => x.CharacterId == robot.CharacterId);
+AscNet.GameServer\Handlers\FightModule.cs:735:                    IEnumerable<int> skills = characterSkill?.SkillGroupId.SelectMany(x => TableReaderV2.Parse<CharacterSkillGroupTable>().Find(y => y.Id == x)?.SkillId ?? new List<int>()) ?? new List<int>();
+AscNet.GameServer\Handlers\FightModule.cs:737:                    AscNet.Table.V2.share.character.CharacterTable? robotCharacter = TableReaderV2.Parse<AscNet.Table.V2.share.character.CharacterTable>()
+AscNet.GameServer\Handlers\FightModule.cs:772:                        SkillList = skills.Where(x => !removedSkillIds.Contains(x)).Select(x => new CharacterSkill() { Id = (uint)x, Level = Math.Min(Convert.ToInt32(robot.SkillLevel), TableReaderV2.Parse<CharacterSkillLevelEffectTable>().OrderByDescending(x => x.Level).FirstOrDefault(y => y.SkillId == x)?.Level ?? 1) }).ToList(),
+AscNet.GameServer\Handlers\FightModule.cs:843:            TableReaderV2.Parse<CharacterTable>()
+AscNet.GameServer\Handlers\FightModule.cs:848:            CharacterTable? character = TableReaderV2.Parse<CharacterTable>()
+AscNet.GameServer\Handlers\FightModule.cs:850:            return TableReaderV2.Parse<CharacterCareerTable>()
+AscNet.GameServer\Handlers\FightModule.cs:855:            TableReaderV2.Parse<CharacterCareerTable>()
+AscNet.GameServer\Handlers\FightModule.cs:859:            TableReaderV2.Parse<CharacterElementTable>()
+AscNet.GameServer\Handlers\FightModule.cs:874:                    TableReaderV2.Parse<CharacterTable>()
+AscNet.GameServer\Handlers\FightModule.cs:905:                .FirstOrDefault(skill => TableReaderV2.Parse<CharacterObsTriggerMagicTable>()
+AscNet.GameServer\Handlers\FightModule.cs:910:            CharacterObsTriggerMagicTable? config = TableReaderV2.Parse<CharacterObsTriggerMagicTable>()
+AscNet.GameServer\Handlers\FightModule.cs:926:                .Select(id => int.TryParse(id, out int value) ? value : 0)
+AscNet.GameServer\Handlers\FightModule.cs:950:            HashSet<int> characterFashionIds = TableReaderV2.Parse<FashionTable>()
+AscNet.GameServer\Handlers\FightModule.cs:1057:            if (req.StageId <= 0 || !TableReaderV2.Parse<StageTable>().Any(stage => stage.StageId == req.StageId))
+AscNet.GameServer\Handlers\FightModule.cs:2586:            List<RewardTable> rewardTables = TableReaderV2.Parse<RewardTable>()
+AscNet.GameServer\Handlers\FightModule.cs:2605:                rewardTables.AddRange(TableReaderV2.Parse<RewardTable>().Where(x => rewardIds.Contains(x.Id)));
+AscNet.GameServer\Handlers\FightModule.cs:2621:                        .Select(x => TableReaderV2.Parse<RewardGoodsTable>().FirstOrDefault(y => y.Id == x))
+AscNet.GameServer\Handlers\FightModule.cs:2781:                : TableReaderV2.Parse<StageTable>().FirstOrDefault(stage => stage.StageId == stageId);
+AscNet.GameServer\Handlers\FightModule.cs:2788:                : TableReaderV2.Parse<StageLevelControlTable>().Where(control => control.StageId == stageId);
+AscNet.GameServer\Handlers\FightModule.cs:2799:            return TableReaderV2.Parse<RobotTable>().FirstOrDefault(robot => robot.Id == robotId);
+AscNet.GameServer\Handlers\GuideModule.cs:48:            TableReaderV2.Parse<GuideGroupTable>().ToDictionary(guide => guide.Id));
+AscNet.GameServer\Handlers\GuideModule.cs:50:            TableReaderV2.Parse<GuideCompleteTable>().ToDictionary(completion => completion.Id));
+AscNet.GameServer\Handlers\HitMouseModule.cs:32:    private static readonly Lazy<List<HitMouseActivityTable>> Activities = new(() => TableReaderV2.Parse<HitMouseActivityTable>());
+AscNet.GameServer\Handlers\HitMouseModule.cs:33:    private static readonly Lazy<Dictionary<int, HitMouseStageTable>> Stages = new(() => TableReaderV2.Parse<HitMouseStageTable>().ToDictionary(row => row.Id));
+AscNet.GameServer\Handlers\HitMouseModule.cs:188:            ItemTable? itemTable = TableReaderV2.Parse<ItemTable>().FirstOrDefault(row => row.Id == group.Key);
+AscNet.GameServer\Handlers\ItemModule.cs:106:            ItemTable? itemTable = TableReaderV2.Parse<ItemTable>().FirstOrDefault(item => item.Id == itemId);
+AscNet.GameServer\Handlers\ItemModule.cs:196:            Dictionary<int, ItemTable> itemTables = TableReaderV2.Parse<ItemTable>()
+AscNet.GameServer\Handlers\ItemModule.cs:528:            ItemExchangeTable? recipe = TableReaderV2.Parse<ItemExchangeTable>()
+AscNet.GameServer\Handlers\ItemModule.cs:540:            Dictionary<int, ItemTable> itemTables = TableReaderV2.Parse<ItemTable>()
+AscNet.GameServer\Handlers\LifeTreeModule.cs:101:            TableReaderV2.Parse<LifeTreeChapterTable>().ToDictionary(row => row.Id));
+AscNet.GameServer\Handlers\LifeTreeModule.cs:103:            TableReaderV2.Parse<MainLine2ExhibitionChapterTable>().Select(row => row.Id).ToHashSet());
+AscNet.GameServer\Handlers\LifeTreeModule.cs:106:            LifeTreeClientConfigTable? config = TableReaderV2.Parse<LifeTreeClientConfigTable>()
+AscNet.GameServer\Handlers\LifeTreeModule.cs:108:            return int.TryParse(config?.Values.FirstOrDefault(), out int chapterId)
+AscNet.GameServer\Handlers\LifeTreeModule.cs:123:            TableReaderV2.Parse<LifeTreeCharacterTable>().ToDictionary(row => row.Id));
+AscNet.GameServer\Handlers\LifeTreeModule.cs:125:            TableReaderV2.Parse<ConditionTable>().ToDictionary(row => row.Id));
+AscNet.GameServer\Handlers\LifeTreeModule.cs:328:                        .Select(value => int.TryParse(value, out int id) ? id : 0).ToArray();
+AscNet.GameServer\Handlers\MailModule.cs:268:            MailRewardTable? reward = TableReaderV2.Parse<MailRewardTable>()
+AscNet.GameServer\Handlers\MailModule.cs:273:            Dictionary<int, MailRewardGoodsTable> goodsById = TableReaderV2.Parse<MailRewardGoodsTable>()
+AscNet.GameServer\Handlers\MailModule.cs:327:                    && TableReaderV2.Parse<CharacterTable>().Any(row => row.Id == candidate.TemplateId),
+AscNet.GameServer\Handlers\MailModule.cs:329:                    && TableReaderV2.Parse<EquipTable>().Any(row => row.Id == candidate.TemplateId),
+AscNet.GameServer\Handlers\MailModule.cs:331:                    && TableReaderV2.Parse<FashionTable>().Any(row => row.Id == candidate.TemplateId),
+AscNet.GameServer\Handlers\MailModule.cs:333:                    && TableReaderV2.Parse<FashionColorTable>().Any(row => row.Id == candidate.TemplateId),
+AscNet.GameServer\Handlers\MailModule.cs:348:                ItemTable? table = TableReaderV2.Parse<ItemTable>().FirstOrDefault(item => item.Id == group.Key);
+AscNet.GameServer\Handlers\MainLine2Module.cs:229:            => chapterId > 0 && TableReaderV2.Parse<MainLine2ExhibitionChapterTable>()
+AscNet.GameServer\Handlers\MainLine2Module.cs:244:            JToken payload = JToken.Parse(payloadJson);
+AscNet.GameServer\Handlers\MainLine2Module.cs:285:                    if (int.TryParse(property.Name, out int messageId) && messageId > 0 && state.HasValue)
+AscNet.GameServer\Handlers\MainLine2Module.cs:339:                JTokenType.String => int.TryParse(token.Value<string>(), out int value) ? value : null,
+AscNet.GameServer\Handlers\MainLine2Module.cs:376:            MainLine2TreasureTable? treasure = TableReaderV2.Parse<MainLine2TreasureTable>()
+AscNet.GameServer\Handlers\MainLine2Module.cs:422:            List<MainLine2MainTable> mains = TableReaderV2.Parse<MainLine2MainTable>();
+AscNet.GameServer\Handlers\MainLine2Module.cs:511:            HashSet<int> stageGroupIds = TableReaderV2.Parse<MainLine2ChapterTable>()
+AscNet.GameServer\Handlers\MainLine2Module.cs:517:            return TableReaderV2.Parse<MainLine2StageGroupTable>()
+AscNet.GameServer\Handlers\MainLine2Module.cs:526:            HashSet<int> mainLine2StageIds = TableReaderV2.Parse<MainLine2StageTable>()
+AscNet.GameServer\Handlers\PartnerModule.cs:236:                    ItemTable? config = TableReaderV2.Parse<ItemTable>().Find(row => row.Id == item.Key);
+AscNet.GameServer\Handlers\PartnerModule.cs:315:                : TableReaderV2.Parse<PartnerSkillTable>().Find(row => row.PartnerId == partner.TemplateId);
+AscNet.GameServer\Handlers\PartnerModule.cs:324:            int maxLevel = TableReaderV2.Parse<PartnerSkillEffectTable>()
+AscNet.GameServer\Handlers\PartnerModule.cs:402:                HashSet<int> available = TableReaderV2.Parse<PartnerMainSkillGroupTable>()
+AscNet.GameServer\Handlers\PartnerModule.cs:419:                foreach (PartnerQualityTable row in TableReaderV2.Parse<PartnerQualityTable>())
+AscNet.GameServer\Handlers\PartnerModule.cs:488:                : TableReaderV2.Parse<PartnerQualityTable>()
+AscNet.GameServer\Handlers\PartnerModule.cs:524:                : TableReaderV2.Parse<PartnerQualityTable>()
+AscNet.GameServer\Handlers\PartnerModule.cs:526:            bool hasNextQuality = partner is not null && TableReaderV2.Parse<PartnerQualityTable>()
+AscNet.GameServer\Handlers\PartnerModule.cs:572:                : TableReaderV2.Parse<PartnerTable>().Find(row => row.Id == partner.TemplateId);
+AscNet.GameServer\Handlers\PartnerModule.cs:597:                : TableReaderV2.Parse<PartnerTable>().Find(row => row.Id == partner.TemplateId);
+AscNet.GameServer\Handlers\PartnerModule.cs:661:            TableReaderV2.Parse<PartnerBreakThroughTable>()
+AscNet.GameServer\Handlers\PartnerModule.cs:700:            501 => TableReaderV2.Parse<PartnerLevelUpTemplate501Table>().Select(row => (row.Level, row.AllExp)).ToList(),
+AscNet.GameServer\Handlers\PartnerModule.cs:701:            502 => TableReaderV2.Parse<PartnerLevelUpTemplate502Table>().Select(row => (row.Level, row.AllExp)).ToList(),
+AscNet.GameServer\Handlers\PartnerModule.cs:702:            503 => TableReaderV2.Parse<PartnerLevelUpTemplate503Table>().Select(row => (row.Level, row.AllExp)).ToList(),
+AscNet.GameServer\Handlers\PartnerModule.cs:703:            504 => TableReaderV2.Parse<PartnerLevelUpTemplate504Table>().Select(row => (row.Level, row.AllExp)).ToList(),
+AscNet.GameServer\Handlers\PartnerModule.cs:709:            PartnerTable? partner = TableReaderV2.Parse<PartnerTable>()
+AscNet.GameServer\Handlers\PartnerModule.cs:713:                : TableReaderV2.Parse<ItemTable>().Find(item => item.Id == partner.ChipItemId);
+AscNet.GameServer\Handlers\PartnerModule.cs:721:            PartnerTable partnerConfig = TableReaderV2.Parse<PartnerTable>()
+AscNet.GameServer\Handlers\PartnerModule.cs:723:            PartnerSkillTable skillConfig = TableReaderV2.Parse<PartnerSkillTable>()
+AscNet.GameServer\Handlers\PartnerModule.cs:725:            PartnerMainSkillGroupTable mainSkillGroup = TableReaderV2.Parse<PartnerMainSkillGroupTable>()
+AscNet.GameServer\Handlers\PartnerModule.cs:728:                TableReaderV2.Parse<PartnerPassiveSkillGroupTable>().ToLookup(group => group.Id);
+AscNet.GameServer\Handlers\PassportModule.cs:159:            List<PassportTypeInfoTable> types = TableReaderV2.Parse<PassportTypeInfoTable>()
+AscNet.GameServer\Handlers\PassportModule.cs:177:                    foreach (PassportRewardTable reward in TableReaderV2.Parse<PassportRewardTable>()
+AscNet.GameServer\Handlers\PassportModule.cs:281:            PassportRewardTable? reward = TableReaderV2.Parse<PassportRewardTable>()
+AscNet.GameServer\Handlers\PassportModule.cs:284:            else if (!TableReaderV2.Parse<PassportTypeInfoTable>()
+AscNet.GameServer\Handlers\PassportModule.cs:354:            PassportTypeInfoTable? type = TableReaderV2.Parse<PassportTypeInfoTable>()
+AscNet.GameServer\Handlers\PassportModule.cs:443:            List<PassportLevelTable> levels = TableReaderV2.Parse<PassportLevelTable>()
+AscNet.GameServer\Handlers\PassportModule.cs:551:        TableReaderV2.Parse<PassportActivityTable>()
+AscNet.GameServer\Handlers\PassportModule.cs:557:        TableReaderV2.Parse<PassportTypeInfoTable>().Where(row => row.ActivityId == activityId && row.IsFree == 1);
+AscNet.GameServer\Handlers\PassportModule.cs:575:        return TableReaderV2.Parse<PassportTaskGroupTable>()
+AscNet.GameServer\Handlers\PassportModule.cs:611:        List<PassportTaskGroupTable> groups = TableReaderV2.Parse<PassportTaskGroupTable>()
+AscNet.GameServer\Handlers\PassportModule.cs:674:    private static int ResolveLevel(int activityId, long exp) => TableReaderV2.Parse<PassportLevelTable>()
+AscNet.GameServer\Handlers\PassportModule.cs:693:                        && !TableReaderV2.Parse<FashionColorTable>()
+AscNet.GameServer\Handlers\PassportModule.cs:711:            ItemTable? table = TableReaderV2.Parse<ItemTable>()
+AscNet.GameServer\Handlers\PhotographModule.cs:42:            if (character is not null && character.FashionId != request.FashionId && TableReaderV2.Parse<FashionTable>().Any(x => x.CharacterId == request.CharId && x.Id == request.FashionId))
+AscNet.GameServer\Handlers\PlayerModule.cs:324:            TableReaderV2.Parse<FunctionalOpenTable>()
+AscNet.GameServer\Handlers\PlayerModule.cs:326:                .Concat(TableReaderV2.Parse<SkipFunctionalTable>()
+AscNet.GameServer\Handlers\PlayerModule.cs:437:            HeadPortraitTable? row = TableReaderV2.Parse<HeadPortraitTable>().Find(candidate => candidate.Id == id);
+AscNet.GameServer\Handlers\PlayerModule.cs:471:            List<HeadPortraitTable> rows = TableReaderV2.Parse<HeadPortraitTable>();
+AscNet.GameServer\Handlers\PrequelModule.cs:58:            StageTable? stage = TableReaderV2.Parse<StageTable>().FirstOrDefault(x => x.StageId == stageId);
+AscNet.GameServer\Handlers\PrequelModule.cs:170:            EquipTable? equip = TableReaderV2.Parse<EquipTable>().FirstOrDefault(x => x.Id == templateId);
+AscNet.GameServer\Handlers\RepeatChallengeModule.cs:229:            RepeatChallengeActivityTable activity = TableReaderV2.Parse<RepeatChallengeActivityTable>()
+AscNet.GameServer\Handlers\RepeatChallengeModule.cs:232:            RepeatChallengeChapterTable chapter = TableReaderV2.Parse<RepeatChallengeChapterTable>()
+AscNet.GameServer\Handlers\RepeatChallengeModule.cs:235:            RepeatChallengeStageTable stage = TableReaderV2.Parse<RepeatChallengeStageTable>()
+AscNet.GameServer\Handlers\RepeatChallengeModule.cs:237:            StageTable stageData = TableReaderV2.Parse<StageTable>()
+AscNet.GameServer\Handlers\RepeatChallengeModule.cs:239:            RepeatChallengeLevelTable[] levels = TableReaderV2.Parse<RepeatChallengeLevelTable>().OrderBy(row => row.Id).ToArray();
+AscNet.GameServer\Handlers\RepeatChallengeModule.cs:276:                TableReaderV2.Parse<RepeatChallengeRewardTable>().ToDictionary(row => row.Id),
+AscNet.GameServer\Handlers\RepeatChallengeModule.cs:277:                TableReaderV2.Parse<ConditionTable>().ToDictionary(row => row.Id),
+AscNet.GameServer\Handlers\RepeatChallengeModule.cs:319:            StageLevelControlTable? control = TableReaderV2.Parse<StageLevelControlTable>()
+AscNet.GameServer\Handlers\RepeatChallengeModule.cs:323:                ?? TableReaderV2.Parse<StageLevelControlTable>().Where(row => row.StageId == Runtime.Value.Stage.Id).OrderBy(row => row.MaxLevel).LastOrDefault();
+AscNet.GameServer\Handlers\RewardHandler.cs:112:            foreach (RewardTable reward in TableReaderV2.Parse<RewardTable>())
+AscNet.GameServer\Handlers\RewardHandler.cs:129:            foreach (RewardGoodsTable goods in TableReaderV2.Parse<RewardGoodsTable>())
+AscNet.GameServer\Handlers\RewardHandler.cs:413:                    FashionTable? fashionTable = TableReaderV2.Parse<FashionTable>()
+AscNet.GameServer\Handlers\RewardHandler.cs:549:                    var itemData = TableReaderV2.Parse<ItemTable>().Find(x => x.Id == reward.Id);
+AscNet.GameServer\Handlers\RewardHandler.cs:580:                        var characterData = TableReaderV2.Parse<CharacterTable>().Find(x => x.Id == reward.Id);
+AscNet.GameServer\Handlers\RewardHandler.cs:603:            ItemTable? item = TableReaderV2.Parse<ItemTable>().Find(x => x.Id == itemId);
+AscNet.GameServer\Handlers\RewardHandler.cs:627:            bool isCatalogWeaponFashion = TableReaderV2.Parse<ItemTable>()
+AscNet.GameServer\Handlers\RewardHandler.cs:662:            FashionTable? fashion = TableReaderV2.Parse<FashionTable>().Find(x => x.Id == fashionId);
+AscNet.GameServer\Handlers\RewardHandler.cs:694:                || !TableReaderV2.Parse<HeadPortraitTable>().Any(row => row.Id == headPortraitId)
+AscNet.GameServer\Handlers\RewardHandler.cs:710:            FashionColorTable? color = TableReaderV2.Parse<FashionColorTable>()
+AscNet.GameServer\Handlers\RewardHandler.cs:739:            FashionColorTable? color = TableReaderV2.Parse<FashionColorTable>()
+AscNet.GameServer\Handlers\RewardHandler.cs:785:                    ExhibitionRewardTable? baselineReward = TableReaderV2.Parse<ExhibitionRewardTable>()
+AscNet.GameServer\Handlers\RewardHandler.cs:832:                    if (!TableReaderV2.Parse<AscNet.Table.V2.share.partner.PartnerTable>().Any(row => row.Id == reward.Id))
+AscNet.GameServer\Handlers\ShopModule.cs:77:            TableReaderV2.Parse<AlarmClockTable>().GroupBy(clock => clock.ClockId).ToDictionary(group => group.Key, group => group.First()));
+AscNet.GameServer\Handlers\ShopModule.cs:243:                if (!uint.TryParse(shopProperty.Name, out uint shopId) || shopProperty.Value is not JObject shopObject)
+AscNet.GameServer\Handlers\ShopModule.cs:462:                ItemTable? rewardItem = TableReaderV2.Parse<ItemTable>().Find(item => item.Id == rewardItemId);
+AscNet.GameServer\Handlers\ShopModule.cs:615:                dynamic key = int.TryParse(property.Name, out int numericKey)
+AscNet.GameServer\Handlers\SignInModule.cs:16:            TableReaderV2.Parse<SignInTable>().ToDictionary(row => row.Id, row => row));
+AscNet.GameServer\Handlers\SignInModule.cs:18:            TableReaderV2.Parse<SignInRewardTable>()
+AscNet.GameServer\Handlers\SimulateTrainModule.cs:187:        Dictionary<uint, SimulateTrainMonsterTable> monsters = TableReaderV2.Parse<SimulateTrainMonsterTable>()
+AscNet.GameServer\Handlers\SimulateTrainModule.cs:189:        Dictionary<int, SimulateTrainAtkTable> attackLevels = TableReaderV2.Parse<SimulateTrainAtkTable>()
+AscNet.GameServer\Handlers\SimulateTrainModule.cs:191:        Dictionary<int, SimulateTrainHpTable> healthLevels = TableReaderV2.Parse<SimulateTrainHpTable>()
+AscNet.GameServer\Handlers\SimulateTrainModule.cs:193:        Dictionary<(int BossId, int Period), int> periodBuffs = TableReaderV2.Parse<SimulateTrainPeriodBuffTable>()
+AscNet.GameServer\Handlers\StrongholdModule.cs:14:    private static List<T> Rows<T>() where T : class, AscNet.Common.Util.ITable => TableReaderV2.Parse<T>();
+AscNet.GameServer\Handlers\StrongholdModule.cs:19:        int.TryParse((value ?? string.Empty).Trim('[', ']').Split('|')[0], out int result) ? result : 0;
+AscNet.GameServer\Handlers\StrongholdModule.cs:24:            .Select(value => int.TryParse(value, out int parsed) ? parsed : 0).Where(value => value > 0).ToArray();
+AscNet.GameServer\Handlers\TaskModule.cs:110:            TableReaderV2.Parse<CurrentConditionTable>().ToDictionary(condition => condition.Id));
+AscNet.GameServer\Handlers\TaskModule.cs:112:            TableReaderV2.Parse<CurrentTaskTable>().OrderByDescending(task => task.Priority).ToArray());
+AscNet.GameServer\Handlers\TaskModule.cs:116:            TableReaderV2.Parse<EquipTable>().ToDictionary(equip => (uint)equip.Id));
+AscNet.GameServer\Handlers\TaskModule.cs:118:            TableReaderV2.Parse<GuildBossStageCatalogTable>().ToDictionary(stage => stage.StageId, stage => stage.StageType));
+AscNet.GameServer\Handlers\TaskModule.cs:271:            CurrentTaskActivenessTable? rewards = TableReaderV2.Parse<CurrentTaskActivenessTable>().FirstOrDefault(x => x.Type == rewardType);
+AscNet.GameServer\Handlers\TaskModule.cs:331:            CurrentTaskActivenessTable? rewards = TableReaderV2.Parse<CurrentTaskActivenessTable>().FirstOrDefault(x => x.Type == 3);
+AscNet.GameServer\Handlers\TaskModule.cs:412:            CurrentTaskActivenessTable? rewards = TableReaderV2.Parse<CurrentTaskActivenessTable>().FirstOrDefault(x => x.Type == 4);
+AscNet.GameServer\Handlers\TaskModule.cs:420:            HashSet<int> noviceTaskIds = TableReaderV2.Parse<CurrentTaskTable>()
+AscNet.GameServer\Handlers\TaskModule.cs:481:            CurrentTaskActivenessTable? rewards = TableReaderV2.Parse<CurrentTaskActivenessTable>().FirstOrDefault(x => x.Type == 4);
+AscNet.GameServer\Handlers\TaskModule.cs:490:            int[] noviceTaskIds = TableReaderV2.Parse<CurrentTaskTable>()
+AscNet.GameServer\Handlers\TaskModule.cs:534:            CourseTable? courseTable = TableReaderV2.Parse<CourseTable>().FirstOrDefault(x => x.StageId == stageId);
+AscNet.GameServer\Handlers\TaskModule.cs:643:            TableReaderV2.Parse<TaskTable>().Any(task => task.Id == taskId && IsDormTask(task));
+AscNet.GameServer\Handlers\TaskModule.cs:678:            int? stageGroupType = TableReaderV2.Parse<TransfiniteStageGroupTable>()
+AscNet.GameServer\Handlers\TaskModule.cs:680:            HashSet<int> achievementTaskGroupIds = TableReaderV2.Parse<TransfiniteAchievementTable>()
+AscNet.GameServer\Handlers\TaskModule.cs:684:            HashSet<int> achievementTaskIds = TableReaderV2.Parse<TransfiniteTaskGroupTable>()
+AscNet.GameServer\Handlers\TaskModule.cs:692:            foreach (ConditionTable condition in TableReaderV2.Parse<ConditionTable>()
+AscNet.GameServer\Handlers\TaskModule.cs:713:            TableReaderV2.Parse<TaskTable>()
+AscNet.GameServer\Handlers\TaskModule.cs:717:                    ConditionTable? condition = TableReaderV2.Parse<ConditionTable>()
+AscNet.GameServer\Handlers\TaskModule.cs:750:                || !TableReaderV2.Parse<TransfiniteActivityTable>().Any(activity => activity.Id == state.ActivityId))
+AscNet.GameServer\Handlers\TaskModule.cs:753:            TransfiniteRegionTable? region = TableReaderV2.Parse<TransfiniteRegionTable>()
+AscNet.GameServer\Handlers\TaskModule.cs:759:            stageGroups.UnionWith(TableReaderV2.Parse<TransfiniteIslandTable>()
+AscNet.GameServer\Handlers\TaskModule.cs:762:            Dictionary<int, int> stageGroupTypes = TableReaderV2.Parse<TransfiniteStageGroupTable>()
+AscNet.GameServer\Handlers\TaskModule.cs:766:            taskGroups.UnionWith(TableReaderV2.Parse<TransfiniteAchievementTable>()
+AscNet.GameServer\Handlers\TaskModule.cs:770:            List<TransfiniteTaskGroupTable> groups = TableReaderV2.Parse<TransfiniteTaskGroupTable>()
+AscNet.GameServer\Handlers\TaskModule.cs:774:            TransfiniteTaskGroupSpecialTreatmentTable? special = TableReaderV2.Parse<TransfiniteTaskGroupSpecialTreatmentTable>()
+AscNet.GameServer\Handlers\TaskModule.cs:783:            return TableReaderV2.Parse<TaskTable>()
+AscNet.GameServer\Handlers\TaskModule.cs:857:            Dictionary<int, LifeTreeTaskCondition> conditions = TableReaderV2.Parse<LifeTreeTaskCondition>()
+AscNet.GameServer\Handlers\TaskModule.cs:863:            List<LifeTreeTask> tasks = TableReaderV2.Parse<LifeTreeTask>()
+AscNet.GameServer\Handlers\TaskModule.cs:891:            HashSet<int> conditionIds = TableReaderV2.Parse<LifeTreeTaskCondition>()
+AscNet.GameServer\Handlers\TaskModule.cs:895:            return TableReaderV2.Parse<LifeTreeTask>()
+AscNet.GameServer\Handlers\TaskModule.cs:912:            Dictionary<int, ConditionTable> conditions = TableReaderV2.Parse<ConditionTable>()
+AscNet.GameServer\Handlers\TaskModule.cs:916:            return TableReaderV2.Parse<TaskTable>()
+AscNet.GameServer\Handlers\TaskModule.cs:950:            foreach (CurrentConditionTable condition in TableReaderV2.Parse<CurrentConditionTable>())
+AscNet.GameServer\Handlers\TaskModule.cs:970:            HashSet<int> passportConditionIds = TableReaderV2.Parse<TaskTable>()
+AscNet.GameServer\Handlers\TaskModule.cs:974:            foreach (ConditionTable condition in TableReaderV2.Parse<ConditionTable>()
+AscNet.GameServer\Handlers\TaskModule.cs:1002:            foreach (CurrentConditionTable condition in TableReaderV2.Parse<CurrentConditionTable>()
+AscNet.GameServer\Handlers\TaskModule.cs:1013:            HashSet<int> passportConditionIds = TableReaderV2.Parse<TaskTable>()
+AscNet.GameServer\Handlers\TaskModule.cs:1017:            foreach (ConditionTable condition in TableReaderV2.Parse<ConditionTable>()
+AscNet.GameServer\Handlers\TaskModule.cs:1036:            List<CurrentTaskTable> currentTasks = TableReaderV2.Parse<CurrentTaskTable>();
+AscNet.GameServer\Handlers\TaskModule.cs:1042:            List<CurrentConditionTable> conditions = TableReaderV2.Parse<CurrentConditionTable>()
+AscNet.GameServer\Handlers\TaskModule.cs:1050:                foreach (int conditionId in TableReaderV2.Parse<TaskTable>()
+AscNet.GameServer\Handlers\TaskModule.cs:1052:                    .Join(TableReaderV2.Parse<ConditionTable>(),
+AscNet.GameServer\Handlers\TaskModule.cs:1101:            HashSet<int> allowedTaskIds = TableReaderV2.Parse<TaskTimeLimitTable>()
+AscNet.GameServer\Handlers\TaskModule.cs:1103:            Dictionary<int, ConditionTable> conditions = TableReaderV2.Parse<ConditionTable>()
+AscNet.GameServer\Handlers\TaskModule.cs:1111:            List<TaskTable> tasks = TableReaderV2.Parse<TaskTable>()
+AscNet.GameServer\Handlers\TaskModule.cs:1158:            Dictionary<int, int> conditionAmounts = TableReaderV2.Parse<ConditionTable>()
+AscNet.GameServer\Handlers\TaskModule.cs:1163:            List<TaskTable> tasks = TableReaderV2.Parse<TaskTable>()
+AscNet.GameServer\Handlers\TaskModule.cs:1191:            (string.IsNullOrWhiteSpace(task.StartTime) || TryParseCurrentTaskTime(task.StartTime, out DateTimeOffset start) && now >= start)
+AscNet.GameServer\Handlers\TaskModule.cs:1192:            && (string.IsNullOrWhiteSpace(task.EndTime) || TryParseCurrentTaskTime(task.EndTime, out DateTimeOffset end) && now < end);
+AscNet.GameServer\Handlers\TaskModule.cs:1196:            HashSet<int> conditionIds = TableReaderV2.Parse<ConditionTable>()
+AscNet.GameServer\Handlers\TaskModule.cs:1210:            List<int> conditionIds = TableReaderV2.Parse<CurrentConditionTable>()
+AscNet.GameServer\Handlers\TaskModule.cs:1217:            conditionIds.AddRange(TableReaderV2.Parse<ConditionTable>()
+AscNet.GameServer\Handlers\TaskModule.cs:1236:            HashSet<int> passportConditionIds = TableReaderV2.Parse<ConditionTable>()
+AscNet.GameServer\Handlers\TaskModule.cs:1273:            CurrentTaskTable? currentTask = TableReaderV2.Parse<CurrentTaskTable>().FirstOrDefault(x => x.Id == taskId);
+AscNet.GameServer\Handlers\TaskModule.cs:1281:                if (TableReaderV2.Parse<StoryTaskTable>().Any(task => task.Id == taskId))
+AscNet.GameServer\Handlers\TaskModule.cs:1329:            TaskTable? task = TableReaderV2.Parse<TaskTable>()
+AscNet.GameServer\Handlers\TaskModule.cs:1336:            ConditionTable? condition = TableReaderV2.Parse<ConditionTable>()
+AscNet.GameServer\Handlers\TaskModule.cs:1380:            TaskTable? task = TableReaderV2.Parse<TaskTable>().FirstOrDefault(candidate =>
+AscNet.GameServer\Handlers\TaskModule.cs:1393:            ConditionTable? condition = TableReaderV2.Parse<ConditionTable>().FirstOrDefault(candidate => candidate.Id == task.Condition);
+AscNet.GameServer\Handlers\TaskModule.cs:1450:            LifeTreeTask? task = TableReaderV2.Parse<LifeTreeTask>().FirstOrDefault(candidate =>
+AscNet.GameServer\Handlers\TaskModule.cs:1452:                && TableReaderV2.Parse<LifeTreeTaskCondition>().Any(condition =>
+AscNet.GameServer\Handlers\TaskModule.cs:1513:            StoryTaskTable? task = TableReaderV2.Parse<StoryTaskTable>().FirstOrDefault(x => x.Id == taskId);
+AscNet.GameServer\Handlers\TaskModule.cs:1560:            Dictionary<int, StoryTaskTable> tasks = TableReaderV2.Parse<StoryTaskTable>().ToDictionary(x => x.Id);
+AscNet.GameServer\Handlers\TaskModule.cs:1561:            Dictionary<int, StoryTaskConditionTable> conditions = TableReaderV2.Parse<StoryTaskConditionTable>().ToDictionary(x => x.Id);
+AscNet.GameServer\Handlers\TaskModule.cs:1643:                && (!TryParseCurrentTaskTime(task.StartTime, out DateTimeOffset startTime) || now < startTime))
+AscNet.GameServer\Handlers\TaskModule.cs:1648:                && (!TryParseCurrentTaskTime(task.EndTime, out DateTimeOffset endTime) || now >= endTime))
+AscNet.GameServer\Handlers\TaskModule.cs:1655:        private static bool TryParseCurrentTaskTime(string value, out DateTimeOffset result)
+AscNet.GameServer\Handlers\TaskModule.cs:1657:            return DateTimeOffset.TryParseExact(
+AscNet.GameServer\Handlers\TaskModule.cs:1893:            List<CurrentTaskTable> tasks = TableReaderV2.Parse<CurrentTaskTable>().Where(x => x.Type == taskType).ToList();
+AscNet.GameServer\Handlers\TaskModule.cs:1906:            List<TaskTable> tasks = TableReaderV2.Parse<TaskTable>()
+AscNet.GameServer\Handlers\TaskModule.cs:1916:            List<TaskTable> tasks = TableReaderV2.Parse<TaskTable>().Where(task => task.Type == taskType).ToList();
+AscNet.GameServer\Handlers\TaskModule.cs:1974:            CurrentRewardTable? reward = TableReaderV2.Parse<CurrentRewardTable>().FirstOrDefault(x => x.Id == rewardId);
+AscNet.GameServer\Handlers\TaskModule.cs:1981:            return TableReaderV2.Parse<CurrentRewardGoodsTable>()
+AscNet.GameServer\Handlers\Theatre6Module.cs:62:    private static readonly Lazy<Dictionary<int, Theatre6CharacterTable>> Characters = new(() => TableReaderV2.Parse<Theatre6CharacterTable>().ToDictionary(x => x.Id));
+AscNet.GameServer\Handlers\Theatre6Module.cs:63:    private static readonly Lazy<Dictionary<int, Theatre6CharacterFashionTable>> Fashions = new(() => TableReaderV2.Parse<Theatre6CharacterFashionTable>().ToDictionary(x => x.Id));
+AscNet.GameServer\Handlers\Theatre6Module.cs:64:    private static readonly Lazy<Dictionary<int, Theatre6AttrTable>> Attrs = new(() => TableReaderV2.Parse<Theatre6AttrTable>().ToDictionary(x => x.Id));
+AscNet.GameServer\Handlers\Theatre6Module.cs:65:    private static readonly Lazy<Dictionary<int, Theatre6SkillTable>> Skills = new(() => TableReaderV2.Parse<Theatre6SkillTable>().ToDictionary(x => x.Id));
+AscNet.GameServer\Handlers\Theatre6Module.cs:66:    private static readonly Lazy<Dictionary<int, Theatre6AttrPackTable>> AttrPacks = new(() => TableReaderV2.Parse<Theatre6AttrPackTable>().ToDictionary(x => x.Id));
+AscNet.GameServer\Handlers\Theatre6Module.cs:67:    private static readonly Lazy<HashSet<int>> Buffs = new(() => TableReaderV2.Parse<Theatre6StageBuffTable>().Select(x => x.Id).ToHashSet());
+AscNet.GameServer\Handlers\Theatre6Module.cs:68:    private static readonly Lazy<HashSet<int>> BuildTags = new(() => TableReaderV2.Parse<Theatre6BuildTagTable>().Select(x => x.Id).ToHashSet());
+AscNet.GameServer\Handlers\Theatre6Module.cs:70:    private static readonly Lazy<HashSet<int>> Activities = new(() => TableReaderV2.Parse<Theatre6ActivityTable>().Select(x => x.Id).ToHashSet());
+AscNet.GameServer\Handlers\Theatre6Module.cs:76:        List<EventCatalogTable> catalog = TableReaderV2.Parse<EventCatalogTable>();
+AscNet.GameServer\Handlers\Theatre6Module.cs:77:        List<SkipFunctionalTable> skips = TableReaderV2.Parse<SkipFunctionalTable>();
+AscNet.GameServer\Handlers\Theatre6Module.cs:78:        Dictionary<int, FunctionalOpenTable> functions = TableReaderV2.Parse<FunctionalOpenTable>().ToDictionary(row => row.Id);
+AscNet.GameServer\Handlers\Theatre6Module.cs:79:        Dictionary<int, ConditionTable> conditions = TableReaderV2.Parse<ConditionTable>().ToDictionary(row => row.Id);
+AscNet.GameServer\Handlers\Theatre6Module.cs:80:        foreach (Theatre6PvpActivityTable season in TableReaderV2.Parse<Theatre6PvpActivityTable>().OrderBy(row => row.Id))
+AscNet.GameServer\Handlers\Theatre6Module.cs:157:    private static int Cfg(string key) => TableReaderV2.Parse<Theatre6ConfigTable>().FirstOrDefault(x => x.Key == key)?.Values.FirstOrDefault() ?? 0;
+AscNet.GameServer\Handlers\Theatre6PvpModule.cs:50:    private static int Cfg(string key) => TableReaderV2.Parse<Theatre6PvpConfigTable>().Single(x=>x.Key==key).Values;
+AscNet.GameServer\Handlers\Theatre6PvpModule.cs:64:        && TableReaderV2.Parse<Theatre6PvpActivityTable>().Any(activity => activity.Id == seasonId)
+AscNet.GameServer\Handlers\Theatre6PvpModule.cs:67:    private static Theatre6PvpRankTable? Rank(Theatre6PvpState s)=>TableReaderV2.Parse<Theatre6PvpRankTable>().FirstOrDefault(x=>x.Id==s.RankId);
+AscNet.GameServer\Handlers\Theatre6PvpModule.cs:70:        var ranks=TableReaderV2.Parse<Theatre6PvpRankTable>();
+AscNet.GameServer\Handlers\Theatre6PvpModule.cs:79:        var activity=TableReaderV2.Parse<Theatre6PvpActivityTable>().FirstOrDefault(x=>x.Id==s.AuthorizedSeasonId);
+AscNet.GameServer\Handlers\Theatre6PvpModule.cs:249:    private static int BuffCode(Theatre6PvpState s,int id,bool attack){var rank=Rank(s);if(rank==null)return RankNotFound;if(rank.PvpBuffGroupId<=0)return id==0?0:BuffNotInGroup;var group=TableReaderV2.Parse<Theatre6PvpBuffGroupTable>().FirstOrDefault(x=>x.Id==rank.PvpBuffGroupId);if(group==null)return BuffNotInGroup;if(id==0)return BuffMustSelect;return (attack?group.AttBuffs:group.DefBuffs).Contains(id)&&TableReaderV2.Parse<Theatre6PvpBuffTable>().Any(x=>x.Id==id)?0:BuffNotInGroup;}
+AscNet.GameServer\Handlers\Theatre6PvpModule.cs:250:    private static Theatre6PlayerBattleDb RobotDb(int id){var r=TableReaderV2.Parse<Theatre6PvpRobotTable>().Single(x=>x.Id==id);var rank=RankForScore(r.Score);return new(){RobotId=r.Id,Name=r.Name,HeadPortraitId=r.HeadIcon,RankId=rank?.Id??0,Score=r.Score,DefenseBuffId=r.BuffId??0};}
+AscNet.GameServer\Handlers\Theatre6PvpModule.cs:258:        List<Theatre6PvpRobotTable> eligible=TableReaderV2.Parse<Theatre6PvpRobotTable>()
+AscNet.GameServer\Handlers\TransfiniteModule.cs:41:    private static readonly Lazy<Dictionary<int, TransfiniteActivityTable>> Activities = new(() => TableReaderV2.Parse<TransfiniteActivityTable>().ToDictionary(x => x.Id));
+AscNet.GameServer\Handlers\TransfiniteModule.cs:53:    private static readonly Lazy<List<TransfiniteRegionTable>> Regions = new(() => TableReaderV2.Parse<TransfiniteRegionTable>());
+AscNet.GameServer\Handlers\TransfiniteModule.cs:54:    private static readonly Lazy<Dictionary<int, TransfiniteRotateGroupTable>> Rotates = new(() => TableReaderV2.Parse<TransfiniteRotateGroupTable>().ToDictionary(x => x.RotateGroupId));
+AscNet.GameServer\Handlers\TransfiniteModule.cs:55:    private static readonly Lazy<Dictionary<int, TransfiniteStageGroupTable>> Groups = new(() => TableReaderV2.Parse<TransfiniteStageGroupTable>().ToDictionary(x => x.StageGroupId));
+AscNet.GameServer\Handlers\TransfiniteModule.cs:56:    private static readonly Lazy<Dictionary<int, TransfiniteStageTable>> Stages = new(() => TableReaderV2.Parse<TransfiniteStageTable>().ToDictionary(x => x.StageId));
+AscNet.GameServer\Handlers\TransfiniteModule.cs:57:    private static readonly Lazy<List<TransfiniteIslandTable>> Islands = new(() => TableReaderV2.Parse<TransfiniteIslandTable>());
+AscNet.GameServer\Handlers\TransfiniteModule.cs:58:    private static readonly Lazy<List<TransfiniteScoreRewardGroupTable>> Rewards = new(() => TableReaderV2.Parse<TransfiniteScoreRewardGroupTable>());
+AscNet.GameServer\Handlers\TransfiniteModule.cs:59:    private static readonly Lazy<List<TransfiniteStartStageProgressTable>> StartProgress = new(() => TableReaderV2.Parse<TransfiniteStartStageProgressTable>());
+AscNet.GameServer\Handlers\TransfiniteModule.cs:60:    private static readonly Lazy<HashSet<int>> GeneralSkills = new(() => TableReaderV2.Parse<CharacterGeneralSkillTable>().Select(x => x.Id).ToHashSet());
+AscNet.GameServer\Handlers\TransfiniteModule.cs:61:    private static readonly Lazy<Dictionary<int, ItemTable>> Items = new(() => TableReaderV2.Parse<ItemTable>().ToDictionary(x => x.Id));
+AscNet.GameServer\Handlers\TransfiniteModule.cs:455:            return double.TryParse(Convert.ToString(entry, CultureInfo.InvariantCulture), NumberStyles.Float, CultureInfo.InvariantCulture, out double parsed) ? parsed : 0;
+AscNet.GameServer\Handlers\TransfiniteModule.cs:458:            return double.TryParse(Convert.ToString(stringRaw, CultureInfo.InvariantCulture), NumberStyles.Float, CultureInfo.InvariantCulture, out double parsed2) ? parsed2 : 0;
+AscNet.GameServer\Handlers\TreasureModule.cs:38:            TreasureTable? treasure = TableReaderV2.Parse<TreasureTable>().FirstOrDefault(x => x.TreasureId == treasureId);
+AscNet.GameServer\Handlers\TreasureModule.cs:79:            return TableReaderV2.Parse<ChapterTable>()
+AscNet.GameServer\Handlers\TrialModule.cs:27:        TrialChallengeTable? row = TableReaderV2.Parse<TrialChallengeTable>().FirstOrDefault(trial => trial.StageId == stageId);
+AscNet.GameServer\Handlers\TrialModule.cs:37:        TrialChallengeTable? row = TableReaderV2.Parse<TrialChallengeTable>().FirstOrDefault(trial => trial.Id == request.TrialId);
+AscNet.GameServer\Handlers\TrialModule.cs:55:        TrialTypeRewardTable? row = TableReaderV2.Parse<TrialTypeRewardTable>().FirstOrDefault(reward => reward.Type == request.Type);
+AscNet.GameServer\Handlers\TrialModule.cs:56:        int[] required = TableReaderV2.Parse<TrialChallengeTable>().Where(trial => trial.Type == request.Type).Select(trial => trial.Id).ToArray();
+AscNet.GameServer\Handlers\TRPGModule.cs:43:            TRPGFunctionTable? trpgFunction = TableReaderV2.Parse<TRPGFunctionTable>().Find(x => x.Id == request.FunctionId);
+AscNet.GameServer\Handlers\TRPGModule.cs:50:                var rewardGoods = TableReaderV2.Parse<RewardGoodsTable>().Where(x => TableReaderV2.Parse<RewardTable>().Find(x => x.Id == trpgFunction.RewardId)?.SubIds.Contains(x.Id) ?? false);
+AscNet.GameServer\Handlers\Version47EventModule.cs:27:            TableReaderV2.Parse<EnvelopeActivityTable>());
+AscNet.GameServer\Handlers\Version47EventModule.cs:29:            TableReaderV2.Parse<PBRActivityTable>());
+AscNet.GameServer\Handlers\Version47EventModule.cs:31:            TableReaderV2.Parse<ConcertPreHeatingActivityTable>());
+AscNet.GameServer\Handlers\Version47EventModule.cs:33:            TableReaderV2.Parse<ConcertVideoConfigTable>());
+AscNet.GameServer\Handlers\VoteModule.cs:23:            .Parse<EquipRecommendTable>()
+AscNet.GameServer\MessagePackPayloads.cs:20:            using JsonDocument document = JsonDocument.Parse(json);
+AscNet.GameServer\Server.cs:35:            listener = new(IPAddress.Parse("0.0.0.0"), Common.Common.config.GameServer.Port);
+AscNet.GameServer\Server.cs:44:                    TableReaderV2.Parse<CurrentTaskTable>();
+AscNet.GameServer\Server.cs:45:                    TableReaderV2.Parse<StoryTaskTable>();
+AscNet.GameServer\Server.cs:46:                    TableReaderV2.Parse<StoryTaskConditionTable>();
+AscNet.GameServer\Server.cs:47:                    TableReaderV2.Parse<CurrentConditionTable>();
+AscNet.GameServer\Server.cs:48:                    TableReaderV2.Parse<ConditionTable>();
+AscNet.GameServer\Server.cs:49:                    TableReaderV2.Parse<TaskTable>();
+AscNet.GameServer\SessionExtensions.cs:11:            static () => TableReaderV2.Parse<PlayerTable>()
+AscNet.PcapParser\Packet.cs:4:namespace AscNet.PcapParser
+AscNet.PcapParser\PcapParser.cs:13:namespace AscNet.PcapParser
+AscNet.PcapParser\PcapParser.cs:15:    class PcapParser
+AscNet.PcapParser\Properties\AssemblyInfo.cs:8:[assembly: AssemblyTitle("AscNet.PcapParser")]
+AscNet.PcapParser\Properties\AssemblyInfo.cs:12:[assembly: AssemblyProduct("AscNet.PcapParser")]
+AscNet.SDKServer\Controllers\ConfigController.cs:227:                JObject notice = JObject.Parse(File.ReadAllText(path));
+AscNet.SDKServer\Controllers\ConfigController.cs:244:                foreach (JObject notice in JArray.Parse(File.ReadAllText(path)).OfType<JObject>())
+AscNet.SDKServer\Controllers\ConfigController.cs:433:                if (!Version.TryParse(knownVersion.Key, out Version? parsedVersion))
+AscNet.SDKServer\Controllers\ConfigController.cs:448:            return Version.TryParse(version, out Version? parsedVersion)
+AscNet.SDKServer\Controllers\KuroSdkController.cs:327:            return int.TryParse(value, out int parsed) ? parsed : null;
+AscNet.SDKServer\Controllers\KuroSdkController.cs:333:            return long.TryParse(value, out long parsed) ? parsed : null;
+AscNet.Table\TableGeneratorV2.cs:76:                                if (int.TryParse(value, out int intVal))
