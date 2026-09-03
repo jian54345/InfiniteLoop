@@ -248,16 +248,17 @@ namespace AscNet.Common.Database
                 EquipBreakThroughTable? progression = ResolveEquipBreakThrough(equip.TemplateId, equip.Breakthrough);
                 if (progression is not null)
                 {
-                    int clampedLevel = Math.Clamp(equip.Level, 1, progression.LevelLimit);
+                    // GM装备等级不再受突破等级限制
+					int clampedLevel = Math.Max(equip.Level, 1);
                     if (equip.Level != clampedLevel)
                     {
                         equip.Level = clampedLevel;
                         changed = true;
                     }
 
-                    EquipLevelUpTemplate? levelTemplate = equipLevelUpTemplates.FirstOrDefault(row =>
-                        row.TemplateId == progression.LevelUpTemplateId && row.Level == equip.Level);
-                    int clampedExp = Math.Clamp(equip.Exp, 0, levelTemplate?.Exp ?? 0);
+                    // 自定义等级不限制经验上限
+																																	  
+					int clampedExp = Math.Max(equip.Exp, 0);
                     if (equip.Exp != clampedExp)
                     {
                         equip.Exp = clampedExp;
@@ -1298,7 +1299,16 @@ namespace AscNet.Common.Database
                 && MeetsCharacterSkillCondition(character, playerLevel, id, conditions, depth);
         }
 
-        public EquipData? AddEquip(uint equipId, int characterId = 0, int level = 1)
+        public static int GetCharacterMaxLevel(int levelUpTemplateId)
+{
+    return characterLevelUpTemplates
+        .Where(x => x.Type == levelUpTemplateId)
+        .Select(x => x.Level)
+        .DefaultIfEmpty()
+        .Max();
+}
+		
+		public EquipData? AddEquip(uint equipId, int characterId = 0, int level = 1)
         {
             EquipTable? equip = TableReaderV2.Parse<EquipTable>().Find(x => x.Id == equipId && IsOwnableEquipTemplate(x));
             if (equip is null)
