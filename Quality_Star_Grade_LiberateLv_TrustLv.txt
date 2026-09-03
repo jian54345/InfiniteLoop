@@ -1,0 +1,562 @@
+﻿AscNet.Common\Database\Character.cs:36:            ids.IntersectWith(TableReaderV2.Parse<CharacterQualityTable>()
+AscNet.Common\Database\Character.cs:38:            ids.IntersectWith(TableReaderV2.Parse<CharacterGradeTable>()
+AscNet.Common\Database\Character.cs:39:                .Where(row => row.Grade == 1)
+AscNet.Common\Database\Character.cs:411:            ILookup<int, CharacterQualityTable> qualityRowsByCharacterId = TableReaderV2.Parse<CharacterQualityTable>()
+AscNet.Common\Database\Character.cs:461:                CharacterQualityTable? firstQualityRow = qualityRowsByCharacterId[(int)character.Id]
+AscNet.Common\Database\Character.cs:462:                    .OrderBy(quality => quality.Quality)
+AscNet.Common\Database\Character.cs:464:                if (firstQualityRow is not null)
+AscNet.Common\Database\Character.cs:466:                    if (character.InitQuality <= 0)
+AscNet.Common\Database\Character.cs:468:                        character.InitQuality = firstQualityRow.Quality;
+AscNet.Common\Database\Character.cs:472:                    if (character.Quality <= 0)
+AscNet.Common\Database\Character.cs:474:                        character.Quality = firstQualityRow.Quality;
+AscNet.Common\Database\Character.cs:485:                if (character.Grade <= 0)
+AscNet.Common\Database\Character.cs:487:                    character.Grade = 1;
+AscNet.Common\Database\Character.cs:491:                if (character.TrustLv <= 0)
+AscNet.Common\Database\Character.cs:493:                    character.TrustLv = 1;
+AscNet.Common\Database\Character.cs:497:                if (character.LiberateLv <= 0)
+AscNet.Common\Database\Character.cs:499:                    character.LiberateLv = 1;
+AscNet.Common\Database\Character.cs:736:            ReconcileQualityGatedSkills(character, normalizedSkills, characterSkill, skillIdsByGroupId, upgradesBySkillId);
+AscNet.Common\Database\Character.cs:740:        private static bool ReconcileQualityGatedSkills(
+AscNet.Common\Database\Character.cs:787:        public bool UnlockQualityGatedSkills(CharacterData character)
+AscNet.Common\Database\Character.cs:799:            return ReconcileQualityGatedSkills(character, character.SkillList, skillTable, skillsByGroup, upgradesBySkillId);
+AscNet.Common\Database\Character.cs:984:        public static CharacterQualityFragmentTable? GetMinCharacterFragment(int id)
+AscNet.Common\Database\Character.cs:986:            var characterMinQuality = TableReaderV2
+AscNet.Common\Database\Character.cs:987:                .Parse<CharacterQualityTable>()
+AscNet.Common\Database\Character.cs:989:                .Min(x => x.Quality);
+AscNet.Common\Database\Character.cs:992:                .Parse<CharacterQualityFragmentTable>()
+AscNet.Common\Database\Character.cs:993:                .FirstOrDefault(x => x.Quality == characterMinQuality);
+AscNet.Common\Database\Character.cs:1011:            CharacterQualityTable? characterQuality = TableReaderV2.Parse<CharacterQualityTable>().OrderBy(x => x.Quality).FirstOrDefault(x => x.CharacterId == id);
+AscNet.Common\Database\Character.cs:1012:            if (!IsOwnableCharacter(id) || character is null || characterSkill is null || characterQuality is null)
+AscNet.Common\Database\Character.cs:1028:                Quality = characterQuality.Quality,
+AscNet.Common\Database\Character.cs:1029:                InitQuality = characterQuality.Quality,
+AscNet.Common\Database\Character.cs:1030:                Star = 0,
+AscNet.Common\Database\Character.cs:1031:                Grade = 1,
+AscNet.Common\Database\Character.cs:1034:                TrustLv = 1,
+AscNet.Common\Database\Character.cs:1037:                LiberateLv = 1,
+AscNet.Common\Database\Character.cs:1240:                    && character.LiberateLv >= condition.Params[1],
+AscNet.Common\Database\Character.cs:1243:                13105 => character.Quality > condition.Params[0]
+AscNet.Common\Database\Character.cs:1244:                    || character.Quality == condition.Params[0]
+AscNet.Common\Database\Character.cs:1245:                    && (condition.Params.Count <= 2 || character.Star >= condition.Params[2]),
+AscNet.Common\Database\Inventory.cs:43:        public const int PokemonStarUpItem = 57;
+AscNet.Common\Database\Inventory.cs:44:        public const int PokemonLowStarUpItem = 58;
+AscNet.Common\Database\MongoCommandMetrics.cs:23:        builder.Subscribe<CommandStartedEvent>(OnStarted);
+AscNet.Common\Database\MongoCommandMetrics.cs:40:    private static void OnStarted(CommandStartedEvent command)
+AscNet.Common\Database\Player.Bfrt.cs:30:    [BsonElement("course_reward_star")] public int CourseRewardStar { get; set; }
+AscNet.Common\Database\Player.cs:720:            RecycleStar = [1, 2, 3, 4]
+AscNet.Common\Database\Player.Mail.cs:11:        [BsonElement("quality")] public int Quality { get; set; }
+AscNet.Common\Database\Player.Mail.cs:12:        [BsonElement("grade")] public int Grade { get; set; }
+AscNet.Common\Database\Player.Theatre6.cs:100:    [BsonElement("refresh_period_start")] public long RefreshPeriodStart { get; set; }
+AscNet.Common\Database\Player.Theatre6.cs:121:        RefreshPeriodStart = 0;
+AscNet.Common\Database\Player.Theatre6.cs:141:    [BsonElement("started_at")] public long StartedAt { get; set; }
+AscNet.Common\Database\Player.Transfinite.cs:19:    [BsonElement("send_activity_start_mail")] public bool SendActivityStartMail { get; set; }
+AscNet.Common\Database\Player.Transfinite.cs:32:    [BsonElement("start_stage_progress")] public int StartStageProgress { get; set; }
+AscNet.Common\Database\Player.Transfinite.cs:105:    [BsonElement("quality")] public int Quality { get; set; }
+AscNet.Common\Database\Player.Transfinite.cs:106:    [BsonElement("grade")] public int Grade { get; set; }
+AscNet.Common\Database\Player.Transfinite.cs:109:    [BsonElement("show_quality")] public int ShowQuality { get; set; }
+AscNet.Common\Database\Stage.cs:39:                    StarsMark = 7,
+AscNet.Common\MsgPack\Types.cs:70:        public long Quality { get; set; }
+AscNet.Common\MsgPack\Types.cs:71:        public long InitQuality { get; set; }
+AscNet.Common\MsgPack\Types.cs:72:        public long Star { get; set; }
+AscNet.Common\MsgPack\Types.cs:73:        public long Grade { get; set; }
+AscNet.Common\MsgPack\Types.cs:80:        public long TrustLv { get; set; }
+AscNet.Common\MsgPack\Types.cs:83:        public long LiberateLv { get; set; }
+AscNet.Common\MsgPack\Types.cs:188:        public long StarsMark { get; set; }
+AscNet.Common\MsgPack\Types.cs:371:        public long StartTime { get; set; }
+AscNet.Common\MsgPack\Types.cs:373:        public string? StartTimeStr { get; set; }
+AscNet.Common\MsgPack\Types.cs:536:        public Int64 StartTick { get; set; }
+AscNet.Common\MsgPack\Types.cs:635:        public List<Int32> RecycleStar { get; set; } = new();
+AscNet.Common\MsgPack\Types.cs:944:            public Int32 Quality { get; set; }
+AscNet.Common\MsgPack\Types.cs:1000:        public Int32 CourseRewardStar { get; set; }
+AscNet.Common\MsgPack\Types.cs:1593:        public List<dynamic> StageStarInfos { get; set; } = new();
+AscNet.Common\MsgPack\Types.cs:1594:        public List<dynamic> StarRewardIds { get; set; } = new();
+AscNet.Common\MsgPack\Types.cs:1897:        public Int32 Quality { get; set; }
+AscNet.Common\MsgPack\Types.cs:1898:        public Int32 Grade { get; set; }
+AscNet.Common\MsgPack\Types.cs:1986:            public UInt32 StartTime { get; set; }
+AscNet.Common\MsgPack\Types.cs:2002:            public Int32 DailyStageStarRewardCount { get; set; }
+AscNet.Common\MsgPack\Types.cs:2003:            public List<dynamic> StarRewards { get; set; } = new();
+AscNet.Common\MsgPack\Types.cs:2361:            public Int32 Quality { get; set; }
+AscNet.Common\MsgPack\Types.cs:2362:            public Int32 Grade { get; set; }
+AscNet.Common\MsgPack\Types.cs:2617:                public Int32 Quality { get; set; }
+AscNet.Common\MsgPack\Types.cs:2618:                public Int32 Grade { get; set; }
+AscNet.Common\MsgPack\Types.cs:2632:                public Int32 Quality { get; set; }
+AscNet.Common\MsgPack\Types.cs:2633:                public Int32 Grade { get; set; }
+AscNet.Common\MsgPack\Types.cs:3204:            public Int32 StarsMark { get; set; }
+AscNet.Common\MsgPack\Types.cs:3303:            public Int32 StarsMark { get; set; }
+AscNet.Common\MsgPack\Types.cs:3399:        public Int32 Quality { get; set; }
+AscNet.Common\MsgPack\Types.cs:3400:        public Int32 InitQuality { get; set; }
+AscNet.Common\MsgPack\Types.cs:3401:        public Int32 Star { get; set; }
+AscNet.Common\MsgPack\Types.cs:3402:        public Int32 Grade { get; set; }
+AscNet.Common\MsgPack\Types.cs:3408:        public Int32 TrustLv { get; set; }
+AscNet.Common\MsgPack\Types.cs:3411:        public Int32 LiberateLv { get; set; }
+AscNet.Common\MsgPack\Types.cs:3465:        public Int32 Quality { get; set; }
+AscNet.Common\MsgPack\Types.cs:3466:        public Int32 Grade { get; set; }
+AscNet.Common\MsgPack\Types.cs:3469:        public Int32 ShowQuality { get; set; }
+AscNet.Common\MsgPack\Types.cs:3540:        public Int32 Quality { get; set; }
+AscNet.Common\MsgPack\Types.cs:3541:        public Int32 StarSchedule { get; set; }
+AscNet.Common\MsgPack\Types.cs:3653:                    public Int32 Quality { get; set; }
+AscNet.Common\MsgPack\Types.cs:3654:                    public Int32 Grade { get; set; }
+AscNet.Common\MsgPack\Types.cs:3729:                public Int32 Quality { get; set; }
+AscNet.Common\MsgPack\Types.cs:3730:                public Int32 Grade { get; set; }
+AscNet.Common\MsgPack\Types.cs:3816:        public Int32 Quality { get; set; }
+AscNet.Common\MsgPack\Types.cs:3817:        public Int32 Grade { get; set; }
+AscNet.Common\MsgPack\Types.cs:3991:    public class ConcertPreHeatingStartRequest
+AscNet.Common\MsgPack\Types.cs:3997:    public class ConcertPreHeatingStartResponse
+AscNet.Common\MsgPack\Types.cs:4203:public sealed class BfrtReceiveCourseRewardResponse { public Int32 Code { get; set; } public Int32 CourseRewardStar { get; set; } public List<RewardGoods> RewardGoodsList { get; set; } = new(); }
+AscNet.GameServer\Commands\StageCommand.cs:27:                        StarsMark = 7,
+AscNet.GameServer\Commands\StageCommand.cs:53:                        StarsMark = 7,
+AscNet.GameServer\Game\ActivityScheduleService.cs:7:public readonly record struct ActivityScheduleEntry(long Id, long StartTime, long EndTime, string Source)
+AscNet.GameServer\Game\ActivityScheduleService.cs:12:        return (StartTime == 0 || unixTime >= StartTime)
+AscNet.GameServer\Game\ActivityScheduleService.cs:22:            .Select(row => new ActivityScheduleEntry(row.Id, row.StartTime, row.EndTime, row.Source))
+AscNet.GameServer\Game\DrawManager.cs:18:    private const int MinDrawItemShowQuality = 3;
+AscNet.GameServer\Game\DrawManager.cs:24:    private static readonly List<CharacterQualityTable> CharacterQualities = TableReaderV2.Parse<CharacterQualityTable>();
+AscNet.GameServer\Game\DrawManager.cs:4829:    private readonly record struct DrawRotationWindow(int TimeId, long StartTime, long EndTime, int[] CharacterIds);
+AscNet.GameServer\Game\DrawManager.cs:4885:        draw.StartTime = row.StartTime;
+AscNet.GameServer\Game\DrawManager.cs:4918:        group.StartTime = row.StartTime;
+AscNet.GameServer\Game\DrawManager.cs:4993:        draw.StartTime = window.StartTime;
+AscNet.GameServer\Game\DrawManager.cs:5003:                || prediction.StartTime <= 0
+AscNet.GameServer\Game\DrawManager.cs:5004:                || prediction.EndTime <= prediction.StartTime
+AscNet.GameServer\Game\DrawManager.cs:5013:                prediction.StartTime,
+AscNet.GameServer\Game\DrawManager.cs:5059:            StartTime = 1763006400,
+AscNet.GameServer\Game\DrawManager.cs:5090:    private static bool IsActive(DrawGroupInfo group) => (group.StartTime == 0 || group.StartTime <= Now()) && (group.EndTime == 0 || Now() < group.EndTime);
+AscNet.GameServer\Game\DrawManager.cs:5091:    private static bool IsActive(DrawInfo draw) => GroupsById.TryGetValue(draw.GroupId, out DrawGroupInfo? group) && IsActive(group) && (draw.StartTime == 0 || draw.StartTime <= Now()) && (draw.EndTime == 0 || Now() < draw.EndTime);
+AscNet.GameServer\Game\DrawManager.cs:5103:                value.BannerBeginTime = activeDraws.Min(x => x.StartTime);
+AscNet.GameServer\Game\DrawManager.cs:5328:    private static RewardGoods? DrawMemoryReward() { List<EquipTable> pool = Equips.Where(x => x.Type == 0 && x.Quality == 4 && Character.IsOwnableEquipTemplate(x) && DrawWaferShowIds.Contains(x.Id)).ToList(); return pool.Count == 0 ? DrawFallbackItemReward() : Create(RewardType.Equip, pool[Random.Shared.Next(pool.Count)].Id, 1, 1); }
+AscNet.GameServer\Game\DrawManager.cs:5330:    private static RewardGoods? DrawRandomWeaponReward(int quality, int exclude = 0) { List<EquipTable> pool = Equips.Where(x => x.Type > 0 && x.Quality == quality && x.Id != exclude && Character.IsOwnableEquipTemplate(x)).ToList(); return pool.Count == 0 ? DrawFallbackItemReward() : Create(RewardType.Equip, pool[Random.Shared.Next(pool.Count)].Id, 1, 1); }
+AscNet.GameServer\Game\DrawManager.cs:5331:    private static RewardGoods? DrawOverclockMaterialReward() => DrawItemReward(x => x.Id is 40110 or 40111 or 40112 or 40113 or 40114 && x.Quality >= MinDrawItemShowQuality, 1);
+AscNet.GameServer\Game\DrawManager.cs:5332:    private static RewardGoods? DrawExpMaterialReward() => DrawItemReward(x => x.Id is 30011 or 30012 or 30013 or 30014 or 31101 or 31102 or 31103 or 31104 or 31201 or 31202 or 31203 or 31204 && x.Quality >= MinDrawItemShowQuality, 3);
+AscNet.GameServer\Game\DrawManager.cs:5333:    private static RewardGoods? DrawCogBoxReward() => DrawItemReward(x => x.Name.StartsWith("Cog Pack") && x.Quality >= MinDrawItemShowQuality, 1);
+AscNet.GameServer\Game\DrawManager.cs:5337:    private static RewardGoods Clone(RewardGoods x) => new() { RewardType = x.RewardType, TemplateId = x.TemplateId, Count = x.Count, Level = x.Level, Quality = x.Quality, Grade = x.Grade, Breakthrough = x.Breakthrough, ConvertFrom = x.ConvertFrom, ShowQuality = x.ShowQuality, Id = x.Id, IsGift = x.IsGift, RewardMulti = x.RewardMulti };
+AscNet.GameServer\Game\DrawManager.cs:5338:    private static DrawGroupInfo Clone(DrawGroupInfo x) => new() { BannerBeginTime=x.BannerBeginTime, BannerEndTime=x.BannerEndTime, BottomTimes=x.BottomTimes, MaxBottomTimes=x.MaxBottomTimes, UseItemId=x.UseItemId, UseTenDrawOnSaleTimes=x.UseTenDrawOnSaleTimes, Id=x.Id, Priority=x.Priority, ResetTime=x.ResetTime, StartTime=x.StartTime, EndTime=x.EndTime, Order=x.Order, SwitchDrawIdActivityId=x.SwitchDrawIdActivityId, MaxSwitchDrawIdCount=x.MaxSwitchDrawIdCount, Banner=x.Banner, UiPrefab=x.UiPrefab, UiBackGround=x.UiBackGround, Tag=x.Tag, OptionalDrawIdList=[..x.OptionalDrawIdList], TagBlackListDrawIds=[..x.TagBlackListDrawIds], TenDrawOnSales=new(x.TenDrawOnSales), TransformSuitList=[..x.TransformSuitList], ConditionId=x.ConditionId, Type=x.Type, ExtraRewardId=x.ExtraRewardId, ExtraRewardCycleTimes=x.ExtraRewardCycleTimes, ShowPredictType=x.ShowPredictType };
+AscNet.GameServer\Game\DrawManager.cs:5339:    private static DrawInfo Clone(DrawInfo x) => new() { TodayCount=x.TodayCount, TotalCount=x.TotalCount, BottomTimes=x.BottomTimes, MaxBottomTimes=x.MaxBottomTimes, IsTriggerSpecified=x.IsTriggerSpecified, IsShowShop=x.IsShowShop, IsShowBubble=x.IsShowBubble, UseTenDrawOnSaleTimes=x.UseTenDrawOnSaleTimes, Id=x.Id, GroupId=x.GroupId, DrawType=x.DrawType, UseItemId=x.UseItemId, UseItemCount=x.UseItemCount, DailyLimitTimes=x.DailyLimitTimes, ActivityLimitTimes=x.ActivityLimitTimes, StartTime=x.StartTime, EndTime=x.EndTime, Banner=x.Banner, Resources=new(x.Resources), ResourceIds=new(x.ResourceIds), BtnDrawCount=[..x.BtnDrawCount], ShowPriority=x.ShowPriority, PurchaseUiType=[..x.PurchaseUiType], PurchaseId=[..x.PurchaseId], ExPurchaseIds=[..x.ExPurchaseIds], CapacityCheckType=x.CapacityCheckType, UpGoodsId=x.UpGoodsId, GroupSubType=x.GroupSubType };
+AscNet.GameServer\Game\DrawManager.cs:5340:    private static DrawAdjustActivityInfo Clone(DrawAdjustActivityInfo x) => new() { TargetTimes=x.TargetTimes, TargetId=x.TargetId, ActivityStatus=x.ActivityStatus, ActivityId=x.ActivityId, StartTime=x.StartTime, EndTime=x.EndTime, AdjustTimes=x.AdjustTimes, DrawGroupId=x.DrawGroupId, TargetTemplateIds=[..x.TargetTemplateIds], SourceTemplateIds=[..x.SourceTemplateIds], EffectTargetTemplateIds=[..x.EffectTargetTemplateIds] };
+AscNet.GameServer\Game\LottoManager.cs:22:        TableReaderV2.Parse<CharacterQualityTable>()
+AscNet.GameServer\Game\LottoManager.cs:24:            .ToDictionary(group => group.Key, group => group.Min(row => row.Quality)));
+AscNet.GameServer\Game\LottoManager.cs:26:        TableReaderV2.Parse<EquipTable>().ToDictionary(row => row.Id, row => row.Quality));
+AscNet.GameServer\Game\LottoManager.cs:28:        TableReaderV2.Parse<ItemTable>().ToDictionary(row => row.Id, row => row.Quality));
+AscNet.GameServer\Game\LottoManager.cs:146:        if (CharacterQualities.Value.TryGetValue(reward.TemplateId, out int characterQuality))
+AscNet.GameServer\Game\LottoManager.cs:149:            quality = characterQuality;
+AscNet.GameServer\Game\LottoManager.cs:151:        else if (EquipQualities.Value.TryGetValue(reward.TemplateId, out int equipQuality))
+AscNet.GameServer\Game\LottoManager.cs:154:            quality = equipQuality;
+AscNet.GameServer\Game\LottoManager.cs:156:        else if (ItemQualities.Value.TryGetValue(reward.TemplateId, out int itemQuality))
+AscNet.GameServer\Game\LottoManager.cs:158:            quality = itemQuality;
+AscNet.GameServer\Game\LottoManager.cs:167:            Quality = quality,
+AscNet.GameServer\Game\LottoManager.cs:168:            Grade = rewardType == 2 && quality > 0 ? 1 : 0,
+AscNet.GameServer\Handlers\AccountModule.cs:519:                StartTime = startTime,
+AscNet.GameServer\Handlers\AccountModule.cs:521:                StartTimeStr = FormatTimeLimitBound(startTime),
+AscNet.GameServer\Handlers\AccountModule.cs:543:                row => MakeTimeLimitControl(row.Id, row.StartTime, row.EndTime));
+AscNet.GameServer\Handlers\AccountModule.cs:548:                    anchor.Schedule.StartTime,
+AscNet.GameServer\Handlers\AccountModule.cs:570:                long firstWeeklyReset = checked(schedule.StartTime
+AscNet.GameServer\Handlers\AccountModule.cs:571:                    + TaskModule.RemainingSecondsInWeeklyResetPeriod(schedule.StartTime));
+AscNet.GameServer\Handlers\AccountModule.cs:575:                        ? schedule.StartTime
+AscNet.GameServer\Handlers\AccountModule.cs:577:                    long nextStart = checked(firstWeeklyReset + index * 604_800L);
+AscNet.GameServer\Handlers\AccountModule.cs:580:                        : nextStart - 60;
+AscNet.GameServer\Handlers\AccountModule.cs:607:                        openChildSchedules.Min(schedule => schedule.StartTime),
+AscNet.GameServer\Handlers\AccountModule.cs:637:                        AddDerived(teaching.TimeId.Value, outerSchedule.StartTime, outerSchedule.EndTime);
+AscNet.GameServer\Handlers\AccountModule.cs:1040:        private static readonly IReadOnlyDictionary<string, byte[]> SupportedStartupPushPayloads = new Dictionary<string, byte[]>
+AscNet.GameServer\Handlers\AccountModule.cs:1042:            ["NotifyDlcFightCharacterId"] = SerializeStartupPayload(new Dictionary<string, object?>
+AscNet.GameServer\Handlers\AccountModule.cs:1046:            ["NotifyDlcChipFormDataList"] = SerializeStartupPayload(new Dictionary<string, object?>
+AscNet.GameServer\Handlers\AccountModule.cs:1050:            ["NotifyDlcChipAssistChipId"] = SerializeStartupPayload(new Dictionary<string, object?>
+AscNet.GameServer\Handlers\AccountModule.cs:1054:            ["NotifyNameplateLoginData"] = SerializeStartupPayload(new Dictionary<string, object?>
+AscNet.GameServer\Handlers\AccountModule.cs:1059:            ["NotifyGuildDormPlayerData"] = SerializeStartupPayload(new Dictionary<string, object?>
+AscNet.GameServer\Handlers\AccountModule.cs:1071:            ["NotifyHoldRegressionIgnoreChannel"] = SerializeStartupPayload(new Dictionary<string, object?>
+AscNet.GameServer\Handlers\AccountModule.cs:1075:            ["NotifyClientVersion"] = SerializeStartupPayload(new Dictionary<string, object?>
+AscNet.GameServer\Handlers\AccountModule.cs:1080:            ["NotifyNewActivityCalendarData"] = SerializeStartupPayload(BuildNewActivityCalendarPayload()),
+AscNet.GameServer\Handlers\AccountModule.cs:1081:            ["NotifyAccumulateExpendData"] = SerializeStartupPayload(BuildAccumulateExpendPayload()),
+AscNet.GameServer\Handlers\AccountModule.cs:1082:            ["NotifyExperimentData"] = SerializeStartupPayload(new Dictionary<string, object?>
+AscNet.GameServer\Handlers\AccountModule.cs:1087:            ["NotifySameColorGameData"] = SerializeStartupPayload(new Dictionary<string, object?>
+AscNet.GameServer\Handlers\AccountModule.cs:1092:            ["NotifyReviewConfig"] = SerializeStartupPayload(new Dictionary<string, object?>
+AscNet.GameServer\Handlers\AccountModule.cs:1096:            ["NotifyMentorData"] = SerializeStartupPayload(new Dictionary<string, object?>
+AscNet.GameServer\Handlers\AccountModule.cs:1114:            ["NotifyGuildData"] = SerializeStartupPayload(new Dictionary<string, object?>
+AscNet.GameServer\Handlers\AccountModule.cs:1130:            ["NotifyMentorChat"] = SerializeStartupPayload(new Dictionary<string, object?>
+AscNet.GameServer\Handlers\AccountModule.cs:1134:            ["NotifyFestivalData"] = SerializeStartupPayload(BuildFestivalPayload()),
+AscNet.GameServer\Handlers\AccountModule.cs:1135:            ["NotifyGame2048DataDb"] = SerializeStartupPayload(BuildGame2048Payload()),
+AscNet.GameServer\Handlers\AccountModule.cs:1136:            ["NotifyGameCollectionData"] = SerializeStartupPayload(BuildGameCollectionPayload()),
+AscNet.GameServer\Handlers\AccountModule.cs:1137:            ["NotifyGoldenMinerGameInfo"] = SerializeStartupPayload(BuildGoldenMinerPayload()),
+AscNet.GameServer\Handlers\AccountModule.cs:1138:            ["NotifyTaikoMasterData"] = SerializeStartupPayload(BuildTaikoMasterPayload()),
+AscNet.GameServer\Handlers\AccountModule.cs:1139:            ["NotifyTurntableData"] = SerializeStartupPayload(BuildTurntablePayload())
+AscNet.GameServer\Handlers\AccountModule.cs:1142:        private static byte[] SerializeStartupPayload(Dictionary<string, object?> payload)
+AscNet.GameServer\Handlers\AccountModule.cs:1147:        private static void SendEmptyStartupPush(Session session, string name)
+AscNet.GameServer\Handlers\AccountModule.cs:1151:                session.SendPush(name, SerializeStartupPayload(BuildNewActivityCalendarPayload()));
+AscNet.GameServer\Handlers\AccountModule.cs:1166:                session.SendPush(name, SerializeStartupPayload(BuildSelfChoiceLottoPayload(session.player)));
+AscNet.GameServer\Handlers\AccountModule.cs:1169:            if (SupportedStartupPushPayloads.TryGetValue(name, out byte[]? supportedPayload))
+AscNet.GameServer\Handlers\AccountModule.cs:1296:                RefreshTime = ((DateTimeOffset)Process.GetCurrentProcess().StartTime).ToUnixTimeSeconds(),
+AscNet.GameServer\Handlers\AccountModule.cs:1368:            SendEmptyStartupPush(session, "NotifyTheatre3ActivityData");
+AscNet.GameServer\Handlers\AccountModule.cs:1369:            SendEmptyStartupPush(session, "NotifyFangKuaiData");
+AscNet.GameServer\Handlers\AccountModule.cs:1380:            SendEmptyStartupPush(session, "NotifyNewActivityCalendarData");
+AscNet.GameServer\Handlers\AccountModule.cs:1382:            SendEmptyStartupPush(session, "NotifyDlcFightCharacterId");
+AscNet.GameServer\Handlers\AccountModule.cs:1383:            SendEmptyStartupPush(session, "NotifyDlcChipFormDataList");
+AscNet.GameServer\Handlers\AccountModule.cs:1384:            SendEmptyStartupPush(session, "NotifyDlcChipAssistChipId");
+AscNet.GameServer\Handlers\AccountModule.cs:1385:            SendEmptyStartupPush(session, "NotifyTheatre5ActivityData");
+AscNet.GameServer\Handlers\AccountModule.cs:1390:            SendEmptyStartupPush(session, "NotifyNameplateLoginData");
+AscNet.GameServer\Handlers\AccountModule.cs:1391:            SendEmptyStartupPush(session, "NotifyGuildDormPlayerData");
+AscNet.GameServer\Handlers\AccountModule.cs:1393:            SendEmptyStartupPush(session, "NotifyHoldRegressionData");
+AscNet.GameServer\Handlers\AccountModule.cs:1394:            SendEmptyStartupPush(session, "NotifyHoldRegressionIgnoreChannel");
+AscNet.GameServer\Handlers\AccountModule.cs:1395:            SendEmptyStartupPush(session, "NotifyBountyTaskInfo");
+AscNet.GameServer\Handlers\AccountModule.cs:1401:            SendEmptyStartupPush(session, "NotifyLoginItemCollectionData");
+AscNet.GameServer\Handlers\AccountModule.cs:1405:            SendEmptyStartupPush(session, "NotifyAccumulateExpendData");
+AscNet.GameServer\Handlers\AccountModule.cs:1414:            SendEmptyStartupPush(session, "NotifyBountyChallengeMonsterDifficultyState");
+AscNet.GameServer\Handlers\AccountModule.cs:1416:            SendEmptyStartupPush(session, "NotifyCerberusGameData");
+AscNet.GameServer\Handlers\AccountModule.cs:1417:            SendEmptyStartupPush(session, "NotifyLoginCharacterTowerData");
+AscNet.GameServer\Handlers\AccountModule.cs:1418:            SendEmptyStartupPush(session, "NotifyClickClearData");
+AscNet.GameServer\Handlers\AccountModule.cs:1419:            SendEmptyStartupPush(session, "NotifyClientVersion");
+AscNet.GameServer\Handlers\AccountModule.cs:1420:            SendEmptyStartupPush(session, "NotifyColorTableActivityData");
+AscNet.GameServer\Handlers\AccountModule.cs:1421:            SendEmptyStartupPush(session, "NotifyCommunityData");
+AscNet.GameServer\Handlers\AccountModule.cs:1423:            SendEmptyStartupPush(session, "NotifyCoupletData");
+AscNet.GameServer\Handlers\AccountModule.cs:1424:            SendEmptyStartupPush(session, "NotifyCourseData");
+AscNet.GameServer\Handlers\AccountModule.cs:1425:            SendEmptyStartupPush(session, "NotifyDoomsdayDbChange");
+AscNet.GameServer\Handlers\AccountModule.cs:1428:            SendEmptyStartupPush(session, "NotifyEscapeData");
+AscNet.GameServer\Handlers\AccountModule.cs:1429:            SendEmptyStartupPush(session, "NotifyExperimentData");
+AscNet.GameServer\Handlers\AccountModule.cs:1443:            SendEmptyStartupPush(session, "NotifyFestivalData");
+AscNet.GameServer\Handlers\AccountModule.cs:1444:            SendEmptyStartupPush(session, "NotifyKotodamaData");
+AscNet.GameServer\Handlers\AccountModule.cs:1445:            SendEmptyStartupPush(session, "NotifyMazeData");
+AscNet.GameServer\Handlers\AccountModule.cs:1446:            SendEmptyStartupPush(session, "NotifyMechanismDataDb");
+AscNet.GameServer\Handlers\AccountModule.cs:1451:            SendEmptyStartupPush(session, "NotifyGame2048DataDb");
+AscNet.GameServer\Handlers\AccountModule.cs:1452:            SendEmptyStartupPush(session, "NotifyGameCollectionData");
+AscNet.GameServer\Handlers\AccountModule.cs:1454:            SendEmptyStartupPush(session, "NotifyGoldenMinerGameInfo");
+AscNet.GameServer\Handlers\AccountModule.cs:1455:            SendEmptyStartupPush(session, "NotifyGuildSignPlayerData");
+AscNet.GameServer\Handlers\AccountModule.cs:1456:            SendEmptyStartupPush(session, "NotifyItemRestrictLoginData");
+AscNet.GameServer\Handlers\AccountModule.cs:1458:            SendEmptyStartupPush(session, "NotifySelfChoiceLottoData");
+AscNet.GameServer\Handlers\AccountModule.cs:1460:            SendEmptyStartupPush(session, "NotifyNonogramData");
+AscNet.GameServer\Handlers\AccountModule.cs:1461:            SendEmptyStartupPush(session, "NotifyPivotCombatData");
+AscNet.GameServer\Handlers\AccountModule.cs:1462:            SendEmptyStartupPush(session, "NotifySettingLoadingOption");
+AscNet.GameServer\Handlers\AccountModule.cs:1464:            SendEmptyStartupPush(session, "NotifyPlayerReportData");
+AscNet.GameServer\Handlers\AccountModule.cs:1465:            SendEmptyStartupPush(session, "NotifySameColorGameData");
+AscNet.GameServer\Handlers\AccountModule.cs:1467:            SendEmptyStartupPush(session, "NotifySucceedBossData");
+AscNet.GameServer\Handlers\AccountModule.cs:1468:            SendEmptyStartupPush(session, "NotifyTaikoMasterData");
+AscNet.GameServer\Handlers\AccountModule.cs:1469:            SendEmptyStartupPush(session, "NotifyTheatreData");
+AscNet.GameServer\Handlers\AccountModule.cs:1475:            SendEmptyStartupPush(session, "NotifyTurntableData");
+AscNet.GameServer\Handlers\AccountModule.cs:1477:            SendEmptyStartupPush(session, "NotifyWheelchairManualActivity");
+AscNet.GameServer\Handlers\AccountModule.cs:1478:            SendEmptyStartupPush(session, "NotifyTheatre4ActivityData");
+AscNet.GameServer\Handlers\AccountModule.cs:1479:            SendEmptyStartupPush(session, "NotifyRestaurantData");
+AscNet.GameServer\Handlers\AccountModule.cs:1480:            SendEmptyStartupPush(session, "NotifyBlackRockChessData");
+AscNet.GameServer\Handlers\AccountModule.cs:1484:            SendEmptyStartupPush(session, "NotifyReviewConfig");
+AscNet.GameServer\Handlers\AccountModule.cs:1486:            SendEmptyStartupPush(session, "NotifyMentorData");
+AscNet.GameServer\Handlers\AccountModule.cs:1487:            SendEmptyStartupPush(session, "NotifyMentorChat");
+AscNet.GameServer\Handlers\AccountModule.cs:1488:            SendEmptyStartupPush(session, "NotifyGuildData");
+AscNet.GameServer\Handlers\AccountModule.cs:1498:            SendEmptyStartupPush(session, "NotifyGuildWarActivityData");
+AscNet.GameServer\Handlers\AccountModule.cs:1499:            SendEmptyStartupPush(session, "NotifyWheelchairManualActivityUpdate");
+AscNet.GameServer\Handlers\AccountModule.cs:1562:                Quality = character.Quality,
+AscNet.GameServer\Handlers\AccountModule.cs:1563:                InitQuality = character.InitQuality,
+AscNet.GameServer\Handlers\AccountModule.cs:1564:                Star = character.Star,
+AscNet.GameServer\Handlers\AccountModule.cs:1565:                Grade = character.Grade,
+AscNet.GameServer\Handlers\AccountModule.cs:1576:                TrustLv = character.TrustLv,
+AscNet.GameServer\Handlers\AccountModule.cs:1579:                LiberateLv = character.LiberateLv,
+AscNet.GameServer\Handlers\ArenaModule.cs:99:        public List<int> QualityList { get; set; } = new();
+AscNet.GameServer\Handlers\ArenaModule.cs:254:            long activeFrames = Math.Max(0, result.SettleFrame - result.StartFrame - result.PauseFrame);
+AscNet.GameServer\Handlers\BfrtModule.cs:30:        CourseRewardStar = state.CourseRewardStar
+AscNet.GameServer\Handlers\BfrtModule.cs:182:            .Where(reward => reward.RewardIds > 0 && reward.CourseStars > state.CourseRewardStar && reward.CourseStars <= passed)
+AscNet.GameServer\Handlers\BfrtModule.cs:183:            .OrderBy(reward => reward.CourseStars).FirstOrDefault();
+AscNet.GameServer\Handlers\BfrtModule.cs:189:            state.CourseRewardStar = row.CourseStars;
+AscNet.GameServer\Handlers\BfrtModule.cs:193:        session.SendResponse(new BfrtReceiveCourseRewardResponse { Code = row is null ? Invalid : 0, CourseRewardStar = state.CourseRewardStar, RewardGoodsList = goods }, packet.Id);
+AscNet.GameServer\Handlers\BiancaTheatreModule.cs:88:        private const int CapturedStartChapterId = 1;
+AscNet.GameServer\Handlers\BiancaTheatreModule.cs:140:                ChapterId = CapturedStartChapterId,
+AscNet.GameServer\Handlers\BiancaTheatreModule.cs:321:                            ["Quality"] = 0,
+AscNet.GameServer\Handlers\BiancaTheatreModule.cs:322:                            ["Grade"] = 0,
+AscNet.GameServer\Handlers\BiancaTheatreModule.cs:459:            CharacterQualityTable? characterQuality = TableReaderV2.Parse<CharacterQualityTable>()
+AscNet.GameServer\Handlers\BiancaTheatreModule.cs:461:                .OrderBy(row => row.Quality)
+AscNet.GameServer\Handlers\BiancaTheatreModule.cs:463:            if (character is null || characterSkill is null || characterQuality is null)
+AscNet.GameServer\Handlers\BiancaTheatreModule.cs:470:                Quality = characterQuality.Quality,
+AscNet.GameServer\Handlers\BiancaTheatreModule.cs:471:                InitQuality = characterQuality.Quality,
+AscNet.GameServer\Handlers\BiancaTheatreModule.cs:472:                Grade = 1,
+AscNet.GameServer\Handlers\BiancaTheatreModule.cs:474:                TrustLv = 1,
+AscNet.GameServer\Handlers\BiancaTheatreModule.cs:475:                LiberateLv = 1,
+AscNet.GameServer\Handlers\BossInshotModule.cs:155:                    bool negate = value.StartsWith('!');
+AscNet.GameServer\Handlers\BossInshotModule.cs:1091:                    bool negate = value.StartsWith('!');
+AscNet.GameServer\Handlers\BossModule.cs:189:        private static int CurrentAfreshId => Grades.Value.Max(row => row.AfreshId);
+AscNet.GameServer\Handlers\BossModule.cs:191:        private static readonly Lazy<List<BossSingleGradeTable>> Grades = new(() =>
+AscNet.GameServer\Handlers\BossModule.cs:192:            TableReaderV2.Parse<BossSingleGradeTable>().OrderBy(row => row.LevelType).ToList());
+AscNet.GameServer\Handlers\BossModule.cs:197:        private static readonly Lazy<List<BossSingleChallengeGradeTable>> ChallengeGrades = new(() =>
+AscNet.GameServer\Handlers\BossModule.cs:198:            TableReaderV2.Parse<BossSingleChallengeGradeTable>());
+AscNet.GameServer\Handlers\BossModule.cs:223:        private static readonly Lazy<List<BossSingleTrialGradeTable>> TrialGrades = new(() =>
+AscNet.GameServer\Handlers\BossModule.cs:224:            TableReaderV2.Parse<BossSingleTrialGradeTable>());
+AscNet.GameServer\Handlers\BossModule.cs:337:            if (!CanConsumeAttempt(state, ResolveGrade(state.BossLevelType), sectionId, history.Characters, stageStatus))
+AscNet.GameServer\Handlers\BossModule.cs:487:                if (!CanConsumeAttempt(state, ResolveGrade(state.BossLevelType), sectionId, characters, stageStatus))
+AscNet.GameServer\Handlers\BossModule.cs:585:            BossSingleGradeTable? grade = state.BossLevelType > 0 ? ResolveGrade(state.BossLevelType) : null;
+AscNet.GameServer\Handlers\BossModule.cs:668:            BossSingleGradeTable? normalGrade)
+AscNet.GameServer\Handlers\BossModule.cs:670:            if (normalGrade is null || state.BossActivityNo <= 0)
+AscNet.GameServer\Handlers\BossModule.cs:673:            BossSingleChallengeGradeTable? challengeGrade = ChallengeGrades.Value
+AscNet.GameServer\Handlers\BossModule.cs:674:                .Where(row => normalGrade.GradeType >= row.NeedGradeType
+AscNet.GameServer\Handlers\BossModule.cs:678:            if (challengeGrade is null
+AscNet.GameServer\Handlers\BossModule.cs:679:                || !Groups.Value.TryGetValue(challengeGrade.BossGroupId, out BossSingleGroupTable? group))
+AscNet.GameServer\Handlers\BossModule.cs:690:                $"{state.BossActivityNo}:{challengeGrade.LevelType}:{challengeGrade.BossGroupId}") % (uint)sections.Count));
+AscNet.GameServer\Handlers\BossModule.cs:692:                $"{state.BossActivityNo}:{challengeGrade.LevelType}:feature") % (uint)ChallengeFeatureGroups.Value.Count));
+AscNet.GameServer\Handlers\BossModule.cs:702:            return (challengeGrade.LevelType, selectedSection.TableId, featureGroupId);
+AscNet.GameServer\Handlers\BossModule.cs:714:            int take = ChallengeGrades.Value.FirstOrDefault(row => row.LevelType == levelType)?.RankStageNum ?? 0;
+AscNet.GameServer\Handlers\BossModule.cs:741:            var challenge = ResolveChallengeData(state, state.BossLevelType > 0 ? ResolveGrade(state.BossLevelType) : null);
+AscNet.GameServer\Handlers\BossModule.cs:850:                StageStarInfos = stageIds.Select(stageId =>
+AscNet.GameServer\Handlers\BossModule.cs:856:                        ["StarsMark"] = checked((int)(stage?.StarsMark ?? 0))
+AscNet.GameServer\Handlers\BossModule.cs:877:            BossSingleGradeTable grade = ResolveGrade(state.BossLevelType);
+AscNet.GameServer\Handlers\BossModule.cs:971:            BossSingleGradeTable grade = ResolveGrade(state.BossLevelType);
+AscNet.GameServer\Handlers\BossModule.cs:1088:                settle.SettleFrame - settle.StartFrame - settle.PauseFrame));
+AscNet.GameServer\Handlers\BossModule.cs:1218:            foreach (BossSingleTrialGradeTable catalog in TrialGrades.Value)
+AscNet.GameServer\Handlers\BossModule.cs:1228:            BossSingleGradeTable? grade = state.BossLevelType > 0 ? ResolveGrade(state.BossLevelType) : null;
+AscNet.GameServer\Handlers\BossModule.cs:1309:            int previousGrade = state.BossOldLevelType > 0
+AscNet.GameServer\Handlers\BossModule.cs:1310:                ? ResolveGrade(state.BossOldLevelType).GradeType
+AscNet.GameServer\Handlers\BossModule.cs:1312:            foreach (BossSingleGradeTable grade in Grades.Value.Where(row =>
+AscNet.GameServer\Handlers\BossModule.cs:1316:                         && (row.PreGradeType == 0
+AscNet.GameServer\Handlers\BossModule.cs:1317:                             || (previousGrade >= row.PreGradeType && state.BossMaxScore >= row.NeedScore))))
+AscNet.GameServer\Handlers\BossModule.cs:1362:                var challenge = ResolveChallengeData(state, state.BossLevelType > 0 ? ResolveGrade(state.BossLevelType) : null);
+AscNet.GameServer\Handlers\BossModule.cs:1397:            BossSingleTrialGradeTable? catalog = TrialGrades.Value.FirstOrDefault(row =>
+AscNet.GameServer\Handlers\BossModule.cs:1437:        private static BossSingleGradeTable ResolveGrade(int levelType) =>
+AscNet.GameServer\Handlers\BossModule.cs:1438:            Grades.Value.SingleOrDefault(row => row.LevelType == levelType)
+AscNet.GameServer\Handlers\BossModule.cs:1446:            Grades.Value
+AscNet.GameServer\Handlers\BossModule.cs:1448:                    && row.PreGradeType == 0
+AscNet.GameServer\Handlers\BossModule.cs:1470:            BossSingleGradeTable grade,
+AscNet.GameServer\Handlers\BossModule.cs:1510:        private static int CurrentChallengeLimit(BossSingleGradeTable grade, long? now)
+AscNet.GameServer\Handlers\BossModule.cs:1654:                    ["LiberateLv"] = 0
+AscNet.GameServer\Handlers\ChatModule.cs:223:            string? content = request.ChatData.Content?.TrimStart('\r', '\n');
+AscNet.GameServer\Handlers\ChatModule.cs:230:            if (content?.StartsWith('/') == true)
+AscNet.GameServer\Handlers\ChatModule.cs:283:                Content = chatData.Content?.TrimStart('\r', '\n'),
+AscNet.GameServer\Handlers\CurrentClientStudyTables.cs:118:            if (string.IsNullOrWhiteSpace(path) || !path.StartsWith("en/bytes/", StringComparison.Ordinal) || !path.EndsWith(".json", StringComparison.Ordinal))
+AscNet.GameServer\Handlers\DlcModule.cs:167:    public class StartFightNotify
+AscNet.GameServer\Handlers\DlcModule.cs:324:            session.PendingBigWorldStartFightNotify = true;
+AscNet.GameServer\Handlers\DlcModule.cs:487:                    "RpcNpcInteractStartNotify",
+AscNet.GameServer\Handlers\DlcModule.cs:634:                ["Quality"] = reward.Quality,
+AscNet.GameServer\Handlers\DlcModule.cs:635:                ["Grade"] = reward.Grade,
+AscNet.GameServer\Handlers\DlcModule.cs:1627:                int keyStart = checked((int)reader.Consumed);
+AscNet.GameServer\Handlers\DlcModule.cs:1629:                int keyLength = checked((int)reader.Consumed) - keyStart;
+AscNet.GameServer\Handlers\DlcModule.cs:1636:                writer.WriteRaw(payload.AsSpan(keyStart, keyLength));
+AscNet.GameServer\Handlers\DlcModule.cs:2230:        internal static void SendPendingBigWorldStartFightNotify(Session session)
+AscNet.GameServer\Handlers\DlcModule.cs:2232:            if (!session.PendingBigWorldStartFightNotify)
+AscNet.GameServer\Handlers\DlcModule.cs:2235:            session.PendingBigWorldStartFightNotify = false;
+AscNet.GameServer\Handlers\DlcModule.cs:2236:            session.SendPush(new StartFightNotify());
+AscNet.GameServer\Handlers\DormModule.Quests.cs:172:        List<PlayerDormPendingReward> pendingRewards = session.player.Dorm.PendingRewards.Where(pending => pending.Key.StartsWith($"dorm-quest:{session.player.PlayerData.Id}:", StringComparison.Ordinal)).ToList();
+AscNet.GameServer\Handlers\DormModule.Quests.cs:174:            ? state.QuestAccept.Where(accept => pendingRewards.Any(pending => pending.Key.StartsWith(QuestClaimPrefix(session, accept), StringComparison.Ordinal))).ToList()
+AscNet.GameServer\Handlers\DormModule.Quests.cs:182:            ? pendingRewards.Where(pending => completed.Any(accept => pending.Key.StartsWith(QuestClaimPrefix(session, accept), StringComparison.Ordinal))).Select(pending => new RewardGrant(pending.Key, pending.Goods.Select(good => new AscNet.Table.V2.share.reward.RewardGoodsTable { Id = good.Id, TemplateId = good.TemplateId, Count = good.Count, Params = good.Params.ToList() }).ToList())).ToList()
+AscNet.GameServer\Handlers\DormModule.Rooms.cs:173:    private static Dictionary<string, int> DormConfig() => TableReaderV2.Parse<ConfigTable>().Where(x => x.Key.StartsWith("Dorm", StringComparison.Ordinal)).ToDictionary(x => x.Key, x => int.TryParse(x.Value, NumberStyles.Integer, CultureInfo.InvariantCulture, out int value) ? value : 0);
+AscNet.GameServer\Handlers\DrawModule.cs:136:        public long StartTime { get; set; }
+AscNet.GameServer\Handlers\DrawModule.cs:174:        public long StartTime { get; set; }
+AscNet.GameServer\Handlers\DrawModule.cs:235:        public long StartTime { get; set; }
+AscNet.GameServer\Handlers\DrawModule.cs:248:        private static readonly Lazy<Dictionary<int, int>> CharacterMinQualityById = new(() => TableReaderV2.Parse<CharacterQualityTable>()
+AscNet.GameServer\Handlers\DrawModule.cs:250:            .ToDictionary(group => group.Key, group => group.Min(x => x.Quality)));
+AscNet.GameServer\Handlers\DrawModule.cs:251:        private static readonly Lazy<Dictionary<int, int>> EquipQualityById = new(() => TableReaderV2.Parse<EquipTable>()
+AscNet.GameServer\Handlers\DrawModule.cs:252:            .ToDictionary(x => x.Id, x => x.Quality));
+AscNet.GameServer\Handlers\DrawModule.cs:253:        private static readonly Lazy<Dictionary<int, int>> ItemQualityById = new(() => TableReaderV2.Parse<ItemTable>()
+AscNet.GameServer\Handlers\DrawModule.cs:254:            .ToDictionary(x => x.Id, x => x.Quality));
+AscNet.GameServer\Handlers\DrawModule.cs:446:                    $"quality={reward.Quality} " +
+AscNet.GameServer\Handlers\DrawModule.cs:447:                    $"showQuality={reward.ShowQuality} " +
+AscNet.GameServer\Handlers\DrawModule.cs:448:                    $"grade={reward.Grade} " +
+AscNet.GameServer\Handlers\DrawModule.cs:496:            int quality = GetDrawRewardQuality(reward, convertFrom);
+AscNet.GameServer\Handlers\DrawModule.cs:497:            int showQuality = GetDrawShowQuality(reward, quality, convertFrom);
+AscNet.GameServer\Handlers\DrawModule.cs:506:                Quality = quality,
+AscNet.GameServer\Handlers\DrawModule.cs:507:                Grade = grade,
+AscNet.GameServer\Handlers\DrawModule.cs:510:                ShowQuality = showQuality,
+AscNet.GameServer\Handlers\DrawModule.cs:517:        private static int GetDrawRewardQuality(Reward reward, int convertFrom)
+AscNet.GameServer\Handlers\DrawModule.cs:524:                RewardType.Character => CharacterMinQualityById.Value.GetValueOrDefault(reward.Id),
+AscNet.GameServer\Handlers\DrawModule.cs:525:                RewardType.Equip or RewardType.BaseEquip => EquipQualityById.Value.GetValueOrDefault(reward.Id),
+AscNet.GameServer\Handlers\DrawModule.cs:526:                RewardType.Item or RewardType.DrawTicket => ItemQualityById.Value.GetValueOrDefault(reward.Id),
+AscNet.GameServer\Handlers\DrawModule.cs:531:        private static int GetDrawShowQuality(Reward reward, int quality, int convertFrom)
+AscNet.GameServer\Handlers\DrawModule.cs:546:            return CharacterMinQualityById.Value.ContainsKey(characterId);
+AscNet.GameServer\Handlers\Drops\DropsHandler.cs:19:        public const int StarryHairclip = 1001;
+AscNet.GameServer\Handlers\Drops\DropsHandler.cs:50:        public const int FiveStarWeaponDrop = 10004;
+AscNet.GameServer\Handlers\Drops\DropsHandler.cs:51:        public const int FourStarWeaponDrop = 10005;
+AscNet.GameServer\Handlers\Drops\DropsHandler.cs:52:        public const int ThreeStarWeaponDrop = 10006;
+AscNet.GameServer\Handlers\Drops\DropsHandler.cs:53:        public const int TwoStarWeaponDrop = 10007;
+AscNet.GameServer\Handlers\Drops\DropsHandler.cs:54:        public const int FiveStarMemoryDrop = 10009;
+AscNet.GameServer\Handlers\Drops\DropsHandler.cs:55:        public const int FourStarMemoryDrop = 10010;
+AscNet.GameServer\Handlers\Drops\DropsHandler.cs:56:        public const int ThreeStarMemoryDrop = 10011;
+AscNet.GameServer\Handlers\Drops\DropsHandler.cs:57:        public const int TwoStarMemoryDrop = 10012;
+AscNet.GameServer\Handlers\Drops\DropsHandler.cs:58:        public const int FiveStarEquipmentDrop = 10013;
+AscNet.GameServer\Handlers\Drops\DropsHandler.cs:59:        public const int FourStarEquipmentDrop = 10014;
+AscNet.GameServer\Handlers\Drops\DropsHandler.cs:60:        public const int ThreeStarEquipmentDrop = 10015;
+AscNet.GameServer\Handlers\Drops\DropsHandler.cs:61:        public const int TwoStarEquipmentDrop = 10016;
+AscNet.GameServer\Handlers\Drops\DropsHandler.cs:62:        public const int OneStarEquipmentDrop = 10017;
+AscNet.GameServer\Handlers\Drops\DropsHandler.cs:63:        public const int TwoToFourStarEquipmentDrop = 10018;
+AscNet.GameServer\Handlers\Drops\DropsHandler.cs:66:        public const int FiveStarHQFacility = 10036;
+AscNet.GameServer\Handlers\Drops\DropsHandler.cs:67:        public const int FourStarHQFacility = 10037;
+AscNet.GameServer\Handlers\Drops\DropsHandler.cs:68:        public const int ThreeStarHQFacility = 10038;
+AscNet.GameServer\Handlers\Drops\DropsHandler.cs:69:        public const int ThreeToSixStarEquipmentDrop = 10039;
+AscNet.GameServer\Handlers\Drops\DropsHandler.cs:70:        public const int ThreeToFiveStarEquipmentDrop = 10040;
+AscNet.GameServer\Handlers\Drops\DropsHandler.cs:79:        public const int SixStarEquipmentDrop = 10049;
+AscNet.GameServer\Handlers\Drops\DropsHandler.cs:80:        public const int SixStarWeaponDrop = 10050;
+AscNet.GameServer\Handlers\Drops\DropsHandler.cs:81:        public const int SixStarMemoryDrop = 10051;
+AscNet.GameServer\Handlers\Drops\DropsHandler.cs:123:        [DropHandler(TwoStarMemoryDrop)]
+AscNet.GameServer\Handlers\Drops\DropsHandler.cs:124:        public static IEnumerable<DropHandlerRet> TwoStarMemoryDropHandler(Session session, int count)
+AscNet.GameServer\Handlers\Drops\DropsHandler.cs:130:        [DropHandler(ThreeStarMemoryDrop)]
+AscNet.GameServer\Handlers\Drops\DropsHandler.cs:131:        public static IEnumerable<DropHandlerRet> ThreeStarMemoryDropHandler(Session session, int count)
+AscNet.GameServer\Handlers\Drops\DropsHandler.cs:137:        [DropHandler(FourStarMemoryDrop)]
+AscNet.GameServer\Handlers\Drops\DropsHandler.cs:138:        public static IEnumerable<DropHandlerRet> FourStarMemoryDropHandler(Session session, int count)
+AscNet.GameServer\Handlers\Drops\DropsHandler.cs:144:        [DropHandler(FiveStarMemoryDrop)]
+AscNet.GameServer\Handlers\Drops\DropsHandler.cs:145:        public static IEnumerable<DropHandlerRet> FiveStarMemoryDropHandler(Session session, int count)
+AscNet.GameServer\Handlers\Drops\DropsHandler.cs:151:        [DropHandler(SixStarMemoryDrop)]
+AscNet.GameServer\Handlers\Drops\DropsHandler.cs:152:        public static IEnumerable<DropHandlerRet> SixStarMemoryDropHandler(Session session, int count)
+AscNet.GameServer\Handlers\Drops\DropsHandler.cs:160:            EquipTable[] memoryPool = TableReaderV2.Parse<EquipTable>().Where(x => x.Type == 0 && x.Quality == quality).ToArray();
+AscNet.GameServer\Handlers\Drops\DropsHandler.cs:170:                    Quality = equip.Quality,
+AscNet.GameServer\Handlers\Drops\DropsHandler.cs:257:        public int Quality { get; set;}
+AscNet.GameServer\Handlers\EquipModule.cs:308:        public List<int> StarList = new();
+AscNet.GameServer\Handlers\EquipModule.cs:1197:                || (equipTable.Site == 0 && equipTable.Quality >= 6);
+AscNet.GameServer\Handlers\EquipModule.cs:1299:                if (!attribPoolIds.Any() && equipTable.Site == 0 && equipTable.Quality == 5)
+AscNet.GameServer\Handlers\EquipModule.cs:1919:                .Any(row => row.SuitId == request.SuitId && row.Quality == 6);
+AscNet.GameServer\Handlers\EquipModule.cs:1984:            if (request.StarList is null
+AscNet.GameServer\Handlers\EquipModule.cs:1985:                || request.StarList.Distinct().Count() != request.StarList.Count
+AscNet.GameServer\Handlers\EquipModule.cs:1986:                || request.StarList.Any(star => star is < 1 or > 5)
+AscNet.GameServer\Handlers\EquipModule.cs:1995:                RecycleStar = request.StarList.Order().ToList(),
+AscNet.GameServer\Handlers\EquipModule.cs:2096:                    || template.Star > 5
+AscNet.GameServer\Handlers\EquipModule.cs:2315:                    && table.Star == equipTable.Star
+AscNet.GameServer\Handlers\ExhibitionModule.cs:40:                && character.LiberateLv < precedingReward.LevelId)
+AscNet.GameServer\Handlers\ExhibitionModule.cs:72:        private static int CountBoundResonances(Session session, CharacterData character, int minimumQuality)
+AscNet.GameServer\Handlers\ExhibitionModule.cs:79:                    && template.Quality >= minimumQuality)
+AscNet.GameServer\Handlers\ExhibitionModule.cs:129:            character!.LiberateLv = Math.Max(character.LiberateLv, exhibitionReward.LevelId);
+AscNet.GameServer\Handlers\FashionStoryModule.cs:107:                    bool negate = value.StartsWith('!');
+AscNet.GameServer\Handlers\FightModule.cs:103:        public int AddStars { get; set; }
+AscNet.GameServer\Handlers\FightModule.cs:105:        public long StartFrame { get; set; }
+AscNet.GameServer\Handlers\FightModule.cs:325:            UnknownPartnerQuality,
+AscNet.GameServer\Handlers\FightModule.cs:372:        private static readonly Lazy<IReadOnlyDictionary<(int PartnerId, int Quality), PartnerQualityTable>> PartnerQualityRowsByIdAndQuality = new(() =>
+AscNet.GameServer\Handlers\FightModule.cs:373:            TableReaderV2.Parse<PartnerQualityTable>()
+AscNet.GameServer\Handlers\FightModule.cs:374:                .ToDictionary(row => (row.PartnerId, row.Quality)));
+AscNet.GameServer\Handlers\FightModule.cs:415:            DlcModule.SendPendingBigWorldStartFightNotify(session);
+AscNet.GameServer\Handlers\FightModule.cs:498:                    StarsMark = 0,
+AscNet.GameServer\Handlers\FightModule.cs:768:                        Quality = Convert.ToInt32(robot.CharacterQuality),
+AscNet.GameServer\Handlers\FightModule.cs:769:                        InitQuality = Convert.ToInt32(robot.CharacterQuality),
+AscNet.GameServer\Handlers\FightModule.cs:770:                        Star = Convert.ToInt32(robot.CharacterStar),
+AscNet.GameServer\Handlers\FightModule.cs:771:                        Grade = Convert.ToInt32(robot.CharacterGrade),
+AscNet.GameServer\Handlers\FightModule.cs:775:                        TrustLv = 1,
+AscNet.GameServer\Handlers\FightModule.cs:778:                        LiberateLv = robot.LiberateLv ?? 0,
+AscNet.GameServer\Handlers\FightModule.cs:1005:            Quality = source.Quality,
+AscNet.GameServer\Handlers\FightModule.cs:1006:            InitQuality = source.InitQuality,
+AscNet.GameServer\Handlers\FightModule.cs:1007:            Star = source.Star,
+AscNet.GameServer\Handlers\FightModule.cs:1008:            Grade = source.Grade,
+AscNet.GameServer\Handlers\FightModule.cs:1014:            TrustLv = source.TrustLv,
+AscNet.GameServer\Handlers\FightModule.cs:1017:            LiberateLv = source.LiberateLv,
+AscNet.GameServer\Handlers\FightModule.cs:1359:                or TeamPrefabValidationFailure.UnknownPartnerQuality
+AscNet.GameServer\Handlers\FightModule.cs:1385:                    && PartnerQualityRowsByIdAndQuality.Value.TryGetValue(
+AscNet.GameServer\Handlers\FightModule.cs:1386:                        (ownedPartner.TemplateId, ownedPartner.Quality),
+AscNet.GameServer\Handlers\FightModule.cs:1387:                        out PartnerQualityTable? qualityRow))
+AscNet.GameServer\Handlers\FightModule.cs:1400:                    + $"quality={ownedPartner?.Quality},passiveLimit={passiveLimit},"
+AscNet.GameServer\Handlers\FightModule.cs:2212:            if (!PartnerQualityRowsByIdAndQuality.Value.TryGetValue(
+AscNet.GameServer\Handlers\FightModule.cs:2213:                    (partner.TemplateId, partner.Quality),
+AscNet.GameServer\Handlers\FightModule.cs:2214:                    out PartnerQualityTable? qualityRow))
+AscNet.GameServer\Handlers\FightModule.cs:2216:                failure = TeamPrefabValidationFailure.UnknownPartnerQuality;
+AscNet.GameServer\Handlers\FightModule.cs:2398:                    strongholdStageDatum.StarsMark |= 7;
+AscNet.GameServer\Handlers\FightModule.cs:2672:            long stageStarsMark = (previousStageData?.StarsMark ?? 0L) | (isQuickClear ? 0L : 7L);
+AscNet.GameServer\Handlers\FightModule.cs:2676:                stageStarsMark,
+AscNet.GameServer\Handlers\FightModule.cs:2688:                    (previousLuosaitaProgressStageData?.StarsMark ?? 0L) | 7L,
+AscNet.GameServer\Handlers\FightModule.cs:2743:                    StarsMark = (int)stageData.StarsMark,
+AscNet.GameServer\Handlers\FightModule.cs:2831:                    StarsMark = 0,
+AscNet.GameServer\Handlers\FightModule.cs:2854:                StarsMark = starsMark,
+AscNet.GameServer\Handlers\MailModule.cs:299:                    entry.Quality = goods.Params.Count > 1 ? goods.Params[1] : 0;
+AscNet.GameServer\Handlers\MailModule.cs:300:                    entry.Grade = goods.Params.Count > 2 ? goods.Params[2] : 0;
+AscNet.GameServer\Handlers\MailModule.cs:366:        private static MailRewardGoods ToMailGoods(PlayerMailRewardGoods goods) => new() { RewardType = goods.RewardType, TemplateId = goods.TemplateId, Count = goods.Count, Level = goods.Level, Quality = goods.Quality, Grade = goods.Grade, Breakthrough = goods.Breakthrough, ConvertFrom = goods.ConvertFrom, IsGift = goods.IsGift, RewardMulti = goods.RewardMulti, Id = goods.Id };
+AscNet.GameServer\Handlers\MailModule.cs:367:        private static MailRewardGoods ToMailGoods(RewardGoods goods) => new() { RewardType = goods.RewardType, TemplateId = (uint)goods.TemplateId, Count = goods.Count, Level = goods.Level, Quality = goods.Quality, Grade = goods.Grade, Breakthrough = goods.Breakthrough, ConvertFrom = goods.ConvertFrom, IsGift = goods.IsGift, RewardMulti = goods.RewardMulti, Id = goods.Id };
+AscNet.GameServer\Handlers\PartnerModule.cs:99:    public class PartnerStarActivateRequest
+AscNet.GameServer\Handlers\PartnerModule.cs:106:    public class PartnerStarActivateResponse
+AscNet.GameServer\Handlers\PartnerModule.cs:418:                PartnerQualityTable? qualityConfig = null;
+AscNet.GameServer\Handlers\PartnerModule.cs:419:                foreach (PartnerQualityTable row in TableReaderV2.Parse<PartnerQualityTable>())
+AscNet.GameServer\Handlers\PartnerModule.cs:421:                    if (row.PartnerId != partner.TemplateId || row.Quality != partner.Quality)
+AscNet.GameServer\Handlers\PartnerModule.cs:477:        [RequestPacketHandler("PartnerStarActivateRequest")]
+AscNet.GameServer\Handlers\PartnerModule.cs:478:        public static void PartnerStarActivateRequestHandler(Session session, Packet.Request packet)
+AscNet.GameServer\Handlers\PartnerModule.cs:480:            PartnerStarActivateRequest request = packet.Deserialize<PartnerStarActivateRequest>();
+AscNet.GameServer\Handlers\PartnerModule.cs:486:            PartnerQualityTable? qualityConfig = partner is null
+AscNet.GameServer\Handlers\PartnerModule.cs:488:                : TableReaderV2.Parse<PartnerQualityTable>()
+AscNet.GameServer\Handlers\PartnerModule.cs:489:                    .Find(row => row.PartnerId == partner.TemplateId && row.Quality == partner.Quality);
+AscNet.GameServer\Handlers\PartnerModule.cs:490:            int targetSchedule = qualityConfig?.StarCostChipCount.LastOrDefault(value => value > 0) ?? 0;
+AscNet.GameServer\Handlers\PartnerModule.cs:497:                || partner.StarSchedule < 0 || partner.StarSchedule % 30 != 0
+AscNet.GameServer\Handlers\PartnerModule.cs:498:                || partner.StarSchedule >= targetSchedule
+AscNet.GameServer\Handlers\PartnerModule.cs:499:                || materials.Count > (targetSchedule - partner.StarSchedule) / 30)
+AscNet.GameServer\Handlers\PartnerModule.cs:501:                session.SendResponse(new PartnerStarActivateResponse { Code = ErrorCode }, packet.Id);
+AscNet.GameServer\Handlers\PartnerModule.cs:507:            partner.StarSchedule += materials.Count * 30;
+AscNet.GameServer\Handlers\PartnerModule.cs:514:            session.SendResponse(new PartnerStarActivateResponse(), packet.Id);
+AscNet.GameServer\Handlers\PartnerModule.cs:522:            PartnerQualityTable? qualityConfig = partner is null
+AscNet.GameServer\Handlers\PartnerModule.cs:524:                : TableReaderV2.Parse<PartnerQualityTable>()
+AscNet.GameServer\Handlers\PartnerModule.cs:525:                    .Find(row => row.PartnerId == partner.TemplateId && row.Quality == partner.Quality);
+AscNet.GameServer\Handlers\PartnerModule.cs:526:            bool hasNextQuality = partner is not null && TableReaderV2.Parse<PartnerQualityTable>()
+AscNet.GameServer\Handlers\PartnerModule.cs:527:                .Any(row => row.PartnerId == partner.TemplateId && row.Quality == partner.Quality + 1);
+AscNet.GameServer\Handlers\PartnerModule.cs:530:            if (partner is null || qualityConfig is null || !hasNextQuality
+AscNet.GameServer\Handlers\PartnerModule.cs:531:                || partner.StarSchedule != qualityConfig.StarCostChipCount.LastOrDefault(value => value > 0)
+AscNet.GameServer\Handlers\PartnerModule.cs:541:            partner.Quality++;
+AscNet.GameServer\Handlers\PartnerModule.cs:635:                if (fieldName != nameof(PartnerStarActivateRequest.PartnerId)
+AscNet.GameServer\Handlers\PartnerModule.cs:753:                Quality = partnerConfig.InitQuality,
+AscNet.GameServer\Handlers\PassportModule.cs:627:        long firstWeeklyReset = checked(schedule.StartTime
+AscNet.GameServer\Handlers\PassportModule.cs:628:            + TaskModule.RemainingSecondsInWeeklyResetPeriod(schedule.StartTime));
+AscNet.GameServer\Handlers\PayModule.cs:220:                    Quality = ReadDynamicInt(reward, "Quality"),
+AscNet.GameServer\Handlers\PayModule.cs:221:                    Grade = ReadDynamicInt(reward, "Grade"),
+AscNet.GameServer\Handlers\PayModule.cs:224:                    ShowQuality = ReadDynamicInt(reward, "ShowQuality"),
+AscNet.GameServer\Handlers\PrequelModule.cs:35:        public int Quality { get; set; }
+AscNet.GameServer\Handlers\PrequelModule.cs:36:        public int Grade { get; set; }
+AscNet.GameServer\Handlers\PrequelModule.cs:148:                Quality = 0,
+AscNet.GameServer\Handlers\PrequelModule.cs:149:                Grade = 0,
+AscNet.GameServer\Handlers\ShopModule.cs:47:        public int StartTime { get; set; }
+AscNet.GameServer\Handlers\ShopModule.cs:131:                    StartTime = 0,
+AscNet.GameServer\Handlers\ShopModule.cs:343:                Quality = ReadInt(data, "Quality"),
+AscNet.GameServer\Handlers\ShopModule.cs:344:                Grade = ReadInt(data, "Grade"),
+AscNet.GameServer\Handlers\ShopModule.cs:512:                Quality = reward.Quality,
+AscNet.GameServer\Handlers\ShopModule.cs:513:                Grade = reward.Grade,
+AscNet.GameServer\Handlers\SimulateTrainModule.cs:135:        long activeFrames = Math.Max(0, settle.SettleFrame - settle.StartFrame - settle.PauseFrame);
+AscNet.GameServer\Handlers\StudyProgressModule.cs:56:                    ["StarRecords"] = pair.Value
+AscNet.GameServer\Handlers\StudyProgressModule.cs:62:                            ["StarsMark"] = group.Last().StarsMark
+AscNet.GameServer\Handlers\StudyProgressModule.cs:80:                ["StarsMark"] = stage.StarsMark
+AscNet.GameServer\Handlers\TaskModule.cs:1191:            (string.IsNullOrWhiteSpace(task.StartTime) || TryParseCurrentTaskTime(task.StartTime, out DateTimeOffset start) && now >= start)
+AscNet.GameServer\Handlers\TaskModule.cs:1640:            if (string.IsNullOrWhiteSpace(task.StartTime) && string.IsNullOrWhiteSpace(task.EndTime))
+AscNet.GameServer\Handlers\TaskModule.cs:1642:            if (!string.IsNullOrWhiteSpace(task.StartTime)
+AscNet.GameServer\Handlers\TaskModule.cs:1643:                && (!TryParseCurrentTaskTime(task.StartTime, out DateTimeOffset startTime) || now < startTime))
+AscNet.GameServer\Handlers\TaskModule.cs:1710:                13102 => CountCharactersAtQuality(session, parameters),
+AscNet.GameServer\Handlers\TaskModule.cs:1711:                13104 => CharacterMeets(session, parameters[0], character => character.TrustLv >= parameters[1]),
+AscNet.GameServer\Handlers\TaskModule.cs:1713:                13106 => CharacterMeets(session, parameters[1], character => character.Quality >= parameters[0]),
+AscNet.GameServer\Handlers\TaskModule.cs:1714:                13107 => CharacterMeets(session, parameters[1], character => character.LiberateLv >= parameters[0]),
+AscNet.GameServer\Handlers\TaskModule.cs:1734:            int requiredQuality = parameters[4];
+AscNet.GameServer\Handlers\TaskModule.cs:1743:                && row.Quality >= requiredQuality
+AscNet.GameServer\Handlers\TaskModule.cs:1757:        private static int CountCharactersAtQuality(Session session, IReadOnlyList<int> parameters)
+AscNet.GameServer\Handlers\TaskModule.cs:1764:            int requiredQuality = parameters[1];
+AscNet.GameServer\Handlers\TaskModule.cs:1767:                character.Quality >= requiredQuality && character.Level >= requiredLevel);
+AscNet.GameServer\Handlers\TaskModule.cs:1778:            return session.character.Characters.Count(character => character.TrustLv >= requiredTrust);
+AscNet.GameServer\Handlers\TaskModule.cs:1814:            long weekStartDay = checked(CurrentWeeklyResetPeriod(timestamp) * 7 - 3);
+AscNet.GameServer\Handlers\TaskModule.cs:1815:            return checked((int)(day - weekStartDay));
+AscNet.GameServer\Handlers\TaskModule.cs:1820:            long nextWeekStartDay = checked((CurrentWeeklyResetPeriod(timestamp) + 1) * 7 - 3);
+AscNet.GameServer\Handlers\TaskModule.cs:1821:            return checked(nextWeekStartDay * 86_400 - timestamp);
+AscNet.GameServer\Handlers\TaskModule.cs:1927:                || prefixes.Any(prefix => claim.StartsWith(prefix, StringComparison.Ordinal));
+AscNet.GameServer\Handlers\Theatre6PvpModule.cs:26:[MessagePackObject(true)] public sealed class Theatre6PvpStartResponse { public int Code { get; set; } public Theatre6PvpActivityData? ActivityData { get; set; } }
+AscNet.GameServer\Handlers\Theatre6PvpModule.cs:30:[MessagePackObject(true)] public sealed class Theatre6PvpStartFightRequest { public int EnemyId { get; set; } public List<Theatre6FileSlot> MyFileSlots { get; set; } = new(); public int? BuffId { get; set; } }
+AscNet.GameServer\Handlers\Theatre6PvpModule.cs:31:[MessagePackObject(true)] public sealed class Theatre6PvpStartFightResponse { public int Code { get; set; } public Theatre6TinyBattleState? BattleState { get; set; } }
+AscNet.GameServer\Handlers\Theatre6PvpModule.cs:98:    [RequestPacketHandler("Theatre6PvpStartRequest")]
+AscNet.GameServer\Handlers\Theatre6PvpModule.cs:99:    public static void Start(Session session,Packet.Request packet){var original=session.player.Theatre6.Pvp;var s=Clone(original);long now=Now();int c=Gate(session.player);if(c==0)c=ReconcileSeason(session,s,now);if(c!=0){session.SendResponse(new Theatre6PvpStartResponse{Code=c},packet.Id);return;}ReconcileActionPoint(s,now);if(s.Matches.Count==0&&!BuildMatches(session.player,s,now)){session.SendResponse(new Theatre6PvpStartResponse{Code=DataError},packet.Id);return;}Commit(session,original,s);session.SendResponse(new Theatre6PvpStartResponse{ActivityData=Activity(s)},packet.Id);}
+AscNet.GameServer\Handlers\Theatre6PvpModule.cs:158:    public static void Refresh(Session session,Packet.Request packet){var original=session.player.Theatre6.Pvp;var s=Clone(original);long now=Now();int c=Gate(session.player);if(c==0)c=ReconcileSeason(session,s,now);if(c==0&&s.Battle is {Finished:false})c=AlreadyInBattle;if(c==0&&now-s.LastRefreshTime<Cfg("RefreshMatchCd"))c=RefreshCd;if(c==0&&now-s.RefreshPeriodStart>=Cfg("RefreshMatchPeriodSeconds")){s.RefreshPeriodStart=now;s.RefreshPeriodCount=0;}if(c==0&&s.RefreshPeriodCount>=Cfg("RefreshMatchMaxCountPerPeriod"))c=RefreshLimit;if(c!=0){session.SendResponse(new Theatre6PvpRefreshMatchResponse{Code=c},packet.Id);return;}if(!BuildMatches(session.player,s,now)){session.SendResponse(new Theatre6PvpRefreshMatchResponse{Code=DataError},packet.Id);return;}s.RefreshPeriodCount++;Commit(session,original,s);session.SendResponse(new Theatre6PvpRefreshMatchResponse{MatchResult=new(){Enemies=Enemies(s)},LastRefreshMatchTime=s.LastRefreshTime,RefreshRemainSeconds=Cfg("RefreshMatchCd")},packet.Id);}
+AscNet.GameServer\Handlers\Theatre6PvpModule.cs:163:    [RequestPacketHandler("Theatre6PvpStartFightRequest")]
+AscNet.GameServer\Handlers\Theatre6PvpModule.cs:164:    public static void StartFight(Session session,Packet.Request packet){int c=Gate(session.player);if(c==0)c=NotOpen;session.SendResponse(new Theatre6PvpStartFightResponse{Code=c},packet.Id);}
+AscNet.GameServer\Handlers\Theatre6PvpModule.cs:265:        s.LastRefreshTime=now;if(s.RefreshPeriodStart==0)s.RefreshPeriodStart=now;
+AscNet.GameServer\Handlers\TransfiniteModule.cs:19:[MessagePackObject(true)] public sealed class TransfiniteData { public int ActivityId { get; set; } public int CircleId { get; set; } public long BeginTime { get; set; } public int RegionId { get; set; } public int StageGroupIndex { get; set; } public List<TransfiniteBattleInfo> BattleInfo { get; set; } = new(); public List<TransfiniteBestSpendTime> BestSpendTime { get; set; } = new(); public List<int> GotScoreRewardIndex { get; set; } = new(); public bool SendActivityStartMail { get; set; } public int MaxRotateStageProgressIndex { get; set; } public TransfiniteRotateSettleInfo? RotateSettleInfo { get; set; } public int StageGroupId { get; set; } public long LastModifyTime { get; set; } public int ScoreRewardGroupId { get; set; } }
+AscNet.GameServer\Handlers\TransfiniteModule.cs:20:[MessagePackObject(true)] public sealed class TransfiniteBattleInfo { public int StageGroupId { get; set; } public int StageProgressIndex { get; set; } public int StartStageProgress { get; set; } public TransfiniteTeamInfo? TeamInfo { get; set; } public List<TransfiniteStageInfo> StageInfo { get; set; } = new(); public TransfiniteBattleResult? Result { get; set; } public TransfiniteBattleResult? LastResult { get; set; } public List<TransfiniteBattleResult> HistoryResults { get; set; } = new(); }
+AscNet.GameServer\Handlers\TransfiniteModule.cs:46:            .Where(anchor => anchor.Schedule.Id != 0 && anchor.Schedule.Source.StartsWith("version-history:", StringComparison.Ordinal))
+AscNet.GameServer\Handlers\TransfiniteModule.cs:47:            .OrderBy(anchor => anchor.Schedule.StartTime)
+AscNet.GameServer\Handlers\TransfiniteModule.cs:51:            EndTime: index + 1 < anchors.Length ? anchors[index + 1].Schedule.StartTime : long.MaxValue)).ToArray();
+AscNet.GameServer\Handlers\TransfiniteModule.cs:59:    private static readonly Lazy<List<TransfiniteStartStageProgressTable>> StartProgress = new(() => TableReaderV2.Parse<TransfiniteStartStageProgressTable>());
+AscNet.GameServer\Handlers\TransfiniteModule.cs:80:            claim.StartsWith(terminalPrefix, StringComparison.Ordinal)
+AscNet.GameServer\Handlers\TransfiniteModule.cs:81:            || claim.StartsWith(resetPrefix, StringComparison.Ordinal)
+AscNet.GameServer\Handlers\TransfiniteModule.cs:82:            || claim.StartsWith(legacyPrefix, StringComparison.Ordinal));
+AscNet.GameServer\Handlers\TransfiniteModule.cs:92:        var anchor = GetAnchoredActivities().LastOrDefault(x => x.Schedule.StartTime <= now);
+AscNet.GameServer\Handlers\TransfiniteModule.cs:131:                int progressAnchor = StartProgress.Value.Where(x => x.LastProgress <= outgoing).OrderByDescending(x => x.LastProgress).Select(x => x.StartProgress).FirstOrDefault();
+AscNet.GameServer\Handlers\TransfiniteModule.cs:133:                    next.BattleInfo = new() { StageGroupId = next.StageGroupId, StageProgressIndex = progressAnchor - 1, StartStageProgress = progressAnchor };
+AscNet.GameServer\Handlers\TransfiniteModule.cs:143:        if (activity.CycleSeconds <= 0 || now < schedule.StartTime)
+AscNet.GameServer\Handlers\TransfiniteModule.cs:148:        long cycleOffset = (now - schedule.StartTime) / activity.CycleSeconds;
+AscNet.GameServer\Handlers\TransfiniteModule.cs:149:        long begin = schedule.StartTime + cycleOffset * activity.CycleSeconds;
+AscNet.GameServer\Handlers\TransfiniteModule.cs:150:        long circle = schedule.StartTime / activity.CycleSeconds + cycleOffset + 1;
+AscNet.GameServer\Handlers\TransfiniteModule.cs:182:            battle = new() { StageGroupId = r.StageGroupId, StartStageProgress = 1 };
+AscNet.GameServer\Handlers\TransfiniteModule.cs:463:    private static TransfiniteBattleInfo ToWire(TransfiniteBattleState x) => new() { StageGroupId = x.StageGroupId, StageProgressIndex = x.StageProgressIndex, StartStageProgress = x.StartStageProgress, TeamInfo = x.TeamInfo is null ? null : new() { CharacterIdList = x.TeamInfo.CharacterIdList.ToList(), CaptainPos = x.TeamInfo.CaptainPos, FirstFightPos = x.TeamInfo.FirstFightPos, SelectedGeneralSkill = x.TeamInfo.SelectedGeneralSkill, EnterCgIndex = x.TeamInfo.EnterCgIndex, SettleCgIndex = x.TeamInfo.SettleCgIndex }, StageInfo = x.StageInfo.Select(y => new TransfiniteStageInfo { StageId = y.StageId, IsWin = y.IsWin, SpendTime = y.SpendTime, Score = y.Score }).ToList(), Result = Wire(x.Result) ?? (x.TeamInfo is null ? null : new()), LastResult = Wire(x.LastResult), HistoryResults = x.HistoryResults.Select(Wire).Where(y => y is not null).Cast<TransfiniteBattleResult>().ToList() };
+AscNet.GameServer\Handlers\TransfiniteModule.cs:503:    private static TransfiniteRewardReceipt ToReceipt(RewardGoods x) => new() { RewardType = x.RewardType, TemplateId = x.TemplateId, Count = x.Count, Level = x.Level, Quality = x.Quality, Grade = x.Grade, Breakthrough = x.Breakthrough, ConvertFrom = x.ConvertFrom, ShowQuality = x.ShowQuality, Id = x.Id, IsGift = x.IsGift, RewardMulti = x.RewardMulti };
+AscNet.GameServer\Handlers\TransfiniteModule.cs:504:    private static RewardGoods ToWireReward(TransfiniteRewardReceipt x) => new() { RewardType = x.RewardType, TemplateId = x.TemplateId, Count = x.Count, Level = x.Level, Quality = x.Quality, Grade = x.Grade, Breakthrough = x.Breakthrough, ConvertFrom = x.ConvertFrom, ShowQuality = x.ShowQuality, Id = x.Id, IsGift = x.IsGift, RewardMulti = x.RewardMulti };
+AscNet.GameServer\Handlers\TreasureModule.cs:49:            if (!HasEnoughChapterStars(session, treasureId, treasure.RequireStar))
+AscNet.GameServer\Handlers\TreasureModule.cs:77:        private static bool HasEnoughChapterStars(Session session, int treasureId, int requiredStars)
+AscNet.GameServer\Handlers\TreasureModule.cs:81:                .Any(chapter => CountChapterStars(session, chapter.StageId) >= requiredStars);
+AscNet.GameServer\Handlers\TreasureModule.cs:84:        private static int CountChapterStars(Session session, IEnumerable<int> stageIds)
+AscNet.GameServer\Handlers\TreasureModule.cs:91:                    total += CountStarBits(stageData.StarsMark);
+AscNet.GameServer\Handlers\TreasureModule.cs:98:        private static int CountStarBits(long starsMark)
+AscNet.GameServer\Handlers\Version47EventModule.cs:131:        [RequestPacketHandler("ConcertPreHeatingStartRequest")]
+AscNet.GameServer\Handlers\Version47EventModule.cs:132:        public static void ConcertPreHeatingStart(Session session, Packet.Request packet)
+AscNet.GameServer\Handlers\Version47EventModule.cs:134:            ConcertPreHeatingStartRequest request = packet.Deserialize<ConcertPreHeatingStartRequest>();
+AscNet.GameServer\Handlers\Version47EventModule.cs:135:            session.SendResponse(StartConcertPreHeating(request.StageId, DateTimeOffset.UtcNow), packet.Id);
+AscNet.GameServer\Handlers\Version47EventModule.cs:138:        internal static ConcertPreHeatingStartResponse StartConcertPreHeating(int stageId, DateTimeOffset now)
+AscNet.GameServer\Handlers\Version47EventModule.cs:140:            ConcertPreHeatingStartResponse response = new();
+AscNet.GameServer\Handlers\WorldModule.cs:88:        public int FightStartTime;
+AscNet.GameServer\Handlers\WorldModule.cs:157:            session.SendResponse(new EnterFightTimeResponse() { FightStartTime = request.EnterFightTime }, packet.Id);
+AscNet.GameServer\Server.cs:38:        public void Start()
+AscNet.GameServer\Server.cs:50:                    listener.Start();
+AscNet.GameServer\Server.cs:61:                            session.Start();
+AscNet.GameServer\Session.cs:31:        public bool PendingBigWorldStartFightNotify;
+AscNet.GameServer\Session.cs:60:        public void Start()
+AscNet.GameServer\Session.cs:359:                _ when name.StartsWith("NotifyEquip", StringComparison.Ordinal) => push is byte[] bytes ? $"rawBytes={bytes.Length}" : $"payloadType={typeof(T).FullName}",
+AscNet.GameServer\Session.cs:448:                || name.StartsWith("DlcWorld", StringComparison.Ordinal)
+AscNet.GameServer\Session.cs:449:                || name.StartsWith("XRpc", StringComparison.Ordinal)
+AscNet.GameServer\Session.cs:451:                    or "StartFightNotify"
+AscNet.SDKServer\SDKServer.cs:44:            new Thread(() => app.Run()).Start();
+AscNet.SDKServer\SDKServer.cs:54:                if (args[i].StartsWith("--urls=", StringComparison.Ordinal))
+AscNet\Program.cs:17:            LoggerFactory.Logger.Info("Starting...");
+AscNet\Program.cs:24:            new Thread(Server.Instance.Start) { IsBackground = true }.Start();
