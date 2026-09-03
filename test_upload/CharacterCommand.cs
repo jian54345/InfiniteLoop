@@ -41,7 +41,8 @@ internal sealed class CharacterCommand : Command
         "Usage:\n" +
         "character add <id|all>\n" +
         "character modify <id|all> level <value>\n" +
-        "character modify <id|all> max";
+        "character modify <id|all> max" +
+        "character modify <id|all> min";
 
     private string Op { get; set; } = string.Empty;
 
@@ -166,6 +167,20 @@ internal sealed class CharacterCommand : Command
         }
 
         if (ModifyType.Equals(
+        "min",
+        StringComparison.OrdinalIgnoreCase))
+{
+    if (!string.IsNullOrWhiteSpace(Value))
+    {
+        throw new ArgumentException(
+            "Usage: character modify <id|all> min");
+    }
+
+    ModifyMin(characters);
+
+    return;
+}
+		if (ModifyType.Equals(
                 "level",
                 StringComparison.OrdinalIgnoreCase))
         {
@@ -330,7 +345,280 @@ internal sealed class CharacterCommand : Command
         session);
 }
 
-    private void LiberateCharacterMax(
+    private void ModifyMin(
+    IReadOnlyCollection<CharacterData> characters)
+{
+    Dictionary<int, CharacterTable> characterRows =
+        TableReaderV2
+            .Parse<CharacterTable>()
+            .Where(row =>
+                row.Id > 0)
+            .GroupBy(row =>
+                row.Id)
+            .ToDictionary(
+                group => group.Key,
+                group => group.First());
+
+    foreach (CharacterData character in characters)
+    {
+        character.SkillList ??= new();
+        character.EnhanceSkillList ??= new();
+        character.MagicList ??= new();
+
+        /*
+         * ============================================================
+         * 1. 角色等级恢复到配置最低等级
+         * ============================================================
+         */
+        if (characterRows.TryGetValue(
+                checked((int)character.Id),
+                out CharacterTable? characterRow))
+        {
+            int minLevel =
+                Character.characterLevelUpTemplates
+                    .Where(row =>
+                        row.Type ==
+                            characterRow.LevelUpTemplateId
+                        && row.Level > 0)
+                    .Select(row =>
+                        row.Level)
+                    .DefaultIfEmpty(1)
+                    .Min();
+
+            character.Level = minLevel;
+        }
+        else
+        {
+            character.Level = 1;
+        }
+
+        character.Exp = 0;
+
+        /*
+         * ============================================================
+         * 2. Quality 恢复到该角色配置最低值
+         * ============================================================
+         */
+        int minQuality =
+            TableReaderV2
+                .Parse<CharacterQualityTable>()
+                .Where(row =>
+                    row.CharacterId ==
+                        checked((int)character.Id))
+                .Select(row =>
+                    row.Quality)
+                .DefaultIfEmpty(1)
+                .Min();
+
+        character.Quality = minQuality;
+
+        /*
+         * ============================================================
+         * 3. Grade 恢复到该角色配置最低值
+         * ============================================================
+         */
+        int minGrade =
+            TableReaderV2
+                .Parse<CharacterGradeTable>()
+                .Where(row =>
+                    row.CharacterId ==
+                        checked((int)character.Id))
+                .Select(row =>
+                    row.Grade)
+                .DefaultIfEmpty(1)
+                .Min();
+
+        character.Grade = minGrade;
+
+        /*
+         * ============================================================
+         * 4. 好感度恢复初始状态
+         * ============================================================
+         */
+        character.TrustLv = 1;
+        character.TrustExp = 0;
+
+        /*
+         * ============================================================
+         * 5. Star 不修改
+         *
+         * 6. LiberateLv 不修改
+         *
+         * 7. GatherRewards 不修改
+         * ============================================================
+         */
+
+        /*
+         * ============================================================
+         * 8. 普通技能恢复“初始技能状态”
+         *
+         * 不能直接 Clear()。
+         *
+         * Character.NormalizeCharacterSkills() 会在角色重新加载时
+         * 根据 CharacterSkillTable 自动补回每个技能组的默认技能。
+         *
+         * 因此这里根据当前角色配置重新构建初始技能列表。
+         * ============================================================
+         */
+        CharacterSkillTable? skillTable =
+            TableReaderV2
+                .Parse<CharacterSkillTable>()
+                .FirstOrDefault(row =>
+                    row.CharacterId ==
+                        checked((int)character.Id));
+
+        if (skillTable is not null)
+        {
+            character.SkillList =
+                BuildInitialSkillListForMin(
+                    character,
+                    skillTable);
+        }
+        else
+        {
+            character.SkillList.Clear();
+        }
+
+        /*
+         * ============================================================
+         * 9. EnhanceSkill 恢复锁定状态
+         *
+         * Character.cs 的 NormalizeEnhanceSkillsForCharacter()
+         * 明确规定：
+         *
+         * “Never grants locked groups (an absent group stays locked).”
+         *
+         * 所以这里必须直接清空。
+         * ============================================================
+         */
+        character.EnhanceSkillList.Clear();
+
+        /*
+         * ============================================================
+         * 10. MagicSkill
+         *
+         * 当前 MagicList 没有像普通 CharacterSkill 那样的
+         * “解锁组重建”逻辑，因此恢复为空。
+         * ============================================================
+         */
+        character.MagicList.Clear();
+
+        /*
+         * ============================================================
+         * 11. EnhanceSkill Notice 清除
+         * ============================================================
+         */
+        character.IsEnhanceSkillNotice = false;
+    }
+
+    SaveAndNotify(
+        characters);
+}
+	private static List<CharacterSkill> BuildInitialSkillListForMin(
+    CharacterData character,
+    CharacterSkillTable skillTable)
+{
+    Dictionary<int, IReadOnlyList<uint>> skillIdsByGroupId =
+        TableReaderV2
+            .Parse<CharacterSkillGroupTable>()
+            .GroupBy(group =>
+                group.Id)
+            .ToDictionary(
+                group =>
+                    group.Key,
+                group =>
+                    (IReadOnlyList<uint>)group
+                        .SelectMany(skillGroup =>
+                            skillGroup.SkillId)
+                        .Where(skillId =>
+                            skillId > 0)
+                        .Distinct()
+                        .Select(skillId =>
+                            (uint)skillId)
+                        .ToArray());
+
+    List<CharacterSkillUpgradeTable> upgrades =
+        TableReaderV2
+            .Parse<CharacterSkillUpgradeTable>()
+            .ToList();
+
+    Dictionary<int, IReadOnlyList<CharacterSkillUpgradeTable>>
+        upgradesBySkillId =
+            upgrades
+                .GroupBy(upgrade =>
+                    upgrade.SkillId)
+                .ToDictionary(
+                    group =>
+                        group.Key,
+                    group =>
+                        (IReadOnlyList<CharacterSkillUpgradeTable>)
+                            group.ToArray());
+
+    List<CharacterSkill> result = new();
+
+    foreach (int skillGroupId in
+        skillTable.SkillGroupId
+            .Where(id =>
+                id > 0)
+            .Distinct())
+    {
+        if (!skillIdsByGroupId.TryGetValue(
+                skillGroupId,
+                out IReadOnlyList<uint>? groupSkillIds))
+        {
+            continue;
+        }
+
+        uint defaultSkillId =
+            groupSkillIds.FirstOrDefault();
+
+        if (defaultSkillId == 0)
+        {
+            continue;
+        }
+
+        /*
+         * 检查默认技能的 Level 0 解锁条件。
+         *
+         * 如果连初始条件都不满足，
+         * 就不要加入这个技能。
+         */
+        CharacterSkillUpgradeTable? initial =
+            upgradesBySkillId.TryGetValue(
+                    checked((int)defaultSkillId),
+                    out IReadOnlyList<CharacterSkillUpgradeTable>?
+                        skillUpgrades)
+                ? skillUpgrades.FirstOrDefault(row =>
+                    row.Level == 0)
+                : null;
+
+        if (initial is not null
+            && !Character.MeetsCharacterSkillCondition(
+                character,
+                initial.ConditionId))
+        {
+            continue;
+        }
+
+        /*
+         * 初始技能 = Level 1。
+         */
+        result.Add(
+            new CharacterSkill
+            {
+                Id = defaultSkillId,
+                Level = 1
+            });
+    }
+
+    /*
+     * 这里故意不调用 UnlockQualityGatedSkills()。
+     *
+     * 因为 min 的目的就是恢复技能锁定状态。
+     */
+    return result;
+}
+	private void LiberateCharacterMax(
     CharacterData character,
     RewardApplicationResult batchResult)
 {
