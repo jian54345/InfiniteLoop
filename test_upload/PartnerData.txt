@@ -1,0 +1,82 @@
+﻿AscNet.Common\Database\Character.cs:368:            foreach (PartnerData partner in Partners)
+AscNet.Common\Database\Character.cs:1399:        public bool NormalizePartnerMainSkillForCarrier(PartnerData partner)
+AscNet.Common\Database\Character.cs:1474:        public List<PartnerData> Partners { get; set; } = new();
+AscNet.Common\MsgPack\Types.cs:582:        public List<PartnerData> PartnerList { get; set; } = new();
+AscNet.Common\MsgPack\Types.cs:2953:    public class TeamPrefabPartnerData
+AscNet.Common\MsgPack\Types.cs:2980:        public Dictionary<int, TeamPrefabPartnerData?> PartnerData { get; set; } = new();
+AscNet.Common\MsgPack\Types.cs:3010:        public TeamPrefabPartnerData? TeamPrefabPartnerData { get; set; }
+AscNet.Common\MsgPack\Types.cs:3530:    public class PartnerData
+AscNet.Common\MsgPack\Types.cs:3548:    public class NotifyPartnerDataList
+AscNet.Common\MsgPack\Types.cs:3550:        public List<PartnerData> PartnerDataList { get; set; } = new();
+AscNet.GameServer\Handlers\FightModule.cs:699:                PartnerData? partner = session.character.Partners.FirstOrDefault(x => x.CharacterId == characterData.Id);
+AscNet.GameServer\Handlers\FightModule.cs:787:                        Partner = (PartnerData?)null,
+AscNet.GameServer\Handlers\FightModule.cs:1216:                PartnerData = source.PartnerData,
+AscNet.GameServer\Handlers\FightModule.cs:1267:                PartnerData = source.PartnerData,
+AscNet.GameServer\Handlers\FightModule.cs:1304:            Dictionary<int, TeamPrefabPartnerData?> partnerData = source.PartnerData?
+AscNet.GameServer\Handlers\FightModule.cs:1307:            partnerData[request.TeamPos] = request.TeamPrefabPartnerData;
+AscNet.GameServer\Handlers\FightModule.cs:1319:                PartnerData = partnerData,
+AscNet.GameServer\Handlers\FightModule.cs:1369:            if (source?.PartnerData is null)
+AscNet.GameServer\Handlers\FightModule.cs:1370:                return "; PartnerData=null";
+AscNet.GameServer\Handlers\FightModule.cs:1373:            foreach ((int position, TeamPrefabPartnerData? presetPartner) in source.PartnerData.OrderBy(pair => pair.Key))
+AscNet.GameServer\Handlers\FightModule.cs:1381:                PartnerData? ownedPartner = session.character.Partners
+AscNet.GameServer\Handlers\FightModule.cs:1404:            return $"; PartnerData={string.Join(" | ", entries)}";
+AscNet.GameServer\Handlers\FightModule.cs:1481:            Dictionary<int, PartnerData> ownedPartnersById = session.character.Partners
+AscNet.GameServer\Handlers\FightModule.cs:1488:            List<(int CharacterId, PartnerData Partner, TeamPrefabPartnerData Preset)> partnerPlan = new();
+AscNet.GameServer\Handlers\FightModule.cs:1514:                if (teamPrefab.PartnerData.TryGetValue(position, out TeamPrefabPartnerData? presetPartner)
+AscNet.GameServer\Handlers\FightModule.cs:1517:                    if (!ownedPartnersById.TryGetValue(presetPartner.PartnerId, out PartnerData? partner))
+AscNet.GameServer\Handlers\FightModule.cs:1539:            foreach (PartnerData partner in session.character.Partners)
+AscNet.GameServer\Handlers\FightModule.cs:1557:            foreach ((int characterId, PartnerData partner, TeamPrefabPartnerData preset) in partnerPlan)
+AscNet.GameServer\Handlers\FightModule.cs:1580:            session.SendPush(new NotifyPartnerDataList
+AscNet.GameServer\Handlers\FightModule.cs:1582:                PartnerDataList = session.character.Partners
+AscNet.GameServer\Handlers\FightModule.cs:1690:            PartnerData partner,
+AscNet.GameServer\Handlers\FightModule.cs:1875:            if ((source.PartnerData?.Keys.Any(position => !validPositions.Contains(position)) ?? false)
+AscNet.GameServer\Handlers\FightModule.cs:1925:            Dictionary<int, PartnerData> ownedPartnersById = session.character.Partners
+AscNet.GameServer\Handlers\FightModule.cs:1929:            foreach ((int position, TeamPrefabPartnerData? partnerData) in source.PartnerData ?? [])
+AscNet.GameServer\Handlers\FightModule.cs:1931:                int partnerId = partnerData?.PartnerId ?? 0;
+AscNet.GameServer\Handlers\FightModule.cs:1936:                    || !ownedPartnersById.TryGetValue(partnerId, out PartnerData? ownedPartner))
+AscNet.GameServer\Handlers\FightModule.cs:1948:                        partnerData!.SkillData,
+AscNet.GameServer\Handlers\FightModule.cs:1981:            Dictionary<int, TeamPrefabPartnerData?> partnerDataByPosition = new();
+AscNet.GameServer\Handlers\FightModule.cs:1989:                    partnerDataByPosition[position] = null;
+AscNet.GameServer\Handlers\FightModule.cs:1994:                TeamPrefabPartnerData? sourcePartner = null;
+AscNet.GameServer\Handlers\FightModule.cs:1995:                source.PartnerData?.TryGetValue(position, out sourcePartner);
+AscNet.GameServer\Handlers\FightModule.cs:1996:                partnerDataByPosition[position] = sourcePartner is null || sourcePartner.PartnerId == 0
+AscNet.GameServer\Handlers\FightModule.cs:1997:                    ? new TeamPrefabPartnerData()
+AscNet.GameServer\Handlers\FightModule.cs:1998:                    : new TeamPrefabPartnerData
+AscNet.GameServer\Handlers\FightModule.cs:2040:                PartnerData = partnerDataByPosition,
+AscNet.GameServer\Handlers\FightModule.cs:2180:            PartnerData partner,
+AscNet.GameServer\Handlers\PartnerModule.cs:199:            List<PartnerData> partners = compositions
+AscNet.GameServer\Handlers\PartnerModule.cs:211:            session.SendPush(new NotifyPartnerDataList
+AscNet.GameServer\Handlers\PartnerModule.cs:213:                PartnerDataList = partners,
+AscNet.GameServer\Handlers\PartnerModule.cs:223:            PartnerData? partner = FindPartner(session, request.PartnerId);
+AscNet.GameServer\Handlers\PartnerModule.cs:281:            PartnerData? partner = FindPartner(session, request.PartnerId);
+AscNet.GameServer\Handlers\PartnerModule.cs:311:            PartnerData? partner = FindPartner(session, request.PartnerId);
+AscNet.GameServer\Handlers\PartnerModule.cs:371:            PartnerData? partner = FindPartner(session, request.PartnerId);
+AscNet.GameServer\Handlers\PartnerModule.cs:481:            PartnerData? partner = FindPartner(session, request.PartnerId);
+AscNet.GameServer\Handlers\PartnerModule.cs:483:            List<PartnerData> materials = session.character.Partners?
+AscNet.GameServer\Handlers\PartnerModule.cs:505:            foreach (PartnerData material in materials)
+AscNet.GameServer\Handlers\PartnerModule.cs:508:            session.SendPush(new NotifyPartnerDataList
+AscNet.GameServer\Handlers\PartnerModule.cs:510:                PartnerDataList = [.. materials, partner],
+AscNet.GameServer\Handlers\PartnerModule.cs:521:            PartnerData? partner = FindPartner(session, request.PartnerId);
+AscNet.GameServer\Handlers\PartnerModule.cs:553:            PartnerData? partner = FindPartner(session, request.PartnerId);
+AscNet.GameServer\Handlers\PartnerModule.cs:569:            PartnerData? partner = FindPartner(session, request.PartnerId);
+AscNet.GameServer\Handlers\PartnerModule.cs:582:            session.SendPush(new NotifyPartnerDataList
+AscNet.GameServer\Handlers\PartnerModule.cs:584:                PartnerDataList = [partner],
+AscNet.GameServer\Handlers\PartnerModule.cs:594:            PartnerData? partner = FindPartner(session, request.PartnerId);
+AscNet.GameServer\Handlers\PartnerModule.cs:607:            PartnerData? displaced = request.CharacterId == 0
+AscNet.GameServer\Handlers\PartnerModule.cs:619:            session.SendPush(new NotifyPartnerDataList
+AscNet.GameServer\Handlers\PartnerModule.cs:621:                PartnerDataList = displaced is null ? [partner] : [displaced, partner],
+AscNet.GameServer\Handlers\PartnerModule.cs:650:        private static PartnerData? FindPartner(Session session, int partnerId) =>
+AscNet.GameServer\Handlers\PartnerModule.cs:660:        private static PartnerBreakThroughTable? FindBreakthrough(PartnerData partner) =>
+AscNet.GameServer\Handlers\PartnerModule.cs:691:        private static void SendPartnerUpdate(Session session, PartnerData partner) =>
+AscNet.GameServer\Handlers\PartnerModule.cs:692:            session.SendPush(new NotifyPartnerDataList
+AscNet.GameServer\Handlers\PartnerModule.cs:694:                PartnerDataList = [partner],
+AscNet.GameServer\Handlers\PartnerModule.cs:719:        internal static PartnerData CreatePartner(int id, int templateId)
+AscNet.GameServer\Handlers\PartnerModule.cs:748:            return new PartnerData
+AscNet.GameServer\Handlers\RewardHandler.cs:41:        internal NotifyPartnerDataList PartnerData { get; } = new();
+AscNet.GameServer\Handlers\RewardHandler.cs:60:            if (PartnerData.PartnerDataList.Count > 0)
+AscNet.GameServer\Handlers\RewardHandler.cs:61:                session.SendPush(PartnerData);
+AscNet.GameServer\Handlers\RewardHandler.cs:89:            PartnerData.PartnerDataList.AddRange(source.PartnerData.PartnerDataList);
+AscNet.GameServer\Handlers\RewardHandler.cs:90:            PartnerData.OperateTypes.AddRange(source.PartnerData.OperateTypes);
+AscNet.GameServer\Handlers\RewardHandler.cs:835:                    PartnerData acquiredPartner = PartnerModule.CreatePartner(
+AscNet.GameServer\Handlers\RewardHandler.cs:839:                    result.PartnerData.PartnerDataList.Add(acquiredPartner);
+AscNet.GameServer\Handlers\RewardHandler.cs:840:                    result.PartnerData.OperateTypes.Add(1);
