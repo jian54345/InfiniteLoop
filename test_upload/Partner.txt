@@ -1,0 +1,722 @@
+﻿AscNet.Common\Database\Character.cs:18:using AscNet.Table.V2.share.partner;
+AscNet.Common\Database\Character.cs:357:            if (Partners is null)
+AscNet.Common\Database\Character.cs:359:                Partners = new();
+AscNet.Common\Database\Character.cs:364:            Dictionary<int, PartnerTable> partnerRowsById = TableReaderV2.Parse<PartnerTable>()
+AscNet.Common\Database\Character.cs:365:                .ToDictionary(partner => partner.Id);
+AscNet.Common\Database\Character.cs:368:            foreach (PartnerData partner in Partners)
+AscNet.Common\Database\Character.cs:370:                if (partner.CharacterId != 0)
+AscNet.Common\Database\Character.cs:372:                    bool ownsCharacter = Characters.Any(character => character.Id == partner.CharacterId);
+AscNet.Common\Database\Character.cs:373:                    bool validTemplate = partnerRowsById.ContainsKey(partner.TemplateId);
+AscNet.Common\Database\Character.cs:374:                    if (!ownsCharacter || !validTemplate || !carriedCharacterIds.Add(partner.CharacterId))
+AscNet.Common\Database\Character.cs:376:                        partner.CharacterId = 0;
+AscNet.Common\Database\Character.cs:381:                partner.SkillList ??= new();
+AscNet.Common\Database\Character.cs:382:                PartnerSkillData? activeSkill = partner.SkillList.FirstOrDefault(skill => skill.Type == 1);
+AscNet.Common\Database\Character.cs:383:                int expectedActiveSkillId = InitialPartnerActiveSkillId(partner.TemplateId);
+AscNet.Common\Database\Character.cs:384:                if (expectedActiveSkillId > 0 && (activeSkill is null || !IsPartnerActiveSkill(partner.TemplateId, activeSkill.Id)))
+AscNet.Common\Database\Character.cs:387:                        partner.SkillList.Remove(activeSkill);
+AscNet.Common\Database\Character.cs:388:                    partner.SkillList.Insert(0, new PartnerSkillData
+AscNet.Common\Database\Character.cs:398:                    && MaxPartnerSkillLevel(activeSkill.Id) is int maxLevel and > 0
+AscNet.Common\Database\Character.cs:404:                changed |= NormalizePartnerMainSkillForCarrier(partner);
+AscNet.Common\Database\Character.cs:642:        private static int InitialPartnerActiveSkillId(int templateId)
+AscNet.Common\Database\Character.cs:644:            PartnerSkillTable? skillConfig = TableReaderV2.Parse<PartnerSkillTable>()
+AscNet.Common\Database\Character.cs:645:                .Find(row => row.PartnerId == templateId);
+AscNet.Common\Database\Character.cs:649:            return TableReaderV2.Parse<PartnerMainSkillGroupTable>()
+AscNet.Common\Database\Character.cs:654:        private static bool IsPartnerActiveSkill(int templateId, int skillId)
+AscNet.Common\Database\Character.cs:656:            PartnerSkillTable? skillConfig = TableReaderV2.Parse<PartnerSkillTable>()
+AscNet.Common\Database\Character.cs:657:                .Find(row => row.PartnerId == templateId);
+AscNet.Common\Database\Character.cs:662:            return TableReaderV2.Parse<PartnerMainSkillGroupTable>()
+AscNet.Common\Database\Character.cs:668:        private static int MaxPartnerSkillLevel(int skillId)
+AscNet.Common\Database\Character.cs:670:            return TableReaderV2.Parse<PartnerSkillEffectTable>()
+AscNet.Common\Database\Character.cs:974:                Partners = new()
+AscNet.Common\Database\Character.cs:1399:        public bool NormalizePartnerMainSkillForCarrier(PartnerData partner)
+AscNet.Common\Database\Character.cs:1401:            PartnerSkillData? activeSkill = partner.SkillList?.FirstOrDefault(skill => skill.Type == 1);
+AscNet.Common\Database\Character.cs:1405:            PartnerSkillTable? skillConfig = TableReaderV2.Parse<PartnerSkillTable>()
+AscNet.Common\Database\Character.cs:1406:                .Find(row => row.PartnerId == partner.TemplateId);
+AscNet.Common\Database\Character.cs:1408:            PartnerMainSkillGroupTable? mainSkillGroup = TableReaderV2.Parse<PartnerMainSkillGroupTable>()
+AscNet.Common\Database\Character.cs:1411:            int element = partner.CharacterId == 0
+AscNet.Common\Database\Character.cs:1414:                    .Find(character => character.Id == partner.CharacterId)?.Element ?? 1;
+AscNet.Common\Database\Character.cs:1473:        [BsonElement("partners")]
+AscNet.Common\Database\Character.cs:1474:        public List<PartnerData> Partners { get; set; } = new();
+AscNet.Common\Database\Player.cs:121:        [BsonElement("partners")]
+AscNet.Common\Database\Player.cs:122:        public List<int> Partners { get; set; } = new();
+AscNet.Common\Database\Player.cs:136:        [BsonElement("partners")]
+AscNet.Common\Database\Player.cs:137:        public List<int> Partners { get; set; } = new();
+AscNet.Common\Database\Player.cs:167:        [BsonElement("max_partners")]
+AscNet.Common\Database\Player.cs:168:        public List<int> MaxPartners { get; set; } = new();
+AscNet.Common\MsgPack\Types.cs:582:        public List<PartnerData> PartnerList { get; set; } = new();
+AscNet.Common\MsgPack\Types.cs:689:        public List<dynamic> PartnerUnlockIds { get; set; } = new();
+AscNet.Common\MsgPack\Types.cs:690:        public List<dynamic> PartnerSettings { get; set; } = new();
+AscNet.Common\MsgPack\Types.cs:1738:            public List<Int32> Partners { get; set; } = new();
+AscNet.Common\MsgPack\Types.cs:2953:    public class TeamPrefabPartnerData
+AscNet.Common\MsgPack\Types.cs:2955:        public Int32 PartnerId { get; set; }
+AscNet.Common\MsgPack\Types.cs:2980:        public Dictionary<int, TeamPrefabPartnerData?> PartnerData { get; set; } = new();
+AscNet.Common\MsgPack\Types.cs:3006:    public class TeamPrefabSetPartnerRequest
+AscNet.Common\MsgPack\Types.cs:3010:        public TeamPrefabPartnerData? TeamPrefabPartnerData { get; set; }
+AscNet.Common\MsgPack\Types.cs:3015:    public class TeamPrefabSetPartnerResponse
+AscNet.Common\MsgPack\Types.cs:3521:    public class PartnerSkillData
+AscNet.Common\MsgPack\Types.cs:3530:    public class PartnerData
+AscNet.Common\MsgPack\Types.cs:3542:        public List<PartnerSkillData> SkillList { get; set; } = new();
+AscNet.Common\MsgPack\Types.cs:3548:    public class NotifyPartnerDataList
+AscNet.Common\MsgPack\Types.cs:3550:        public List<PartnerData> PartnerDataList { get; set; } = new();
+AscNet.Common\TableExtensions.cs:86:        PartnerExp = 1 << 25 | 1 << 2
+AscNet.GameServer\Game\DrawManager.cs:11:using AscNet.Table.V2.share.partner;
+AscNet.GameServer\Game\DrawManager.cs:28:    private static readonly List<PartnerTable> Partners = TableReaderV2.Parse<PartnerTable>();
+AscNet.GameServer\Game\DrawManager.cs:5195:            22 => DrawPartnerReward(draw),
+AscNet.GameServer\Game\DrawManager.cs:5317:    private static RewardGoods? DrawPartnerReward(DrawInfo draw)
+AscNet.GameServer\Game\DrawManager.cs:5320:        return Partners.Any(x => x.Id == id) ? Create(RewardType.Partner, id, 1) : DrawFallbackItemReward();
+AscNet.GameServer\Game\Fight.cs:14:        public List<int> Partners { get; init; } = new();
+AscNet.GameServer\Handlers\AccountModule.cs:744:                PartnerList = session.character.Partners,
+AscNet.GameServer\Handlers\ArenaModule.cs:98:        public List<int> PartnerList { get; set; } = new();
+AscNet.GameServer\Handlers\BossModule.cs:349:                Partners = history.Partners.ToList(),
+AscNet.GameServer\Handlers\BossModule.cs:540:            List<int> partners = characters
+AscNet.GameServer\Handlers\BossModule.cs:541:                .Select(characterId => session.character.Partners
+AscNet.GameServer\Handlers\BossModule.cs:542:                    .FirstOrDefault(partner => partner.CharacterId == characterId)?.Id ?? 0)
+AscNet.GameServer\Handlers\BossModule.cs:572:                Partners = partners
+AscNet.GameServer\Handlers\BossModule.cs:607:                            ["Partners"] = record.Partners.ToArray()
+AscNet.GameServer\Handlers\BossModule.cs:626:                            Characters = record.Characters.ToList(), Partners = record.Partners.ToList(),
+AscNet.GameServer\Handlers\BossModule.cs:648:                            ["MaxPartners"] = record.MaxPartners.ToArray()
+AscNet.GameServer\Handlers\BossModule.cs:960:                    challengeRecord.Partners = pending.Partners.ToList();
+AscNet.GameServer\Handlers\BossModule.cs:990:                record.MaxPartners = pending.Partners.ToList();
+AscNet.GameServer\Handlers\BossModule.cs:1300:            history.Partners = record.MaxPartners.ToList();
+AscNet.GameServer\Handlers\FightModule.cs:8:using AscNet.Table.V2.share.partner;
+AscNet.GameServer\Handlers\FightModule.cs:41:        Partner = 17,
+AscNet.GameServer\Handlers\FightModule.cs:319:            UnknownPartner,
+AscNet.GameServer\Handlers\FightModule.cs:320:            DuplicatePartner,
+AscNet.GameServer\Handlers\FightModule.cs:321:            MissingPartnerSkillData,
+AscNet.GameServer\Handlers\FightModule.cs:322:            InvalidPartnerSkillTypes,
+AscNet.GameServer\Handlers\FightModule.cs:323:            InvalidPartnerMainSkillCount,
+AscNet.GameServer\Handlers\FightModule.cs:324:            UnknownPartnerSkillConfig,
+AscNet.GameServer\Handlers\FightModule.cs:325:            UnknownPartnerQuality,
+AscNet.GameServer\Handlers\FightModule.cs:326:            LockedPartnerMainSkill,
+AscNet.GameServer\Handlers\FightModule.cs:327:            InvalidPartnerPassiveLimit,
+AscNet.GameServer\Handlers\FightModule.cs:328:            TooManyPartnerPassiveSkills,
+AscNet.GameServer\Handlers\FightModule.cs:329:            DuplicatePartnerPassiveSkills,
+AscNet.GameServer\Handlers\FightModule.cs:330:            InvalidPartnerPassiveSkill,
+AscNet.GameServer\Handlers\FightModule.cs:366:        private static readonly Lazy<IReadOnlyDictionary<int, PartnerSkillTable>> PartnerSkillRowsById = new(() =>
+AscNet.GameServer\Handlers\FightModule.cs:367:            TableReaderV2.Parse<PartnerSkillTable>().ToDictionary(row => row.PartnerId));
+AscNet.GameServer\Handlers\FightModule.cs:368:        private static readonly Lazy<IReadOnlyDictionary<int, PartnerMainSkillGroupTable>> PartnerMainSkillGroupRowsById = new(() =>
+AscNet.GameServer\Handlers\FightModule.cs:369:            TableReaderV2.Parse<PartnerMainSkillGroupTable>().ToDictionary(row => row.Id));
+AscNet.GameServer\Handlers\FightModule.cs:370:        private static readonly Lazy<IReadOnlyDictionary<int, PartnerPassiveSkillGroupTable>> PartnerPassiveSkillGroupRowsById = new(() =>
+AscNet.GameServer\Handlers\FightModule.cs:371:            TableReaderV2.Parse<PartnerPassiveSkillGroupTable>().ToDictionary(row => row.Id));
+AscNet.GameServer\Handlers\FightModule.cs:372:        private static readonly Lazy<IReadOnlyDictionary<(int PartnerId, int Quality), PartnerQualityTable>> PartnerQualityRowsByIdAndQuality = new(() =>
+AscNet.GameServer\Handlers\FightModule.cs:373:            TableReaderV2.Parse<PartnerQualityTable>()
+AscNet.GameServer\Handlers\FightModule.cs:374:                .ToDictionary(row => (row.PartnerId, row.Quality)));
+AscNet.GameServer\Handlers\FightModule.cs:699:                PartnerData? partner = session.character.Partners.FirstOrDefault(x => x.CharacterId == characterData.Id);
+AscNet.GameServer\Handlers\FightModule.cs:705:                    Partner = partner,
+AscNet.GameServer\Handlers\FightModule.cs:787:                        Partner = (PartnerData?)null,
+AscNet.GameServer\Handlers\FightModule.cs:1122:                string detail = IsPartnerSkillValidationFailure(failure)
+AscNet.GameServer\Handlers\FightModule.cs:1123:                    ? DescribePartnerSkillData(session, request?.TeamPrefabData)
+AscNet.GameServer\Handlers\FightModule.cs:1216:                PartnerData = source.PartnerData,
+AscNet.GameServer\Handlers\FightModule.cs:1267:                PartnerData = source.PartnerData,
+AscNet.GameServer\Handlers\FightModule.cs:1283:        [RequestPacketHandler("TeamPrefabSetPartnerRequest")]
+AscNet.GameServer\Handlers\FightModule.cs:1284:        public static void TeamPrefabSetPartnerRequestHandler(Session session, Packet.Request packet)
+AscNet.GameServer\Handlers\FightModule.cs:1286:            TeamPrefabSetPartnerRequest? request = packet.Deserialize<TeamPrefabSetPartnerRequest>();
+AscNet.GameServer\Handlers\FightModule.cs:1299:                SendInvalidTeamPrefabPartnerResponse(session, packet.Id);
+AscNet.GameServer\Handlers\FightModule.cs:1304:            Dictionary<int, TeamPrefabPartnerData?> partnerData = source.PartnerData?
+AscNet.GameServer\Handlers\FightModule.cs:1307:            partnerData[request.TeamPos] = request.TeamPrefabPartnerData;
+AscNet.GameServer\Handlers\FightModule.cs:1319:                PartnerData = partnerData,
+AscNet.GameServer\Handlers\FightModule.cs:1330:                string detail = IsPartnerSkillValidationFailure(failure)
+AscNet.GameServer\Handlers\FightModule.cs:1331:                    ? DescribePartnerSkillData(session, candidate)
+AscNet.GameServer\Handlers\FightModule.cs:1334:                    $"TeamPrefabSetPartner rejected TeamId={request.TeamId}, TeamPos={request.TeamPos}: " +
+AscNet.GameServer\Handlers\FightModule.cs:1336:                SendInvalidTeamPrefabPartnerResponse(session, packet.Id);
+AscNet.GameServer\Handlers\FightModule.cs:1343:            session.SendResponse(new TeamPrefabSetPartnerResponse(), packet.Id);
+AscNet.GameServer\Handlers\FightModule.cs:1346:        private static void SendInvalidTeamPrefabPartnerResponse(Session session, int packetId)
+AscNet.GameServer\Handlers\FightModule.cs:1349:                new TeamPrefabSetPartnerResponse { Code = TeamManagerSetTeamParaError },
+AscNet.GameServer\Handlers\FightModule.cs:1353:        private static bool IsPartnerSkillValidationFailure(TeamPrefabValidationFailure failure)
+AscNet.GameServer\Handlers\FightModule.cs:1355:            return failure is TeamPrefabValidationFailure.MissingPartnerSkillData
+AscNet.GameServer\Handlers\FightModule.cs:1356:                or TeamPrefabValidationFailure.InvalidPartnerSkillTypes
+AscNet.GameServer\Handlers\FightModule.cs:1357:                or TeamPrefabValidationFailure.InvalidPartnerMainSkillCount
+AscNet.GameServer\Handlers\FightModule.cs:1358:                or TeamPrefabValidationFailure.UnknownPartnerSkillConfig
+AscNet.GameServer\Handlers\FightModule.cs:1359:                or TeamPrefabValidationFailure.UnknownPartnerQuality
+AscNet.GameServer\Handlers\FightModule.cs:1360:                or TeamPrefabValidationFailure.LockedPartnerMainSkill
+AscNet.GameServer\Handlers\FightModule.cs:1361:                or TeamPrefabValidationFailure.InvalidPartnerPassiveLimit
+AscNet.GameServer\Handlers\FightModule.cs:1362:                or TeamPrefabValidationFailure.TooManyPartnerPassiveSkills
+AscNet.GameServer\Handlers\FightModule.cs:1363:                or TeamPrefabValidationFailure.DuplicatePartnerPassiveSkills
+AscNet.GameServer\Handlers\FightModule.cs:1364:                or TeamPrefabValidationFailure.InvalidPartnerPassiveSkill;
+AscNet.GameServer\Handlers\FightModule.cs:1367:        private static string DescribePartnerSkillData(Session session, TeamPrefabData? source)
+AscNet.GameServer\Handlers\FightModule.cs:1369:            if (source?.PartnerData is null)
+AscNet.GameServer\Handlers\FightModule.cs:1370:                return "; PartnerData=null";
+AscNet.GameServer\Handlers\FightModule.cs:1373:            foreach ((int position, TeamPrefabPartnerData? presetPartner) in source.PartnerData.OrderBy(pair => pair.Key))
+AscNet.GameServer\Handlers\FightModule.cs:1375:                if (presetPartner is null)
+AscNet.GameServer\Handlers\FightModule.cs:1381:                PartnerData? ownedPartner = session.character.Partners
+AscNet.GameServer\Handlers\FightModule.cs:1382:                    .FirstOrDefault(partner => partner.Id == presetPartner.PartnerId);
+AscNet.GameServer\Handlers\FightModule.cs:1384:                if (ownedPartner is not null
+AscNet.GameServer\Handlers\FightModule.cs:1385:                    && PartnerQualityRowsByIdAndQuality.Value.TryGetValue(
+AscNet.GameServer\Handlers\FightModule.cs:1386:                        (ownedPartner.TemplateId, ownedPartner.Quality),
+AscNet.GameServer\Handlers\FightModule.cs:1387:                        out PartnerQualityTable? qualityRow))
+AscNet.GameServer\Handlers\FightModule.cs:1392:                string mainSkills = presetPartner.SkillData?.TryGetValue(1, out List<int>? main) == true
+AscNet.GameServer\Handlers\FightModule.cs:1395:                string passiveSkills = presetPartner.SkillData?.TryGetValue(2, out List<int>? passive) == true
+AscNet.GameServer\Handlers\FightModule.cs:1399:                    $"pos={position},partner={presetPartner.PartnerId},template={ownedPartner?.TemplateId},"
+AscNet.GameServer\Handlers\FightModule.cs:1400:                    + $"quality={ownedPartner?.Quality},passiveLimit={passiveLimit},"
+AscNet.GameServer\Handlers\FightModule.cs:1404:            return $"; PartnerData={string.Join(" | ", entries)}";
+AscNet.GameServer\Handlers\FightModule.cs:1481:            Dictionary<int, PartnerData> ownedPartnersById = session.character.Partners
+AscNet.GameServer\Handlers\FightModule.cs:1482:                .GroupBy(partner => partner.Id)
+AscNet.GameServer\Handlers\FightModule.cs:1488:            List<(int CharacterId, PartnerData Partner, TeamPrefabPartnerData Preset)> partnerPlan = new();
+AscNet.GameServer\Handlers\FightModule.cs:1514:                if (teamPrefab.PartnerData.TryGetValue(position, out TeamPrefabPartnerData? presetPartner)
+AscNet.GameServer\Handlers\FightModule.cs:1515:                    && presetPartner is { PartnerId: > 0 })
+AscNet.GameServer\Handlers\FightModule.cs:1517:                    if (!ownedPartnersById.TryGetValue(presetPartner.PartnerId, out PartnerData? partner))
+AscNet.GameServer\Handlers\FightModule.cs:1520:                            $"TeamPrefabApply rejected stale partner TeamId={teamPrefab.TeamId} " +
+AscNet.GameServer\Handlers\FightModule.cs:1521:                            $"PartnerId={presetPartner.PartnerId}");
+AscNet.GameServer\Handlers\FightModule.cs:1525:                    partnerPlan.Add((characterId, partner, presetPartner));
+AscNet.GameServer\Handlers\FightModule.cs:1535:            Dictionary<int, int> desiredPartnerByCharacter = partnerPlan
+AscNet.GameServer\Handlers\FightModule.cs:1536:                .ToDictionary(entry => entry.CharacterId, entry => entry.Partner.Id);
+AscNet.GameServer\Handlers\FightModule.cs:1537:            HashSet<int> affectedPartnerIds = new();
+AscNet.GameServer\Handlers\FightModule.cs:1539:            foreach (PartnerData partner in session.character.Partners)
+AscNet.GameServer\Handlers\FightModule.cs:1541:                if (partner.CharacterId <= 0
+AscNet.GameServer\Handlers\FightModule.cs:1542:                    || !targetCharacterIds.Contains(partner.CharacterId)
+AscNet.GameServer\Handlers\FightModule.cs:1543:                    || (desiredPartnerByCharacter.TryGetValue(
+AscNet.GameServer\Handlers\FightModule.cs:1544:                            partner.CharacterId,
+AscNet.GameServer\Handlers\FightModule.cs:1545:                            out int desiredPartnerId)
+AscNet.GameServer\Handlers\FightModule.cs:1546:                        && desiredPartnerId == partner.Id))
+AscNet.GameServer\Handlers\FightModule.cs:1551:                partner.CharacterId = 0;
+AscNet.GameServer\Handlers\FightModule.cs:1552:                session.character.NormalizePartnerMainSkillForCarrier(partner);
+AscNet.GameServer\Handlers\FightModule.cs:1553:                affectedPartnerIds.Add(partner.Id);
+AscNet.GameServer\Handlers\FightModule.cs:1557:            foreach ((int characterId, PartnerData partner, TeamPrefabPartnerData preset) in partnerPlan)
+AscNet.GameServer\Handlers\FightModule.cs:1559:                if (partner.CharacterId != characterId)
+AscNet.GameServer\Handlers\FightModule.cs:1561:                    partner.CharacterId = characterId;
+AscNet.GameServer\Handlers\FightModule.cs:1564:                ApplyTeamPrefabPartnerSkills(session.character, partner, preset.SkillData);
+AscNet.GameServer\Handlers\FightModule.cs:1565:                affectedPartnerIds.Add(partner.Id);
+AscNet.GameServer\Handlers\FightModule.cs:1580:            session.SendPush(new NotifyPartnerDataList
+AscNet.GameServer\Handlers\FightModule.cs:1582:                PartnerDataList = session.character.Partners
+AscNet.GameServer\Handlers\FightModule.cs:1583:                    .Where(partner => affectedPartnerIds.Contains(partner.Id))
+AscNet.GameServer\Handlers\FightModule.cs:1584:                    .OrderBy(partner => partner.Id)
+AscNet.GameServer\Handlers\FightModule.cs:1688:        private static void ApplyTeamPrefabPartnerSkills(
+AscNet.GameServer\Handlers\FightModule.cs:1690:            PartnerData partner,
+AscNet.GameServer\Handlers\FightModule.cs:1695:                && partner.SkillList.FirstOrDefault(skill => skill.Type == 1) is PartnerSkillData mainSkill)
+AscNet.GameServer\Handlers\FightModule.cs:1706:            foreach (PartnerSkillData passiveSkill in partner.SkillList.Where(skill => skill.Type == 2))
+AscNet.GameServer\Handlers\FightModule.cs:1709:            character.NormalizePartnerMainSkillForCarrier(partner);
+AscNet.GameServer\Handlers\FightModule.cs:1875:            if ((source.PartnerData?.Keys.Any(position => !validPositions.Contains(position)) ?? false)
+AscNet.GameServer\Handlers\FightModule.cs:1925:            Dictionary<int, PartnerData> ownedPartnersById = session.character.Partners
+AscNet.GameServer\Handlers\FightModule.cs:1926:                .GroupBy(partner => partner.Id)
+AscNet.GameServer\Handlers\FightModule.cs:1928:            HashSet<int> presetPartnerIds = new();
+AscNet.GameServer\Handlers\FightModule.cs:1929:            foreach ((int position, TeamPrefabPartnerData? partnerData) in source.PartnerData ?? [])
+AscNet.GameServer\Handlers\FightModule.cs:1931:                int partnerId = partnerData?.PartnerId ?? 0;
+AscNet.GameServer\Handlers\FightModule.cs:1932:                if (partnerId == 0)
+AscNet.GameServer\Handlers\FightModule.cs:1934:                if (partnerId < 0
+AscNet.GameServer\Handlers\FightModule.cs:1936:                    || !ownedPartnersById.TryGetValue(partnerId, out PartnerData? ownedPartner))
+AscNet.GameServer\Handlers\FightModule.cs:1938:                    failure = TeamPrefabValidationFailure.UnknownPartner;
+AscNet.GameServer\Handlers\FightModule.cs:1941:                if (!presetPartnerIds.Add(partnerId))
+AscNet.GameServer\Handlers\FightModule.cs:1943:                    failure = TeamPrefabValidationFailure.DuplicatePartner;
+AscNet.GameServer\Handlers\FightModule.cs:1946:                if (!IsValidPartnerSkillData(
+AscNet.GameServer\Handlers\FightModule.cs:1947:                        ownedPartner,
+AscNet.GameServer\Handlers\FightModule.cs:1948:                        partnerData!.SkillData,
+AscNet.GameServer\Handlers\FightModule.cs:1949:                        out TeamPrefabValidationFailure partnerFailure))
+AscNet.GameServer\Handlers\FightModule.cs:1951:                    failure = partnerFailure;
+AscNet.GameServer\Handlers\FightModule.cs:1981:            Dictionary<int, TeamPrefabPartnerData?> partnerDataByPosition = new();
+AscNet.GameServer\Handlers\FightModule.cs:1989:                    partnerDataByPosition[position] = null;
+AscNet.GameServer\Handlers\FightModule.cs:1994:                TeamPrefabPartnerData? sourcePartner = null;
+AscNet.GameServer\Handlers\FightModule.cs:1995:                source.PartnerData?.TryGetValue(position, out sourcePartner);
+AscNet.GameServer\Handlers\FightModule.cs:1996:                partnerDataByPosition[position] = sourcePartner is null || sourcePartner.PartnerId == 0
+AscNet.GameServer\Handlers\FightModule.cs:1997:                    ? new TeamPrefabPartnerData()
+AscNet.GameServer\Handlers\FightModule.cs:1998:                    : new TeamPrefabPartnerData
+AscNet.GameServer\Handlers\FightModule.cs:2000:                        PartnerId = sourcePartner.PartnerId,
+AscNet.GameServer\Handlers\FightModule.cs:2001:                        SkillData = sourcePartner.SkillData?
+AscNet.GameServer\Handlers\FightModule.cs:2040:                PartnerData = partnerDataByPosition,
+AscNet.GameServer\Handlers\FightModule.cs:2179:        private static bool IsValidPartnerSkillData(
+AscNet.GameServer\Handlers\FightModule.cs:2180:            PartnerData partner,
+AscNet.GameServer\Handlers\FightModule.cs:2187:                failure = TeamPrefabValidationFailure.MissingPartnerSkillData;
+AscNet.GameServer\Handlers\FightModule.cs:2192:                failure = TeamPrefabValidationFailure.InvalidPartnerSkillTypes;
+AscNet.GameServer\Handlers\FightModule.cs:2200:                failure = TeamPrefabValidationFailure.InvalidPartnerMainSkillCount;
+AscNet.GameServer\Handlers\FightModule.cs:2203:            if (partner.SkillList is null
+AscNet.GameServer\Handlers\FightModule.cs:2204:                || !partner.SkillList.Any(skill => skill.Type == 1)
+AscNet.GameServer\Handlers\FightModule.cs:2205:                || !PartnerSkillRowsById.Value.TryGetValue(
+AscNet.GameServer\Handlers\FightModule.cs:2206:                    partner.TemplateId,
+AscNet.GameServer\Handlers\FightModule.cs:2207:                    out PartnerSkillTable? skillRow))
+AscNet.GameServer\Handlers\FightModule.cs:2209:                failure = TeamPrefabValidationFailure.UnknownPartnerSkillConfig;
+AscNet.GameServer\Handlers\FightModule.cs:2212:            if (!PartnerQualityRowsByIdAndQuality.Value.TryGetValue(
+AscNet.GameServer\Handlers\FightModule.cs:2213:                    (partner.TemplateId, partner.Quality),
+AscNet.GameServer\Handlers\FightModule.cs:2214:                    out PartnerQualityTable? qualityRow))
+AscNet.GameServer\Handlers\FightModule.cs:2216:                failure = TeamPrefabValidationFailure.UnknownPartnerQuality;
+AscNet.GameServer\Handlers\FightModule.cs:2220:            HashSet<int> unlockedGroups = (partner.UnlockSkillGroup ?? []).ToHashSet();
+AscNet.GameServer\Handlers\FightModule.cs:2224:                if (!PartnerMainSkillGroupRowsById.Value.TryGetValue(
+AscNet.GameServer\Handlers\FightModule.cs:2226:                        out PartnerMainSkillGroupTable? group))
+AscNet.GameServer\Handlers\FightModule.cs:2237:                failure = TeamPrefabValidationFailure.LockedPartnerMainSkill;
+AscNet.GameServer\Handlers\FightModule.cs:2249:                failure = TeamPrefabValidationFailure.InvalidPartnerPassiveLimit;
+AscNet.GameServer\Handlers\FightModule.cs:2254:                failure = TeamPrefabValidationFailure.TooManyPartnerPassiveSkills;
+AscNet.GameServer\Handlers\FightModule.cs:2259:                failure = TeamPrefabValidationFailure.DuplicatePartnerPassiveSkills;
+AscNet.GameServer\Handlers\FightModule.cs:2266:                if (PartnerPassiveSkillGroupRowsById.Value.TryGetValue(
+AscNet.GameServer\Handlers\FightModule.cs:2268:                        out PartnerPassiveSkillGroupTable? group)
+AscNet.GameServer\Handlers\FightModule.cs:2274:            HashSet<int> ownedPassiveSkillIds = partner.SkillList
+AscNet.GameServer\Handlers\FightModule.cs:2282:                failure = TeamPrefabValidationFailure.InvalidPartnerPassiveSkill;
+AscNet.GameServer\Handlers\PartnerModule.cs:5:using AscNet.Table.V2.share.partner;
+AscNet.GameServer\Handlers\PartnerModule.cs:6:using AscNet.Table.V2.share.partner.leveluptemplate;
+AscNet.GameServer\Handlers\PartnerModule.cs:15:    public class PartnerComposeRequest
+AscNet.GameServer\Handlers\PartnerModule.cs:22:    public class PartnerComposeResponse
+AscNet.GameServer\Handlers\PartnerModule.cs:28:    public class PartnerLevelUpRequest
+AscNet.GameServer\Handlers\PartnerModule.cs:30:        public int PartnerId;
+AscNet.GameServer\Handlers\PartnerModule.cs:35:    public class PartnerLevelUpResponse
+AscNet.GameServer\Handlers\PartnerModule.cs:43:    public class PartnerBreakThroughRequest
+AscNet.GameServer\Handlers\PartnerModule.cs:45:        public int PartnerId;
+AscNet.GameServer\Handlers\PartnerModule.cs:49:    public class PartnerBreakThroughResponse
+AscNet.GameServer\Handlers\PartnerModule.cs:56:    public class PartnerSkillUpRequest
+AscNet.GameServer\Handlers\PartnerModule.cs:58:        public int PartnerId;
+AscNet.GameServer\Handlers\PartnerModule.cs:64:    public class PartnerSkillUpInfo
+AscNet.GameServer\Handlers\PartnerModule.cs:72:    public class PartnerSkillUpResponse
+AscNet.GameServer\Handlers\PartnerModule.cs:75:        public List<PartnerSkillUpInfo> SkillUpInfo;
+AscNet.GameServer\Handlers\PartnerModule.cs:79:    public class PartnerSkillWearRequest
+AscNet.GameServer\Handlers\PartnerModule.cs:81:        public int PartnerId;
+AscNet.GameServer\Handlers\PartnerModule.cs:82:        public List<PartnerSkillWearInfo> SkillIdToWear;
+AscNet.GameServer\Handlers\PartnerModule.cs:87:    public class PartnerSkillWearInfo
+AscNet.GameServer\Handlers\PartnerModule.cs:94:    public class PartnerSkillWearResponse
+AscNet.GameServer\Handlers\PartnerModule.cs:99:    public class PartnerStarActivateRequest
+AscNet.GameServer\Handlers\PartnerModule.cs:101:        public int PartnerId;
+AscNet.GameServer\Handlers\PartnerModule.cs:102:        public List<int> UsePartnerIdList = new();
+AscNet.GameServer\Handlers\PartnerModule.cs:106:    public class PartnerStarActivateResponse
+AscNet.GameServer\Handlers\PartnerModule.cs:112:    public class PartnerEvolutionRequest
+AscNet.GameServer\Handlers\PartnerModule.cs:114:        public int PartnerId;
+AscNet.GameServer\Handlers\PartnerModule.cs:118:    public class PartnerEvolutionResponse
+AscNet.GameServer\Handlers\PartnerModule.cs:124:    public class PartnerCarryRequest
+AscNet.GameServer\Handlers\PartnerModule.cs:126:        public int PartnerId;
+AscNet.GameServer\Handlers\PartnerModule.cs:131:    public class PartnerCarryResponse
+AscNet.GameServer\Handlers\PartnerModule.cs:136:    public class PartnerBreakAwayRequest
+AscNet.GameServer\Handlers\PartnerModule.cs:138:        public int PartnerId;
+AscNet.GameServer\Handlers\PartnerModule.cs:142:    public class PartnerBreakAwayResponse
+AscNet.GameServer\Handlers\PartnerModule.cs:148:    public class PartnerUpdateLockRequest
+AscNet.GameServer\Handlers\PartnerModule.cs:150:        public int PartnerId;
+AscNet.GameServer\Handlers\PartnerModule.cs:155:    public class PartnerUpdateLockResponse
+AscNet.GameServer\Handlers\PartnerModule.cs:164:    internal class PartnerModule
+AscNet.GameServer\Handlers\PartnerModule.cs:168:        [RequestPacketHandler("PartnerComposeRequest")]
+AscNet.GameServer\Handlers\PartnerModule.cs:169:        public static void PartnerComposeRequestHandler(Session session, Packet.Request packet)
+AscNet.GameServer\Handlers\PartnerModule.cs:171:            PartnerComposeRequest request = packet.Deserialize<PartnerComposeRequest>();
+AscNet.GameServer\Handlers\PartnerModule.cs:181:                session.SendResponse(new PartnerComposeResponse { Code = 1 }, packet.Id);
+AscNet.GameServer\Handlers\PartnerModule.cs:191:                session.SendResponse(new PartnerComposeResponse { Code = 1 }, packet.Id);
+AscNet.GameServer\Handlers\PartnerModule.cs:195:            session.character.Partners ??= [];
+AscNet.GameServer\Handlers\PartnerModule.cs:196:            int nextPartnerId = session.character.Partners.Count == 0
+AscNet.GameServer\Handlers\PartnerModule.cs:198:                : checked(session.character.Partners.Max(partner => partner.Id) + 1);
+AscNet.GameServer\Handlers\PartnerModule.cs:199:            List<PartnerData> partners = compositions
+AscNet.GameServer\Handlers\PartnerModule.cs:200:                .Select(composition => CreatePartner(nextPartnerId++, composition.TemplateId))
+AscNet.GameServer\Handlers\PartnerModule.cs:208:            session.character.Partners.AddRange(partners);
+AscNet.GameServer\Handlers\PartnerModule.cs:211:            session.SendPush(new NotifyPartnerDataList
+AscNet.GameServer\Handlers\PartnerModule.cs:213:                PartnerDataList = partners,
+AscNet.GameServer\Handlers\PartnerModule.cs:214:                OperateTypes = Enumerable.Repeat(1, partners.Count).ToList()
+AscNet.GameServer\Handlers\PartnerModule.cs:216:            session.SendResponse(new PartnerComposeResponse(), packet.Id);
+AscNet.GameServer\Handlers\PartnerModule.cs:219:        [RequestPacketHandler("PartnerLevelUpRequest")]
+AscNet.GameServer\Handlers\PartnerModule.cs:220:        public static void PartnerLevelUpRequestHandler(Session session, Packet.Request packet)
+AscNet.GameServer\Handlers\PartnerModule.cs:222:            PartnerLevelUpRequest request = packet.Deserialize<PartnerLevelUpRequest>();
+AscNet.GameServer\Handlers\PartnerModule.cs:223:            PartnerData? partner = FindPartner(session, request.PartnerId);
+AscNet.GameServer\Handlers\PartnerModule.cs:224:            PartnerBreakThroughTable? breakthrough = partner is null ? null : FindBreakthrough(partner);
+AscNet.GameServer\Handlers\PartnerModule.cs:225:            if (partner is null || breakthrough is null || partner.Level >= breakthrough.LevelLimit)
+AscNet.GameServer\Handlers\PartnerModule.cs:227:                session.SendResponse(new PartnerLevelUpResponse { Code = ErrorCode }, packet.Id);
+AscNet.GameServer\Handlers\PartnerModule.cs:248:                session.SendResponse(new PartnerLevelUpResponse { Code = ErrorCode }, packet.Id);
+AscNet.GameServer\Handlers\PartnerModule.cs:253:            int currentAllExp = levels.First(row => row.Level == partner.Level).AllExp;
+AscNet.GameServer\Handlers\PartnerModule.cs:254:            int totalExp = checked(currentAllExp + partner.Exp
+AscNet.GameServer\Handlers\PartnerModule.cs:259:            partner.Level = newLevel;
+AscNet.GameServer\Handlers\PartnerModule.cs:260:            partner.Exp = newLevel == breakthrough.LevelLimit ? 0 : totalExp - expAtLevel;
+AscNet.GameServer\Handlers\PartnerModule.cs:270:            session.SendResponse(new PartnerLevelUpResponse
+AscNet.GameServer\Handlers\PartnerModule.cs:272:                Level = partner.Level,
+AscNet.GameServer\Handlers\PartnerModule.cs:273:                Exp = partner.Exp
+AscNet.GameServer\Handlers\PartnerModule.cs:277:        [RequestPacketHandler("PartnerBreakThroughRequest")]
+AscNet.GameServer\Handlers\PartnerModule.cs:278:        public static void PartnerBreakThroughRequestHandler(Session session, Packet.Request packet)
+AscNet.GameServer\Handlers\PartnerModule.cs:280:            PartnerBreakThroughRequest request = packet.Deserialize<PartnerBreakThroughRequest>();
+AscNet.GameServer\Handlers\PartnerModule.cs:281:            PartnerData? partner = FindPartner(session, request.PartnerId);
+AscNet.GameServer\Handlers\PartnerModule.cs:282:            PartnerBreakThroughTable? config = partner is null ? null : FindBreakthrough(partner);
+AscNet.GameServer\Handlers\PartnerModule.cs:283:            if (partner is null || config is null || partner.Level != config.LevelLimit ||
+AscNet.GameServer\Handlers\PartnerModule.cs:288:                session.SendResponse(new PartnerBreakThroughResponse { Code = ErrorCode }, packet.Id);
+AscNet.GameServer\Handlers\PartnerModule.cs:295:            partner.BreakThrough++;
+AscNet.GameServer\Handlers\PartnerModule.cs:296:            partner.Level = 1;
+AscNet.GameServer\Handlers\PartnerModule.cs:297:            partner.Exp = 0;
+AscNet.GameServer\Handlers\PartnerModule.cs:301:            session.SendResponse(new PartnerBreakThroughResponse
+AscNet.GameServer\Handlers\PartnerModule.cs:303:                BreakTimes = partner.BreakThrough
+AscNet.GameServer\Handlers\PartnerModule.cs:307:        [RequestPacketHandler("PartnerSkillUpRequest")]
+AscNet.GameServer\Handlers\PartnerModule.cs:308:        public static void PartnerSkillUpRequestHandler(Session session, Packet.Request packet)
+AscNet.GameServer\Handlers\PartnerModule.cs:310:            PartnerSkillUpRequest request = packet.Deserialize<PartnerSkillUpRequest>();
+AscNet.GameServer\Handlers\PartnerModule.cs:311:            PartnerData? partner = FindPartner(session, request.PartnerId);
+AscNet.GameServer\Handlers\PartnerModule.cs:312:            PartnerSkillData? skill = partner?.SkillList.Find(row => row.Id == request.SkillId);
+AscNet.GameServer\Handlers\PartnerModule.cs:313:            PartnerSkillTable? config = partner is null
+AscNet.GameServer\Handlers\PartnerModule.cs:315:                : TableReaderV2.Parse<PartnerSkillTable>().Find(row => row.PartnerId == partner.TemplateId);
+AscNet.GameServer\Handlers\PartnerModule.cs:317:            if (partner is null || skill is null || config is null || times <= 0 ||
+AscNet.GameServer\Handlers\PartnerModule.cs:320:                session.SendResponse(new PartnerSkillUpResponse { Code = ErrorCode, SkillUpInfo = [] }, packet.Id);
+AscNet.GameServer\Handlers\PartnerModule.cs:324:            int maxLevel = TableReaderV2.Parse<PartnerSkillEffectTable>()
+AscNet.GameServer\Handlers\PartnerModule.cs:331:                session.SendResponse(new PartnerSkillUpResponse { Code = ErrorCode, SkillUpInfo = [] }, packet.Id);
+AscNet.GameServer\Handlers\PartnerModule.cs:340:                session.SendResponse(new PartnerSkillUpResponse { Code = ErrorCode, SkillUpInfo = [] }, packet.Id);
+AscNet.GameServer\Handlers\PartnerModule.cs:350:            SendPartnerUpdate(session, partner);
+AscNet.GameServer\Handlers\PartnerModule.cs:353:            session.SendResponse(new PartnerSkillUpResponse
+AscNet.GameServer\Handlers\PartnerModule.cs:357:                    new PartnerSkillUpInfo
+AscNet.GameServer\Handlers\PartnerModule.cs:367:        [RequestPacketHandler("PartnerSkillWearRequest")]
+AscNet.GameServer\Handlers\PartnerModule.cs:368:        public static void PartnerSkillWearRequestHandler(Session session, Packet.Request packet)
+AscNet.GameServer\Handlers\PartnerModule.cs:370:            PartnerSkillWearRequest request = packet.Deserialize<PartnerSkillWearRequest>();
+AscNet.GameServer\Handlers\PartnerModule.cs:371:            PartnerData? partner = FindPartner(session, request.PartnerId);
+AscNet.GameServer\Handlers\PartnerModule.cs:372:            if (partner is null || request.SkillType is not (1 or 2)
+AscNet.GameServer\Handlers\PartnerModule.cs:375:                session.SendResponse(new PartnerSkillWearResponse { Code = ErrorCode }, packet.Id);
+AscNet.GameServer\Handlers\PartnerModule.cs:383:                    session.SendResponse(new PartnerSkillWearResponse { Code = ErrorCode }, packet.Id);
+AscNet.GameServer\Handlers\PartnerModule.cs:395:                        session.SendResponse(new PartnerSkillWearResponse { Code = ErrorCode }, packet.Id);
+AscNet.GameServer\Handlers\PartnerModule.cs:402:                HashSet<int> available = TableReaderV2.Parse<PartnerMainSkillGroupTable>()
+AscNet.GameServer\Handlers\PartnerModule.cs:403:                    .Where(group => partner.UnlockSkillGroup.Contains(group.Id))
+AscNet.GameServer\Handlers\PartnerModule.cs:406:                PartnerSkillData? current = partner.SkillList.Find(skill => skill.Type == 1);
+AscNet.GameServer\Handlers\PartnerModule.cs:409:                    session.SendResponse(new PartnerSkillWearResponse { Code = ErrorCode }, packet.Id);
+AscNet.GameServer\Handlers\PartnerModule.cs:418:                PartnerQualityTable? qualityConfig = null;
+AscNet.GameServer\Handlers\PartnerModule.cs:419:                foreach (PartnerQualityTable row in TableReaderV2.Parse<PartnerQualityTable>())
+AscNet.GameServer\Handlers\PartnerModule.cs:421:                    if (row.PartnerId != partner.TemplateId || row.Quality != partner.Quality)
+AscNet.GameServer\Handlers\PartnerModule.cs:425:                        session.SendResponse(new PartnerSkillWearResponse { Code = ErrorCode }, packet.Id);
+AscNet.GameServer\Handlers\PartnerModule.cs:433:                    session.SendResponse(new PartnerSkillWearResponse { Code = ErrorCode }, packet.Id);
+AscNet.GameServer\Handlers\PartnerModule.cs:437:                int wornCount = partner.SkillList.Count(skill => skill.Type == 2 && skill.IsWear);
+AscNet.GameServer\Handlers\PartnerModule.cs:440:                    PartnerSkillData? resolved = null;
+AscNet.GameServer\Handlers\PartnerModule.cs:441:                    foreach (PartnerSkillData skill in partner.SkillList)
+AscNet.GameServer\Handlers\PartnerModule.cs:447:                            session.SendResponse(new PartnerSkillWearResponse { Code = ErrorCode }, packet.Id);
+AscNet.GameServer\Handlers\PartnerModule.cs:455:                        session.SendResponse(new PartnerSkillWearResponse { Code = ErrorCode }, packet.Id);
+AscNet.GameServer\Handlers\PartnerModule.cs:464:                    session.SendResponse(new PartnerSkillWearResponse { Code = ErrorCode }, packet.Id);
+AscNet.GameServer\Handlers\PartnerModule.cs:469:                    partner.SkillList.Find(skill => skill.Type == 2 && skill.Id == skillId)!.IsWear = isWear;
+AscNet.GameServer\Handlers\PartnerModule.cs:472:            SendPartnerUpdate(session, partner);
+AscNet.GameServer\Handlers\PartnerModule.cs:474:            session.SendResponse(new PartnerSkillWearResponse(), packet.Id);
+AscNet.GameServer\Handlers\PartnerModule.cs:477:        [RequestPacketHandler("PartnerStarActivateRequest")]
+AscNet.GameServer\Handlers\PartnerModule.cs:478:        public static void PartnerStarActivateRequestHandler(Session session, Packet.Request packet)
+AscNet.GameServer\Handlers\PartnerModule.cs:480:            PartnerStarActivateRequest request = packet.Deserialize<PartnerStarActivateRequest>();
+AscNet.GameServer\Handlers\PartnerModule.cs:481:            PartnerData? partner = FindPartner(session, request.PartnerId);
+AscNet.GameServer\Handlers\PartnerModule.cs:482:            List<int> materialIds = ReadMaterialPartnerIds(packet.Content);
+AscNet.GameServer\Handlers\PartnerModule.cs:483:            List<PartnerData> materials = session.character.Partners?
+AscNet.GameServer\Handlers\PartnerModule.cs:486:            PartnerQualityTable? qualityConfig = partner is null
+AscNet.GameServer\Handlers\PartnerModule.cs:488:                : TableReaderV2.Parse<PartnerQualityTable>()
+AscNet.GameServer\Handlers\PartnerModule.cs:489:                    .Find(row => row.PartnerId == partner.TemplateId && row.Quality == partner.Quality);
+AscNet.GameServer\Handlers\PartnerModule.cs:491:            if (partner is null || qualityConfig is null || materialIds.Count == 0
+AscNet.GameServer\Handlers\PartnerModule.cs:493:                || materials.Any(material => material.Id == partner.Id
+AscNet.GameServer\Handlers\PartnerModule.cs:494:                    || material.TemplateId != partner.TemplateId
+AscNet.GameServer\Handlers\PartnerModule.cs:497:                || partner.StarSchedule < 0 || partner.StarSchedule % 30 != 0
+AscNet.GameServer\Handlers\PartnerModule.cs:498:                || partner.StarSchedule >= targetSchedule
+AscNet.GameServer\Handlers\PartnerModule.cs:499:                || materials.Count > (targetSchedule - partner.StarSchedule) / 30)
+AscNet.GameServer\Handlers\PartnerModule.cs:501:                session.SendResponse(new PartnerStarActivateResponse { Code = ErrorCode }, packet.Id);
+AscNet.GameServer\Handlers\PartnerModule.cs:505:            foreach (PartnerData material in materials)
+AscNet.GameServer\Handlers\PartnerModule.cs:506:                session.character.Partners!.Remove(material);
+AscNet.GameServer\Handlers\PartnerModule.cs:507:            partner.StarSchedule += materials.Count * 30;
+AscNet.GameServer\Handlers\PartnerModule.cs:508:            session.SendPush(new NotifyPartnerDataList
+AscNet.GameServer\Handlers\PartnerModule.cs:510:                PartnerDataList = [.. materials, partner],
+AscNet.GameServer\Handlers\PartnerModule.cs:514:            session.SendResponse(new PartnerStarActivateResponse(), packet.Id);
+AscNet.GameServer\Handlers\PartnerModule.cs:517:        [RequestPacketHandler("PartnerEvolutionRequest")]
+AscNet.GameServer\Handlers\PartnerModule.cs:518:        public static void PartnerEvolutionRequestHandler(Session session, Packet.Request packet)
+AscNet.GameServer\Handlers\PartnerModule.cs:520:            PartnerEvolutionRequest request = packet.Deserialize<PartnerEvolutionRequest>();
+AscNet.GameServer\Handlers\PartnerModule.cs:521:            PartnerData? partner = FindPartner(session, request.PartnerId);
+AscNet.GameServer\Handlers\PartnerModule.cs:522:            PartnerQualityTable? qualityConfig = partner is null
+AscNet.GameServer\Handlers\PartnerModule.cs:524:                : TableReaderV2.Parse<PartnerQualityTable>()
+AscNet.GameServer\Handlers\PartnerModule.cs:525:                    .Find(row => row.PartnerId == partner.TemplateId && row.Quality == partner.Quality);
+AscNet.GameServer\Handlers\PartnerModule.cs:526:            bool hasNextQuality = partner is not null && TableReaderV2.Parse<PartnerQualityTable>()
+AscNet.GameServer\Handlers\PartnerModule.cs:527:                .Any(row => row.PartnerId == partner.TemplateId && row.Quality == partner.Quality + 1);
+AscNet.GameServer\Handlers\PartnerModule.cs:530:            if (partner is null || qualityConfig is null || !hasNextQuality
+AscNet.GameServer\Handlers\PartnerModule.cs:531:                || partner.StarSchedule != qualityConfig.StarCostChipCount.LastOrDefault(value => value > 0)
+AscNet.GameServer\Handlers\PartnerModule.cs:535:                session.SendResponse(new PartnerEvolutionResponse { Code = ErrorCode }, packet.Id);
+AscNet.GameServer\Handlers\PartnerModule.cs:541:            partner.Quality++;
+AscNet.GameServer\Handlers\PartnerModule.cs:543:            SendPartnerUpdate(session, partner);
+AscNet.GameServer\Handlers\PartnerModule.cs:546:            session.SendResponse(new PartnerEvolutionResponse(), packet.Id);
+AscNet.GameServer\Handlers\PartnerModule.cs:549:        [RequestPacketHandler("PartnerUpdateLockRequest")]
+AscNet.GameServer\Handlers\PartnerModule.cs:550:        public static void PartnerUpdateLockRequestHandler(Session session, Packet.Request packet)
+AscNet.GameServer\Handlers\PartnerModule.cs:552:            PartnerUpdateLockRequest request = packet.Deserialize<PartnerUpdateLockRequest>();
+AscNet.GameServer\Handlers\PartnerModule.cs:553:            PartnerData? partner = FindPartner(session, request.PartnerId);
+AscNet.GameServer\Handlers\PartnerModule.cs:554:            if (partner is null)
+AscNet.GameServer\Handlers\PartnerModule.cs:556:                session.SendResponse(new PartnerUpdateLockResponse { Code = ErrorCode }, packet.Id);
+AscNet.GameServer\Handlers\PartnerModule.cs:560:            partner.IsLock = request.IsLock;
+AscNet.GameServer\Handlers\PartnerModule.cs:562:            session.SendResponse(new PartnerUpdateLockResponse(), packet.Id);
+AscNet.GameServer\Handlers\PartnerModule.cs:565:        [RequestPacketHandler("PartnerBreakAwayRequest")]
+AscNet.GameServer\Handlers\PartnerModule.cs:566:        public static void PartnerBreakAwayRequestHandler(Session session, Packet.Request packet)
+AscNet.GameServer\Handlers\PartnerModule.cs:568:            PartnerBreakAwayRequest request = packet.Deserialize<PartnerBreakAwayRequest>();
+AscNet.GameServer\Handlers\PartnerModule.cs:569:            PartnerData? partner = FindPartner(session, request.PartnerId);
+AscNet.GameServer\Handlers\PartnerModule.cs:570:            PartnerTable? partnerConfig = partner is null
+AscNet.GameServer\Handlers\PartnerModule.cs:572:                : TableReaderV2.Parse<PartnerTable>().Find(row => row.Id == partner.TemplateId);
+AscNet.GameServer\Handlers\PartnerModule.cs:573:            if (partner is null || partnerConfig is null || partner.CharacterId == 0)
+AscNet.GameServer\Handlers\PartnerModule.cs:575:                session.SendResponse(new PartnerBreakAwayResponse { Code = ErrorCode }, packet.Id);
+AscNet.GameServer\Handlers\PartnerModule.cs:579:            partner.CharacterId = 0;
+AscNet.GameServer\Handlers\PartnerModule.cs:580:            session.character.NormalizePartnerMainSkillForCarrier(partner);
+AscNet.GameServer\Handlers\PartnerModule.cs:582:            session.SendPush(new NotifyPartnerDataList
+AscNet.GameServer\Handlers\PartnerModule.cs:584:                PartnerDataList = [partner],
+AscNet.GameServer\Handlers\PartnerModule.cs:587:            session.SendResponse(new PartnerBreakAwayResponse(), packet.Id);
+AscNet.GameServer\Handlers\PartnerModule.cs:590:        [RequestPacketHandler("PartnerCarryRequest")]
+AscNet.GameServer\Handlers\PartnerModule.cs:591:        public static void PartnerCarryRequestHandler(Session session, Packet.Request packet)
+AscNet.GameServer\Handlers\PartnerModule.cs:593:            PartnerCarryRequest request = packet.Deserialize<PartnerCarryRequest>();
+AscNet.GameServer\Handlers\PartnerModule.cs:594:            PartnerData? partner = FindPartner(session, request.PartnerId);
+AscNet.GameServer\Handlers\PartnerModule.cs:595:            PartnerTable? partnerConfig = partner is null
+AscNet.GameServer\Handlers\PartnerModule.cs:597:                : TableReaderV2.Parse<PartnerTable>().Find(row => row.Id == partner.TemplateId);
+AscNet.GameServer\Handlers\PartnerModule.cs:600:            if (partner is null || partnerConfig is null || !ownsCharacter)
+AscNet.GameServer\Handlers\PartnerModule.cs:602:                session.SendResponse(new PartnerCarryResponse { Code = ErrorCode }, packet.Id);
+AscNet.GameServer\Handlers\PartnerModule.cs:606:            int previousCharacterId = partner.CharacterId;
+AscNet.GameServer\Handlers\PartnerModule.cs:607:            PartnerData? displaced = request.CharacterId == 0
+AscNet.GameServer\Handlers\PartnerModule.cs:609:                : session.character.Partners?
+AscNet.GameServer\Handlers\PartnerModule.cs:610:                    .FirstOrDefault(candidate => candidate.Id != partner.Id
+AscNet.GameServer\Handlers\PartnerModule.cs:614:            partner.CharacterId = request.CharacterId;
+AscNet.GameServer\Handlers\PartnerModule.cs:616:                session.character.NormalizePartnerMainSkillForCarrier(displaced);
+AscNet.GameServer\Handlers\PartnerModule.cs:617:            session.character.NormalizePartnerMainSkillForCarrier(partner);
+AscNet.GameServer\Handlers\PartnerModule.cs:619:            session.SendPush(new NotifyPartnerDataList
+AscNet.GameServer\Handlers\PartnerModule.cs:621:                PartnerDataList = displaced is null ? [partner] : [displaced, partner],
+AscNet.GameServer\Handlers\PartnerModule.cs:625:            session.SendResponse(new PartnerCarryResponse(), packet.Id);
+AscNet.GameServer\Handlers\PartnerModule.cs:628:        private static List<int> ReadMaterialPartnerIds(byte[] content)
+AscNet.GameServer\Handlers\PartnerModule.cs:635:                if (fieldName != nameof(PartnerStarActivateRequest.PartnerId)
+AscNet.GameServer\Handlers\PartnerModule.cs:650:        private static PartnerData? FindPartner(Session session, int partnerId) =>
+AscNet.GameServer\Handlers\PartnerModule.cs:651:            session.character.Partners?.Find(partner => partner.Id == partnerId);
+AscNet.GameServer\Handlers\PartnerModule.cs:652:        internal static int AllocatePartnerId(AscNet.Common.Database.Character character)
+AscNet.GameServer\Handlers\PartnerModule.cs:654:            character.Partners ??= [];
+AscNet.GameServer\Handlers\PartnerModule.cs:655:            return character.Partners.Count == 0
+AscNet.GameServer\Handlers\PartnerModule.cs:657:                : checked(character.Partners.Max(partner => partner.Id) + 1);
+AscNet.GameServer\Handlers\PartnerModule.cs:660:        private static PartnerBreakThroughTable? FindBreakthrough(PartnerData partner) =>
+AscNet.GameServer\Handlers\PartnerModule.cs:661:            TableReaderV2.Parse<PartnerBreakThroughTable>()
+AscNet.GameServer\Handlers\PartnerModule.cs:662:                .Find(row => row.PartnerId == partner.TemplateId && row.BreakTimes == partner.BreakThrough);
+AscNet.GameServer\Handlers\PartnerModule.cs:668:            List<PartnerSkillWearInfo>? requested,
+AscNet.GameServer\Handlers\PartnerModule.cs:678:            foreach (PartnerSkillWearInfo wear in requested)
+AscNet.GameServer\Handlers\PartnerModule.cs:691:        private static void SendPartnerUpdate(Session session, PartnerData partner) =>
+AscNet.GameServer\Handlers\PartnerModule.cs:692:            session.SendPush(new NotifyPartnerDataList
+AscNet.GameServer\Handlers\PartnerModule.cs:694:                PartnerDataList = [partner],
+AscNet.GameServer\Handlers\PartnerModule.cs:700:            501 => TableReaderV2.Parse<PartnerLevelUpTemplate501Table>().Select(row => (row.Level, row.AllExp)).ToList(),
+AscNet.GameServer\Handlers\PartnerModule.cs:701:            502 => TableReaderV2.Parse<PartnerLevelUpTemplate502Table>().Select(row => (row.Level, row.AllExp)).ToList(),
+AscNet.GameServer\Handlers\PartnerModule.cs:702:            503 => TableReaderV2.Parse<PartnerLevelUpTemplate503Table>().Select(row => (row.Level, row.AllExp)).ToList(),
+AscNet.GameServer\Handlers\PartnerModule.cs:703:            504 => TableReaderV2.Parse<PartnerLevelUpTemplate504Table>().Select(row => (row.Level, row.AllExp)).ToList(),
+AscNet.GameServer\Handlers\PartnerModule.cs:709:            PartnerTable? partner = TableReaderV2.Parse<PartnerTable>()
+AscNet.GameServer\Handlers\PartnerModule.cs:711:            ItemTable? shard = partner is null
+AscNet.GameServer\Handlers\PartnerModule.cs:713:                : TableReaderV2.Parse<ItemTable>().Find(item => item.Id == partner.ChipItemId);
+AscNet.GameServer\Handlers\PartnerModule.cs:714:            return partner is not null && partner.ChipNeedCount > 0 && shard?.ItemType == 8
+AscNet.GameServer\Handlers\PartnerModule.cs:715:                ? (partner.Id, partner.ChipItemId, partner.ChipNeedCount)
+AscNet.GameServer\Handlers\PartnerModule.cs:719:        internal static PartnerData CreatePartner(int id, int templateId)
+AscNet.GameServer\Handlers\PartnerModule.cs:721:            PartnerTable partnerConfig = TableReaderV2.Parse<PartnerTable>()
+AscNet.GameServer\Handlers\PartnerModule.cs:723:            PartnerSkillTable skillConfig = TableReaderV2.Parse<PartnerSkillTable>()
+AscNet.GameServer\Handlers\PartnerModule.cs:724:                .First(row => row.PartnerId == templateId);
+AscNet.GameServer\Handlers\PartnerModule.cs:725:            PartnerMainSkillGroupTable mainSkillGroup = TableReaderV2.Parse<PartnerMainSkillGroupTable>()
+AscNet.GameServer\Handlers\PartnerModule.cs:727:            ILookup<int, PartnerPassiveSkillGroupTable> passiveSkillGroups =
+AscNet.GameServer\Handlers\PartnerModule.cs:728:                TableReaderV2.Parse<PartnerPassiveSkillGroupTable>().ToLookup(group => group.Id);
+AscNet.GameServer\Handlers\PartnerModule.cs:730:            List<PartnerSkillData> skills =
+AscNet.GameServer\Handlers\PartnerModule.cs:732:                new PartnerSkillData
+AscNet.GameServer\Handlers\PartnerModule.cs:740:            skills.AddRange(skillConfig.PassiveSkillGroupId.Select(groupId => new PartnerSkillData
+AscNet.GameServer\Handlers\PartnerModule.cs:748:            return new PartnerData
+AscNet.GameServer\Handlers\PartnerModule.cs:753:                Quality = partnerConfig.InitQuality,
+AscNet.GameServer\Handlers\RewardHandler.cs:41:        internal NotifyPartnerDataList PartnerData { get; } = new();
+AscNet.GameServer\Handlers\RewardHandler.cs:60:            if (PartnerData.PartnerDataList.Count > 0)
+AscNet.GameServer\Handlers\RewardHandler.cs:61:                session.SendPush(PartnerData);
+AscNet.GameServer\Handlers\RewardHandler.cs:89:            PartnerData.PartnerDataList.AddRange(source.PartnerData.PartnerDataList);
+AscNet.GameServer\Handlers\RewardHandler.cs:90:            PartnerData.OperateTypes.AddRange(source.PartnerData.OperateTypes);
+AscNet.GameServer\Handlers\RewardHandler.cs:465:            target.Partners = source.Partners;
+AscNet.GameServer\Handlers\RewardHandler.cs:831:                case RewardType.Partner:
+AscNet.GameServer\Handlers\RewardHandler.cs:832:                    if (!TableReaderV2.Parse<AscNet.Table.V2.share.partner.PartnerTable>().Any(row => row.Id == reward.Id))
+AscNet.GameServer\Handlers\RewardHandler.cs:834:                    session.character.Partners ??= [];
+AscNet.GameServer\Handlers\RewardHandler.cs:835:                    PartnerData acquiredPartner = PartnerModule.CreatePartner(
+AscNet.GameServer\Handlers\RewardHandler.cs:836:                        PartnerModule.AllocatePartnerId(session.character),
+AscNet.GameServer\Handlers\RewardHandler.cs:838:                    session.character.Partners.Add(acquiredPartner);
+AscNet.GameServer\Handlers\RewardHandler.cs:839:                    result.PartnerData.PartnerDataList.Add(acquiredPartner);
+AscNet.GameServer\Handlers\RewardHandler.cs:840:                    result.PartnerData.OperateTypes.Add(1);
+Resources\table\client\activitybrief\ActivityBriefGroup.tsv:36:35	瀹犵墿	7110		RefreshPartner											
+Resources\table\client\draw\DrawScene.tsv:84:7001	3	16030000	Assets/Product/Ui/Scene3DPrefab/UiMain3dWuqi.prefab	Assets/Product/Ui/UiModel/UiNewDrawMain/UiNewDrawMainPartner.prefab	0.33|0|-24.34	0|223.2|0	1|1|1	
+Resources\table\client\draw\DrawScene.tsv:85:7002	3	16030000	Assets/Product/Ui/Scene3DPrefab/UiMain3dWuqi.prefab	Assets/Product/Ui/UiModel/UiNewDrawMain/UiNewDrawMainPartner.prefab	0.33|0|-24.34	0|223.2|0	1|1|1	
+Resources\table\client\draw\DrawScene.tsv:86:7003	3	16040000	Assets/Product/Ui/Scene3DPrefab/UiMain3dWuqi.prefab	Assets/Product/Ui/UiModel/UiNewDrawMain/UiNewDrawMainPartner.prefab	0.28|0|-24.58	0|-140.15|0	1|1|1	
+Resources\table\client\draw\DrawScene.tsv:87:7004	3	16040000	Assets/Product/Ui/Scene3DPrefab/UiMain3dWuqi.prefab	Assets/Product/Ui/UiModel/UiNewDrawMain/UiNewDrawMainPartner.prefab	0.28|0|-24.58	0|-140.15|0	1|1|1	
+Resources\table\client\draw\DrawScene.tsv:88:7005	3	16060000	Assets/Product/Ui/Scene3DPrefab/UiMain3dWuqi.prefab	Assets/Product/Ui/UiModel/UiNewDrawMain/UiNewDrawMainPartner.prefab	1.55|0|-23.77	0|-129.67|0	1|1|1	
+Resources\table\client\draw\DrawScene.tsv:89:7006	3	16060000	Assets/Product/Ui/Scene3DPrefab/UiMain3dWuqi.prefab	Assets/Product/Ui/UiModel/UiNewDrawMain/UiNewDrawMainPartner.prefab	1.55|0|-23.77	0|-129.67|0	1|1|1	
+Resources\table\client\draw\DrawScene.tsv:90:7007	3	16080000	Assets/Product/Ui/Scene3DPrefab/UiMain3dWuqi.prefab	Assets/Product/Ui/UiModel/UiNewDrawMain/UiNewDrawMainPartner.prefab	-0.35|-1.04|-25.35	12|-118|0.6	1|1|1	
+Resources\table\client\draw\DrawScene.tsv:91:7008	3	16080000	Assets/Product/Ui/Scene3DPrefab/UiMain3dWuqi.prefab	Assets/Product/Ui/UiModel/UiNewDrawMain/UiNewDrawMainPartner.prefab	-0.35|-1.04|-25.35	12|-118|0.6	1|1|1	
+Resources\table\client\draw\DrawScene.tsv:92:7009	3	16100000	Assets/Product/Ui/Scene3DPrefab/UiMain3dWuqi.prefab	Assets/Product/Ui/UiModel/UiNewDrawMain/UiNewDrawMainPartner.prefab	0.6|0|-24.26	0|-121|0	1|1|1	
+Resources\table\client\draw\DrawScene.tsv:93:7010	3	16100000	Assets/Product/Ui/Scene3DPrefab/UiMain3dWuqi.prefab	Assets/Product/Ui/UiModel/UiNewDrawMain/UiNewDrawMainPartner.prefab	0.6|0|-24.26	0|-121|0	1|1|1	
+Resources\table\client\draw\DrawScene.tsv:94:7011	3	16110000	Assets/Product/Ui/Scene3DPrefab/UiMain3dWuqi.prefab	Assets/Product/Ui/UiModel/UiNewDrawMain/UiNewDrawMainPartner.prefab	0.6|0|-24.26	0|-121|0	1|1|1	
+Resources\table\client\draw\DrawScene.tsv:95:7012	3	16110000	Assets/Product/Ui/Scene3DPrefab/UiMain3dWuqi.prefab	Assets/Product/Ui/UiModel/UiNewDrawMain/UiNewDrawMainPartner.prefab	0.6|0|-24.26	0|-121|0	1|1|1	
+Resources\table\client\draw\DrawScene.tsv:96:7013	3	16120000	Assets/Product/Ui/Scene3DPrefab/UiMain3dWuqi.prefab	Assets/Product/Ui/UiModel/UiNewDrawMain/UiNewDrawMainPartner.prefab	0.6|0|-24.26	0|-121|0	1|1|1	
+Resources\table\client\draw\DrawScene.tsv:97:7014	3	16120000	Assets/Product/Ui/Scene3DPrefab/UiMain3dWuqi.prefab	Assets/Product/Ui/UiModel/UiNewDrawMain/UiNewDrawMainPartner.prefab	0.6|0|-24.26	0|-121|0	1|1|1	
+Resources\table\client\draw\DrawScene.tsv:98:7015	3	16130000	Assets/Product/Ui/Scene3DPrefab/UiMain3dWuqi.prefab	Assets/Product/Ui/UiModel/UiNewDrawMain/UiNewDrawMainPartner.prefab	0.6|0|-24.26	0|-121|0	1|1|1	
+Resources\table\client\draw\DrawScene.tsv:99:7016	3	16130000	Assets/Product/Ui/Scene3DPrefab/UiMain3dWuqi.prefab	Assets/Product/Ui/UiModel/UiNewDrawMain/UiNewDrawMainPartner.prefab	0.6|0|-24.26	0|-121|0	1|1|1	
+Resources\table\client\draw\DrawScene.tsv:100:7017	3	16140000	Assets/Product/Ui/Scene3DPrefab/UiMain3dWuqi.prefab	Assets/Product/Ui/UiModel/UiNewDrawMain/UiNewDrawMainPartner.prefab	0.6|0|-24.26	0|-121|0	1|1|1	
+Resources\table\client\draw\DrawScene.tsv:101:7018	3	16140000	Assets/Product/Ui/Scene3DPrefab/UiMain3dWuqi.prefab	Assets/Product/Ui/UiModel/UiNewDrawMain/UiNewDrawMainPartner.prefab	0.6|0|-24.26	0|-121|0	1|1|1	
+Resources\table\client\draw\DrawScene.tsv:102:7019	3	16150000	Assets/Product/Ui/Scene3DPrefab/UiMain3dWuqi.prefab	Assets/Product/Ui/UiModel/UiNewDrawMain/UiNewDrawMainPartner.prefab	0.6|0|-24.26	0|-121|0	1|1|1	
+Resources\table\client\draw\DrawScene.tsv:103:7020	3	16150000	Assets/Product/Ui/Scene3DPrefab/UiMain3dWuqi.prefab	Assets/Product/Ui/UiModel/UiNewDrawMain/UiNewDrawMainPartner.prefab	0.6|0|-24.26	0|-121|0	1|1|1	
+Resources\table\client\draw\DrawScene.tsv:104:7021	3	16160000	Assets/Product/Ui/Scene3DPrefab/UiMain3dWuqi.prefab	Assets/Product/Ui/UiModel/UiNewDrawMain/UiNewDrawMainPartner.prefab	0.6|0|-24.26	0|-121|0	1|1|1	
+Resources\table\client\draw\DrawScene.tsv:105:7022	3	16160000	Assets/Product/Ui/Scene3DPrefab/UiMain3dWuqi.prefab	Assets/Product/Ui/UiModel/UiNewDrawMain/UiNewDrawMainPartner.prefab	0.6|0|-24.26	0|-121|0	1|1|1	
+Resources\table\client\draw\DrawScene.tsv:106:7023	3	16170000	Assets/Product/Ui/Scene3DPrefab/UiMain3dWuqi.prefab	Assets/Product/Ui/UiModel/UiNewDrawMain/UiNewDrawMainPartner.prefab	0.6|0|-24.26	0|-121|0	0.75|0.75|0.75	
+Resources\table\client\draw\DrawScene.tsv:107:7024	3	16170000	Assets/Product/Ui/Scene3DPrefab/UiMain3dWuqi.prefab	Assets/Product/Ui/UiModel/UiNewDrawMain/UiNewDrawMainPartner.prefab	0.6|0|-24.26	0|-121|0	0.75|0.75|0.75	
+Resources\table\client\draw\DrawScene.tsv:108:7025	3	16180000	Assets/Product/Ui/Scene3DPrefab/UiMain3dWuqi.prefab	Assets/Product/Ui/UiModel/UiNewDrawMain/UiNewDrawMainPartner.prefab	0.6|-0.45|-24.26	0|-121|0	1|1|1	
+Resources\table\client\draw\DrawScene.tsv:109:7026	3	16180000	Assets/Product/Ui/Scene3DPrefab/UiMain3dWuqi.prefab	Assets/Product/Ui/UiModel/UiNewDrawMain/UiNewDrawMainPartner.prefab	0.6|-0.45|-24.26	0|-121|0	1|1|1	
+Resources\table\client\draw\DrawScene.tsv:110:7027	3	16190000	Assets/Product/Ui/Scene3DPrefab/UiMain3dWuqi.prefab	Assets/Product/Ui/UiModel/UiNewDrawMain/UiNewDrawMainPartner.prefab	0.6|-0.45|-24.26	0|-121|0	1|1|1	
+Resources\table\client\draw\DrawScene.tsv:111:7028	3	16190000	Assets/Product/Ui/Scene3DPrefab/UiMain3dWuqi.prefab	Assets/Product/Ui/UiModel/UiNewDrawMain/UiNewDrawMainPartner.prefab	0.6|-0.45|-24.26	0|-121|0	1|1|1	
+Resources\table\client\draw\DrawScene.tsv:112:7029	3	16200000	Assets/Product/Ui/Scene3DPrefab/UiMain3dWuqi.prefab	Assets/Product/Ui/UiModel/UiNewDrawMain/UiNewDrawMainPartner.prefab	0.6|-0.45|-24.26	0|-121|0	1|1|1	
+Resources\table\client\draw\DrawScene.tsv:113:7030	3	16200000	Assets/Product/Ui/Scene3DPrefab/UiMain3dWuqi.prefab	Assets/Product/Ui/UiModel/UiNewDrawMain/UiNewDrawMainPartner.prefab	0.6|-0.45|-24.26	0|-121|0	1|1|1	
+Resources\table\client\draw\DrawScene.tsv:114:7031	3	16210000	Assets/Product/Ui/Scene3DPrefab/UiMain3dWuqi.prefab	Assets/Product/Ui/UiModel/UiNewDrawMain/UiNewDrawMainPartner.prefab	0.6|-0.45|-24.26	0|-121|0	1|1|1	
+Resources\table\client\draw\DrawScene.tsv:115:7032	3	16210000	Assets/Product/Ui/Scene3DPrefab/UiMain3dWuqi.prefab	Assets/Product/Ui/UiModel/UiNewDrawMain/UiNewDrawMainPartner.prefab	0.6|-0.45|-24.26	0|-121|0	1|1|1	
+Resources\table\client\draw\DrawScene.tsv:116:7033	3	16220000	Assets/Product/Ui/Scene3DPrefab/UiMain3dWuqi.prefab	Assets/Product/Ui/UiModel/UiNewDrawMain/UiNewDrawMainPartner.prefab	0.6|-0.45|-24.26	0|-121|0	1|1|1	
+Resources\table\client\draw\DrawScene.tsv:117:7034	3	16220000	Assets/Product/Ui/Scene3DPrefab/UiMain3dWuqi.prefab	Assets/Product/Ui/UiModel/UiNewDrawMain/UiNewDrawMainPartner.prefab	0.6|-0.45|-24.26	0|-121|0	1|1|1	
+Resources\table\client\draw\DrawScene.tsv:118:7035	3	16230000	Assets/Product/Ui/Scene3DPrefab/UiMain3dWuqi.prefab	Assets/Product/Ui/UiModel/UiNewDrawMain/UiNewDrawMainPartner.prefab	0.6|-0.45|-24.26	0|-121|0	1|1|1	
+Resources\table\client\draw\DrawScene.tsv:119:7036	3	16230000	Assets/Product/Ui/Scene3DPrefab/UiMain3dWuqi.prefab	Assets/Product/Ui/UiModel/UiNewDrawMain/UiNewDrawMainPartner.prefab	0.6|-0.45|-24.26	0|-121|0	1|1|1	
+Resources\table\client\draw\DrawScene.tsv:120:7037	3	16240000	Assets/Product/Ui/Scene3DPrefab/UiMain3dWuqi.prefab	Assets/Product/Ui/UiModel/UiNewDrawMain/UiNewDrawMainPartner.prefab	0.6|-0.45|-24.26	0|-121|0	1|1|1	
+Resources\table\client\draw\DrawScene.tsv:121:7038	3	16240000	Assets/Product/Ui/Scene3DPrefab/UiMain3dWuqi.prefab	Assets/Product/Ui/UiModel/UiNewDrawMain/UiNewDrawMainPartner.prefab	0.6|-0.45|-24.26	0|-121|0	1|1|1	
+Resources\table\client\draw\DrawScene.tsv:122:7039	3	16250000	Assets/Product/Ui/Scene3DPrefab/UiMain3dWuqi.prefab	Assets/Product/Ui/UiModel/UiNewDrawMain/UiNewDrawMainPartner.prefab	0.6|-0.45|-24.26	0|-121|0	1|1|1	
+Resources\table\client\draw\DrawScene.tsv:123:7040	3	16250000	Assets/Product/Ui/Scene3DPrefab/UiMain3dWuqi.prefab	Assets/Product/Ui/UiModel/UiNewDrawMain/UiNewDrawMainPartner.prefab	0.6|-0.45|-24.26	0|-121|0	1|1|1	
+Resources\table\client\draw\DrawScene.tsv:124:7041	3	16260000	Assets/Product/Ui/Scene3DPrefab/UiMain3dWuqi.prefab	Assets/Product/Ui/UiModel/UiNewDrawMain/UiNewDrawMainPartner.prefab	0.6|-0.45|-24.26	0|-121|0	1|1|1	
+Resources\table\client\draw\DrawScene.tsv:125:7042	3	16260000	Assets/Product/Ui/Scene3DPrefab/UiMain3dWuqi.prefab	Assets/Product/Ui/UiModel/UiNewDrawMain/UiNewDrawMainPartner.prefab	0.6|-0.45|-24.26	0|-121|0	1|1|1	
+Resources\table\client\draw\DrawScene.tsv:126:7043	3	16270000	Assets/Product/Ui/Scene3DPrefab/UiMain3dWuqi.prefab	Assets/Product/Ui/UiModel/UiNewDrawMain/UiNewDrawMainPartner.prefab	0.6|-0.45|-24.26	0|-121|0	1|1|1	
+Resources\table\client\draw\DrawScene.tsv:127:7044	3	16270000	Assets/Product/Ui/Scene3DPrefab/UiMain3dWuqi.prefab	Assets/Product/Ui/UiModel/UiNewDrawMain/UiNewDrawMainPartner.prefab	0.6|-0.45|-24.26	0|-121|0	1|1|1	
+Resources\table\client\draw\DrawScene.tsv:128:7045	3	16280000	Assets/Product/Ui/Scene3DPrefab/UiMain3dWuqi.prefab	Assets/Product/Ui/UiModel/UiNewDrawMain/UiNewDrawMainPartner.prefab	0.6|-0.45|-24.26	0|-121|0	1|1|1	
+Resources\table\client\draw\DrawScene.tsv:129:7046	3	16280000	Assets/Product/Ui/Scene3DPrefab/UiMain3dWuqi.prefab	Assets/Product/Ui/UiModel/UiNewDrawMain/UiNewDrawMainPartner.prefab	0.6|-0.45|-24.26	0|-121|0	1|1|1	
+Resources\table\client\draw\DrawScene.tsv:130:7047	3	16290000	Assets/Product/Ui/Scene3DPrefab/UiMain3dWuqi.prefab	Assets/Product/Ui/UiModel/UiNewDrawMain/UiNewDrawMainPartner.prefab	0.6|-0.45|-24.26	0|-121|0	1|1|1	
+Resources\table\client\draw\DrawScene.tsv:131:7048	3	16290000	Assets/Product/Ui/Scene3DPrefab/UiMain3dWuqi.prefab	Assets/Product/Ui/UiModel/UiNewDrawMain/UiNewDrawMainPartner.prefab	0.6|-0.45|-24.26	0|-121|0	1|1|1	
+Resources\table\client\draw\DrawScene.tsv:132:7049	3	16300000	Assets/Product/Ui/Scene3DPrefab/UiMain3dWuqi.prefab	Assets/Product/Ui/UiModel/UiNewDrawMain/UiNewDrawMainPartner.prefab	0.6|-0.45|-24.26	0|-121|0	1|1|1	
+Resources\table\client\draw\DrawScene.tsv:133:7050	3	16310000	Assets/Product/Ui/Scene3DPrefab/UiMain3dWuqi.prefab	Assets/Product/Ui/UiModel/UiNewDrawMain/UiNewDrawMainPartner.prefab	0.6|-0.45|-24.26	0|-121|0	1|1|1	
+Resources\table\client\draw\DrawScene.tsv:134:7051	3	16320000	Assets/Product/Ui/Scene3DPrefab/UiMain3dWuqi.prefab	Assets/Product/Ui/UiModel/UiNewDrawMain/UiNewDrawMainPartner.prefab	0.6|-0.45|-24.26	0|-121|0	1|1|1	
+Resources\table\client\draw\DrawScene.tsv:135:7052	3	16320000	Assets/Product/Ui/Scene3DPrefab/UiMain3dWuqi.prefab	Assets/Product/Ui/UiModel/UiNewDrawMain/UiNewDrawMainPartner.prefab	0.6|-0.45|-24.26	0|-121|0	1|1|1	
+Resources\table\client\draw\DrawScene.tsv:136:7053	3	16330000	Assets/Product/Ui/Scene3DPrefab/UiMain3dWuqi.prefab	Assets/Product/Ui/UiModel/UiNewDrawMain/UiNewDrawMainPartner.prefab	0.6|-0.45|-24.26	0|-121|0	1|1|1	
+Resources\table\client\draw\DrawScene.tsv:137:7054	3	16330000	Assets/Product/Ui/Scene3DPrefab/UiMain3dWuqi.prefab	Assets/Product/Ui/UiModel/UiNewDrawMain/UiNewDrawMainPartner.prefab	0.6|-0.45|-24.26	0|-121|0	1|1|1	
+Resources\table\client\draw\DrawScene.tsv:138:7055	3	16340000	Assets/Product/Ui/Scene3DPrefab/UiMain3dWuqi.prefab	Assets/Product/Ui/UiModel/UiNewDrawMain/UiNewDrawMainPartner.prefab	0.6|-0.45|-24.26	0|-121|0	1|1|1	
+Resources\table\client\draw\DrawScene.tsv:139:7056	3	16350000	Assets/Product/Ui/Scene3DPrefab/UiMain3dWuqi.prefab	Assets/Product/Ui/UiModel/UiNewDrawMain/UiNewDrawMainPartner.prefab	0.6|-0.45|-24.26	0|-121|0	1|1|1	
+Resources\table\client\draw\DrawScene.tsv:140:7057	3	16350000	Assets/Product/Ui/Scene3DPrefab/UiMain3dWuqi.prefab	Assets/Product/Ui/UiModel/UiNewDrawMain/UiNewDrawMainPartner.prefab	0.6|-0.45|-24.26	0|-121|0	1|1|1	
+Resources\table\client\draw\DrawScene.tsv:141:7058	3	16360000	Assets/Product/Ui/Scene3DPrefab/UiMain3dWuqi.prefab	Assets/Product/Ui/UiModel/UiNewDrawMain/UiNewDrawMainPartner.prefab	0.6|-0.45|-24.26	0|-121|0	1|1|1	
+Resources\table\client\draw\DrawScene.tsv:142:7059	3	16360000	Assets/Product/Ui/Scene3DPrefab/UiMain3dWuqi.prefab	Assets/Product/Ui/UiModel/UiNewDrawMain/UiNewDrawMainPartner.prefab	0.6|-0.45|-24.26	0|-121|0	1|1|1	
+Resources\table\client\draw\DrawScene.tsv:143:7060	3	16370000	Assets/Product/Ui/Scene3DPrefab/UiMain3dWuqi.prefab	Assets/Product/Ui/UiModel/UiNewDrawMain/UiNewDrawMainPartner.prefab	0.6|-0.45|-24.26	0|-121|0	1|1|1	
+Resources\table\client\draw\DrawScene.tsv:144:7061	3	16370000	Assets/Product/Ui/Scene3DPrefab/UiMain3dWuqi.prefab	Assets/Product/Ui/UiModel/UiNewDrawMain/UiNewDrawMainPartner.prefab	0.6|-0.45|-24.26	0|-121|0	1|1|1	
+Resources\table\client\draw\DrawScene.tsv:145:7062	3	16380000	Assets/Product/Ui/Scene3DPrefab/UiMain3dWuqi.prefab	Assets/Product/Ui/UiModel/UiNewDrawMain/UiNewDrawMainPartner.prefab	0.6|-0.45|-24.26	0|-121|0	1|1|1	
+Resources\table\client\draw\DrawScene.tsv:146:7063	3	16380000	Assets/Product/Ui/Scene3DPrefab/UiMain3dWuqi.prefab	Assets/Product/Ui/UiModel/UiNewDrawMain/UiNewDrawMainPartner.prefab	0.6|-0.45|-24.26	0|-121|0	1|1|1	
+Resources\table\client\draw\DrawScene.tsv:147:7064	3	16390000	Assets/Product/Ui/Scene3DPrefab/UiMain3dWuqi.prefab	Assets/Product/Ui/UiModel/UiNewDrawMain/UiNewDrawMainPartner.prefab	0.6|-0.45|-24.26	0|-121|0	1|1|1	
+Resources\table\client\draw\DrawScene.tsv:148:7065	3	16340000	Assets/Product/Ui/Scene3DPrefab/UiMain3dWuqi.prefab	Assets/Product/Ui/UiModel/UiNewDrawMain/UiNewDrawMainPartner.prefab	0.6|-0.45|-24.26	0|-121|0	1|1|1	
+Resources\table\client\draw\DrawScene.tsv:149:7066	3	16400000	Assets/Product/Ui/Scene3DPrefab/UiMain3dWuqi.prefab	Assets/Product/Ui/UiModel/UiNewDrawMain/UiNewDrawMainPartner.prefab	0.6|-0.45|-24.26	0|-121|0	1|1|1	
+Resources\table\client\draw\DrawScene.tsv:150:7067	3	16400000	Assets/Product/Ui/Scene3DPrefab/UiMain3dWuqi.prefab	Assets/Product/Ui/UiModel/UiNewDrawMain/UiNewDrawMainPartner.prefab	0.6|-0.45|-24.26	0|-121|0	1|1|1	
+Resources\table\client\draw\DrawScene.tsv:151:7069	3	16410000	Assets/Product/Ui/Scene3DPrefab/UiMain3dWuqi.prefab	Assets/Product/Ui/UiModel/UiNewDrawMain/UiNewDrawMainPartner.prefab	0.6|-0.45|-24.26	0|-121|0	1|1|1	
+Resources\table\client\draw\DrawScene.tsv:152:7070	3	16410000	Assets/Product/Ui/Scene3DPrefab/UiMain3dWuqi.prefab	Assets/Product/Ui/UiModel/UiNewDrawMain/UiNewDrawMainPartner.prefab	0.6|-0.45|-24.26	0|-121|0	1|1|1	
+Resources\table\client\draw\DrawShow.tsv:11:CUB	<color=#d580ff>B</color>	<color=#ffd953>A-Rank</color>	<color=#fa5826>S-Rank</color>	<color=#fa5826>SS-Rank</color>	<color=#fa5826>SSS-Rank</color>	<color=#fa5826>SSS-Rank</color>	PartnerShowBegan	PartnerShowLoop	5	5	6	6	6	6	7	8	9	10	11	12	5	5	6	6	6	6	16
+Resources\table\client\functional\SkipFunctional.tsv:1296:7107	6	UiPartnerTeachingBanner		To CUB tutorial	1801	1													
+Resources\table\client\functional\SkipFunctional.tsv:1297:7108	7	SkipToPartnerTeachingChapter		To CUB tutorial - Chapter 1	1801	1	1												
+Resources\table\client\functional\SkipFunctional.tsv:1298:7109	7	SkipToPartnerTeachingChapter		To CUB tutorial - Chapter 2	1801	1	2												
+Resources\table\client\functional\SkipFunctional.tsv:1299:7110	7	SkipToPartnerTeachingChapter		To CUB tutorial trial - Chapter 3	1801	1	3												
+Resources\table\client\functional\SkipFunctional.tsv:1300:7111	7	SkipToPartnerTeachingChapter		To CUB Tutorial - Chapter 4	1801	1	4												
+Resources\table\client\functional\SkipFunctional.tsv:1301:7112	7	SkipToPartnerTeachingChapter		To CUB tutorial trial - Chapter 5	1801	1	5												
+Resources\table\client\functional\SkipFunctional.tsv:1302:7113	7	SkipToPartnerTeachingChapter		To CUB tutorial trial - Chapter 6	1801	1	6												
+Resources\table\client\functional\SkipFunctional.tsv:1303:7114	7	SkipToPartnerTeachingChapter		To CUB Tutorial Trial - Chapter 7	1801	1	7												
+Resources\table\client\functional\SkipFunctional.tsv:1304:7115	7	SkipToPartnerTeachingChapter		To CUB Tutorial Trial - Chapter 8	1801	1	8												
+Resources\table\client\functional\SkipFunctional.tsv:1305:7116	7	SkipToPartnerTeachingChapter		To CUB Tutorial Trial - Chapter 9	1801	1	9												
+Resources\table\client\functional\SkipFunctional.tsv:1306:7117	7	SkipToPartnerTeachingChapter		To CUB Tutorial Trial - Chapter 10	1801	1	10												
+Resources\table\client\functional\SkipFunctional.tsv:1307:7118	7	SkipToPartnerTeachingChapter		To CUB Tutorial Trial - Chapter 11	1801	1	11												
+Resources\table\client\functional\SkipFunctional.tsv:1308:7119	7	SkipToPartnerTeachingChapter		To CUB Tutorial Trial - Chapter 12	1801	1	12												
+Resources\table\client\functional\SkipFunctional.tsv:1309:7120	7	SkipToPartnerTeachingChapter		To CUB Tutorial Trial - Chapter 13	1801	1	13												
+Resources\table\client\functional\SkipFunctional.tsv:1310:7121	7	SkipToPartnerTeachingChapter		To CUB Tutorial Trial - Chapter 14	1801	1	14												
+Resources\table\client\functional\SkipFunctional.tsv:1311:7122	7	SkipToPartnerTeachingChapter		To CUB Tutorial Trial - Chapter 15	1801	1	15												
+Resources\table\client\functional\SkipFunctional.tsv:1312:7123	7	SkipToPartnerTeachingChapter		To CUB Tutorial Trial - Chapter 16	1801	1	16												
+Resources\table\client\functional\SkipFunctional.tsv:1313:7124	7	SkipToPartnerTeachingChapter		To CUB Tutorial Trial - Chapter 17	1801	1	17												
+Resources\table\client\functional\SkipFunctional.tsv:1314:7125	7	SkipToPartnerTeachingChapter		To CUB Tutorial Trial - Chapter 18	1801	1	18												
+Resources\table\client\functional\SkipFunctional.tsv:1315:7126	7	SkipToPartnerTeachingChapter		To CUB Tutorial Trial - Chapter 19	1801	1	19												
+Resources\table\client\functional\SkipFunctional.tsv:1316:7127	7	SkipToPartnerTeachingChapter		To CUB Tutorial Trial - Chapter 20	1801	1	20												
+Resources\table\client\functional\SkipFunctional.tsv:1317:7128	7	SkipToPartnerTeachingChapter		To CUB Tutorial Trial - Chapter 21	1801	1	21												
+Resources\table\client\functional\SkipFunctional.tsv:1318:7129	7	SkipToPartnerTeachingChapter		To CUB Tutorial Trial - Chapter 22	1801	1	22												
+Resources\table\client\functional\SkipFunctional.tsv:1319:7130	7	SkipToPartnerTeachingChapter		To CUB Tutorial Trial - Chapter 23	1801	1	23												
+Resources\table\client\functional\SkipFunctional.tsv:1320:7131	7	SkipToPartnerTeachingChapter		To CUB Tutorial Trial - Chapter 24	1801	1	24												
+Resources\table\client\functional\SkipFunctional.tsv:1321:7132	7	SkipToPartnerTeachingChapter		To CUB Tutorial Trial - Chapter 25	1801	1	25												
+Resources\table\client\functional\SkipFunctional.tsv:1322:7133	7	SkipToPartnerTeachingChapter		To CUB Tutorial Trial - Chapter 26	1801	1	26												
+Resources\table\client\functional\SkipFunctional.tsv:1323:7134	7	SkipToPartnerTeachingChapter		To CUB Tutorial Trial - Chapter 27	1801	1	27												
+Resources\table\client\functional\SkipFunctional.tsv:1324:7135	7	SkipToPartnerTeachingChapter		To CUB Tutorial Trial - Chapter 28	1801	1	28												
+Resources\table\client\functional\SkipFunctional.tsv:1325:7136	7	SkipToPartnerTeachingChapter		To CUB Tutorial Trial - Chapter 29	1801	1	29												
+Resources\table\client\functional\SkipFunctional.tsv:1326:7137	7	SkipToPartnerTeachingChapter		To CUB Tutorial Trial - Chapter 30	1801	1	30												
+Resources\table\client\functional\SkipFunctional.tsv:1327:7138	7	SkipToPartnerTeachingChapter		鍓嶅線杈呭姪鏈烘暀瀛﹁瘯鐜?绗笁鍗佷竴绔?1801	1	31												
+Resources\table\client\functional\SkipFunctional.tsv:1328:7139	7	SkipToPartnerTeachingChapter		To CUB Tutorial Trial - Chapter 32	1801	1	32												
+Resources\table\client\functional\SkipFunctional.tsv:1329:7140	7	SkipToPartnerTeachingChapter		To CUB Tutorial Trial - Chapter 33	1801	1	33												
+Resources\table\client\functional\SkipFunctional.tsv:1330:7141	7	SkipToPartnerTeachingChapter		To CUB Tutorial Trial - Chapter 34	1801	1	34												
+Resources\table\client\functional\SkipFunctional.tsv:1331:7142	7	SkipToPartnerTeachingChapter		To CUB Tutorial Trial - Chapter 35	1801	1	35					1050153							
+Resources\table\client\functional\SkipFunctional.tsv:1332:7143	7	SkipToPartnerTeachingChapter		鍓嶅線杈呭姪鏈烘暀瀛﹁瘯鐜?绗笁鍗佷竷绔?1801	1	37					1050153							
+Resources\table\client\functional\SkipFunctional.tsv:1882:20110	1	UiPartnerMain		CUB	5001	1													
+Resources\table\client\functional\SkipFunctional.tsv:2546:60001	1	UiPartnerMain		Partner System	5001	1													
+Resources\table\client\partner\PartnerItemSkipId.tsv:1:PartnerId	LevelUpSkipIdParams[1]	LevelUpSkipIdParams[2]	ClipSkipIdParams[1]	ClipSkipIdParams[2]	StageSkipIdParam
+Resources\table\client\partner\PartnerUiEffect.tsv:1:Id	PartnerId	ModelType	EffectType	EffectRootName	EffectPath
+Resources\table\share\condition\Condition.tsv:5513:84600703	10105	30130903																																Unlocked after clearing Event "Sea of Stars" Stage - Best Partners	
+Resources\table\share\config\Config.tsv:318:PartnerMaxCount	200
+Resources\table\share\config\Config.tsv:319:PartnerNameMaxLength	12
+Resources\table\share\config\Config.tsv:320:PartnerExpExchangeItemId	30111
+Resources\table\share\config\Config.tsv:321:PartnerExpItemPercent	1
+Resources\table\share\config\Config.tsv:322:PartnerExpExchangeCoin	10
+Resources\table\share\config\Config.tsv:323:PartnerBreakConsumeRebate	0.7
+Resources\table\share\config\Config.tsv:324:PartnerSkillConsumeRebate	0.9
+Resources\table\share\config\Config.tsv:325:PartnerAbilityConvert	0
+Resources\table\share\config\Config.tsv:326:PartnerDecomposeExpItemRebate	30111|30112|30113
+Resources\table\share\config\Config.tsv:327:PartnerDecomposeLevelBreakRebate	0.7
+Resources\table\share\config\Config.tsv:328:PartnerDecomposeEvolutionRebate	0.7
+Resources\table\share\config\Config.tsv:329:PartnerDecomposeSkillRebate	0.7
+Resources\table\share\fuben\Stage.tsv:591:10230102	Undercurrents and Omens	Though our brief partnership has been pleasant, our fundamental goals are irreconcilable. Perhaps our "honeymoon" phase with the Parliament is coming to an end.	Assets/Product/Texture/Image/UiFubenMainTab/UiFuben23TitleBg01.png	Assets/Product/Texture/Image/UiFubenMainTab/UiFuben23Img01.png	36		10101			1													2	1				1								300	10230101																					1				3	Have all members survive.	Die no more than once.	Die no more than 2 times.											1		2	1							17		2	FwSquare			1	2	3											
+Resources\table\share\fuben\Stage.tsv:900:10340107	Partner	A downplayed operation.	Assets/Product/Texture/Image/UiFubenMainLineNew/UiFubenMainLineNewStoryBg3.png	Assets/Product/Texture/Image/UiFubenMainLineNew/UiFubenMainLineNewStoryBg1.png	36		10101			1													8	1				1								300	10340106																					1				3	Defeat all the Corrupted.													1		2	1							17		2	GridStageMainLineStory			1	2	3											
+Resources\table\share\fuben\Stage.tsv:4650:15020615	Raging Fist	My partner and I will beat you up with all we have!	Assets/Product/Texture/Image/UiFubenMainTab/FubenMainTabERN0517.png		36		10101			1													17	1				1								300	15020614						10120102		10120102													1				3	Have all members survive.	Die no more than once.	Die no more than 2 times.											1		2	1	127603						16		1	FwRectangle			1	2	3											
+Resources\table\share\fuben\Stage.tsv:4651:15020616	Partner	Let's celebrate our victory, partner!	Assets/Product/Texture/Image/UiFubenMainTab/UiFubenER05Img01.png	Assets/Product/Texture/Image/UiFubenMainTab/UiFubenER05TitleBg01.png	36		10101			1													18	1				1								300	15020615																					1				3	Have all members survive.	Die no more than once.	Die no more than 2 times.											1		2	1							16		2	FwSquare			1	2	3											
+Resources\table\share\fuben\Stage.tsv:5318:30130451	And Suddenly It's Evening	Do you take Lucia to be your partner, to love, cherish, and stand by her?	Assets/Product/Texture/Image/UiGachaLucia/UiGachaLuciaMain/UiGachaLuciaStoryBg01.png	Assets/Product/Texture/Image/UiGachaLucia/UiGachaLuciaMain/UiGachaLuciaStory01.png	230		20016			1													1	1											1																							1				3														1		2	1									2	Square			1	2	3											
+Resources\table\share\fuben\Stage.tsv:5372:30130520	And Suddenly It's Evening	Do you take Lucia to be your partner, to love, cherish, and stand by her?	Assets/Product/Texture/Image/UiGachaLucia/UiGachaLuciaMain/UiGachaLuciaStoryBg01.png	Assets/Product/Texture/Image/UiGachaLucia/UiGachaLuciaMain/UiGachaLuciaStory01.png	230		20016			1													1	1											1																							1				3														1		2	1									2	Square			1	2	3											
+Resources\table\share\fuben\Stage.tsv:5455:30130903	Best Partners	Could you help me, Karenina? Let's just have some fun.	Assets/Product/Texture/Image/UiFubenChristmas/UiFubenChristmasBg1.png		101		20001			1													3	1											1	900	30130902						11954		11954																	3	Just use someone else' parts.	Don't just repeat the same thing.	Kuroro has something to say											1		2	1	2004						12			Rectangle			1	2	3											
+Resources\table\share\fuben\Stage.tsv:6231:30101009	Reject and Accept	New Pet Trial Stages	Assets/Product/Texture/Image/UiPartnerTeaching/Chapter/UiPartnerTeachingChapterHeStage01.png	Assets/Product/Texture/Image/UiPartnerTeaching/Chapter/UiPartnerTeachingChapterHeStage01.png	101					1													3	1											1		30101112						12051		12051													1				3	Pay attention to CUB tutorial tips.	Learn practical skills of CUB Toniris												1		2	1	9085									Rectangle			1	2	3											
+Resources\table\share\fuben\Stage.tsv:6240:30101019	Nitor	Nitor Description	Assets/Product/Texture/Image/UiPartnerTeaching/Chapter/UiPartnerTeachingChapterMaoStage01.png	Assets/Product/Texture/Image/UiPartnerTeaching/Chapter/UiPartnerTeachingChapterMaoStage01.png	101					1													1	1											1								12051		12051													1				3	Pay attention to CUB tutorial tips.	Learn practical skills of CUB Nitor												1		2	1	9096									Rectangle			1	2	3											
+Resources\table\share\fuben\Stage.tsv:6242:30101021	Boreas	Ice Bird Description	Assets/Product/Texture/Image/UiPartnerTeaching/Chapter/UiPartnerTeachingChapterEagleStage01.png	Assets/Product/Texture/Image/UiPartnerTeaching/Chapter/UiPartnerTeachingChapterMaoStage01.png	101					1													1	1											1								12051		12051													1				3	Pay attention to CUB tutorial tips.	Learn practical skills of CUB Boreas												1		2	1	9105									Rectangle			1	2	3											
+Resources\table\share\fuben\Stage.tsv:6245:30101024	Jet Jaeger	Fire Tiger Description	Assets/Product/Texture/Image/UiPartnerTeaching/Chapter/UiPartnerTeachingChapterHuStage01.png	Assets/Product/Texture/Image/UiPartnerTeaching/Chapter/UiPartnerTeachingChapterMaoStage01.png	101					1													1	1											1								12051		12051													1				3	Pay attention to CUB tutorial tips.	Learn practical skills of CUB Jet Jaeger.												1		2	1	2219									Rectangle			1	2	3											
+Resources\table\share\fuben\Stage.tsv:6249:30101028	Moonhopper	Dark Rabbit Description	Assets/Product/Texture/Image/UiPartnerTeaching/Chapter/UiPartnerTeachingChapterTuStage01.png	Assets/Product/Texture/Image/UiPartnerTeaching/Chapter/UiPartnerTeachingChapterMaoStage01.png	101					1													1	1											1								12051		12051													1				3	Pay attention to CUB tutorial tips.	Learn practical skills of CUB Moonhopper.												1		2	1	2231									Rectangle			1	2	3											
+Resources\table\share\fuben\Stage.tsv:6252:30101031	Shimmer	Shimmer Description	Assets/Product/Texture/Image/UiPartnerTeaching/Chapter/UiPartnerTeachingChapterYuStage01.png	Assets/Product/Texture/Image/UiPartnerTeaching/Chapter/UiPartnerTeachingChapterMaoStage01.png	101					1													1	1											1								12051		12051													1				3	Pay attention to CUB tutorial tips.	Learn practical skills of CUB Shimmer.												1		2	1	9117									Rectangle			1	2	3											
+Resources\table\share\fuben\Stage.tsv:6260:30101038	Punchy	Punchy Description	Assets/Product/Texture/Image/UiPartnerTeaching/Chapter/UiPartnerTeachingChapterQuanStage01.png	Assets/Product/Texture/Image/UiPartnerTeaching/Chapter/UiPartnerTeachingChapterMaoStage01.png	101					1													1	1											1								12051		12051													1				3	Pay attention to CUB tutorial tips.	Learn practical skills of CUB Punchy.												1		2	1	2242									Rectangle			1	2	3											
+Resources\table\share\fuben\Stage.tsv:6263:30101041	Rainbow	Rainbow Description	Assets/Product/Texture/Image/UiPartnerTeaching/Chapter/UiPartnerTeachingChapterWuzeiStage01.png	Assets/Product/Texture/Image/UiPartnerTeaching/Chapter/UiPartnerTeachingChapterMaoStage01.png	101					1													1	1											1								12051		12051													1				3	Pay attention to CUB tutorial tips.	Learn practical skills of CUB Rainbow.												1		2	1	9148									Rectangle			1	2	3											
+Resources\table\share\fuben\Stage.tsv:6266:30101044	Motorbolt	Motorbolt Description	Assets/Product/Texture/Image/UiPartnerTeaching/Chapter/UiPartnerTeachingChapterMotorStage01.png	Assets/Product/Texture/Image/UiPartnerTeaching/Chapter/UiPartnerTeachingChapterMaoStage01.png	101					1													1	1											1								12051		12051													1				3	Pay attention to CUB tutorial tips.	Learn practical skills of CUB Motorbolt.												1		2	1	9162									Rectangle			1	2	3											
+Resources\table\share\fuben\Stage.tsv:6324:30101047	Hades Fangs	Hades Fangs Description	Assets/Product/Texture/Image/UiPartnerTeaching/Chapter/UiPartnerTeachingChapterWolfStage01.png	Assets/Product/Texture/Image/UiPartnerTeaching/Chapter/UiPartnerTeachingChapterMaoStage01.png	101					1													1	1											1								12051		12051													1				3	Pay attention to CUB tutorial tips.	Learn practical skills of CUB Hades Fangs.												1		2	1	9182									Rectangle			1	2	3											
+Resources\table\share\fuben\Stage.tsv:6326:30101050	Dawn Chorus	Dawn Chorus Description	Assets/Product/Texture/Image/UiPartnerTeaching/Chapter/UiPartnerTeachingChapterGriffonStage01.png	Assets/Product/Texture/Image/UiPartnerTeaching/Chapter/UiPartnerTeachingChapterMaoStage01.png	101					1													1	1											1								12051		12051													1				3	Pay attention to CUB tutorial tips.	Learn practical skills of CUB Dawn Chorus.												1		2	1	127626									Rectangle			1	2	3											
+Resources\table\share\fuben\Stage.tsv:6327:30101054	Cetus	Cetus Description	Assets/Product/Texture/Image/UiPartnerTeaching/Chapter/UiPartnerTeachingChapterQianZeStage01.png	Assets/Product/Texture/Image/UiPartnerTeaching/Chapter/UiPartnerTeachingChapterMaoStage01.png	101					1													1	1											1								12051		12051													1				3	Pay attention to CUB tutorial tips.	Learn practical skills of CUB Cetus.												1		2	1	2251									Rectangle			1	2	3											
+Resources\table\share\fuben\Stage.tsv:6328:30101057	Shadow Wing	Shadow Wing Description	Assets/Product/Texture/Image/UiPartnerTeaching/Chapter/UiPartnerTeachingChapterBianfuStage01.png	Assets/Product/Texture/Image/UiPartnerTeaching/Chapter/UiPartnerTeachingChapterMaoStage01.png	101					1													1	1											1								12051		12051													1				3	Pay attention to CUB tutorial tips.	Learn practical skills of CUB Shadow Wing.												1		2	1	2256									Rectangle			1	2	3											
+Resources\table\share\fuben\Stage.tsv:6329:30101060	Huiyu	Huiyu Description	Assets/Product/Texture/Image/UiPartnerTeaching/Chapter/UiPartnerTeachingChapterHuiYuStage01.png	Assets/Product/Texture/Image/UiPartnerTeaching/Chapter/UiPartnerTeachingChapterMaoStage01.png	101					1													1	1											1								12051		12051													1				3	Pay attention to CUB tutorial tips.	Learn practical skills of CUB Huiyu.												1		2	1	2259									Rectangle			1	2	3											
+Resources\table\share\fuben\Stage.tsv:6330:30101063	Guardrake	Guardrake Description	Assets/Product/Texture/Image/UiPartnerTeaching/Chapter/UiPartnerTeachingChapterSuEStage01.png	Assets/Product/Texture/Image/UiPartnerTeaching/Chapter/UiPartnerTeachingChapterMaoStage01.png	101					1													1	1											1								12051		12051													1				3	Pay attention to CUB tutorial tips.	Learn practical skills of CUB Guardrake.												1		2	1	2264									Rectangle			1	2	3											
+Resources\table\share\fuben\Stage.tsv:6331:30101065	Dreamwing	Dreamwing Description	Assets/Product/Texture/Image/UiPartnerTeaching/Chapter/UiPartnerTeachingChapterMeiWuStage01.png	Assets/Product/Texture/Image/UiPartnerTeaching/Chapter/UiPartnerTeachingChapterMaoStage01.png	101					1													1	1											1								12051		12051													1				3	Pay attention to CUB tutorial tips.	Learn practical skills of CUB Dreamwing.												1		2	1	2269									Rectangle			1	2	3											
+Resources\table\share\fuben\Stage.tsv:6332:30101070	Snowveil	Snowveil Description	Assets/Product/Texture/Image/UiPartnerTeaching/Chapter/UiPartnerTeachingChapterRuiXueStage01.png	Assets/Product/Texture/Image/UiPartnerTeaching/Chapter/UiPartnerTeachingChapterMaoStage01.png	101					1													1	1											1								12051		12051													1				3	Pay attention to CUB tutorial tips.	Learn practical skills of CUB Snowveil.												1		2	1	2272									Rectangle			1	2	3											
+Resources\table\share\fuben\Stage.tsv:6333:30101074	Corvus	Corvus Description	Assets/Product/Texture/Image/UiPartnerTeaching/Chapter/UiPartnerTeachingChapterYiKongStage01.png	Assets/Product/Texture/Image/UiPartnerTeaching/Chapter/UiPartnerTeachingChapterMaoStage01.png	101					1													1	1											1								12051		12051													1				3	Pay attention to CUB tutorial tips.	Learn practical skills of CUB Corvus												1		2	1	2275									Rectangle			1	2	3											
+Resources\table\share\fuben\Stage.tsv:6334:30101078	Bramble Angler	Bramble Angler Description	Assets/Product/Texture/Image/UiPartnerTeaching/Chapter/UiPartnerTeachingChapterAnJiStage01.png	Assets/Product/Texture/Image/UiPartnerTeaching/Chapter/UiPartnerTeachingChapterMaoStage01.png	101					1													1	1											1								12051		12051													1				3	Pay attention to CUB tutorial tips.	Learn practice skills of CUB Bramble Angler												1		2	1	2280									Rectangle			1	2	3											
+Resources\table\share\fuben\Stage.tsv:6335:30101081	Diamaton	Diamaton Description	Assets/Product/Texture/Image/UiPartnerTeaching/Chapter/UiPartnerTeachingChapterZhuLingStage01.png	Assets/Product/Texture/Image/UiPartnerTeaching/Chapter/UiPartnerTeachingChapterMaoStage01.png	101					1													1	1											1								12051		12051													1				3	Pay attention to CUB tutorial tips.	Learn practical skills of CUB Diamaton.												1		2	1	2283									Rectangle			1	2	3											
+Resources\table\share\fuben\Stage.tsv:6336:30101083	Billie	Description of Billie	Assets/Product/Texture/Image/UiPartnerTeaching/Chapter/UiPartnerTeachingChapterBiliStage01.png	Assets/Product/Texture/Image/UiPartnerTeaching/Chapter/UiPartnerTeachingChapterMaoStage01.png	101					1													1	1											1								12051		12051													1				3	Pay attention to CUB tutorial tips.	Learn battle skills of CUB Billie												1		2	1	2287									Rectangle			1	2	3											
+Resources\table\share\fuben\Stage.tsv:6337:30101086	Snow Waltz	Snow Waltz Description	Assets/Product/Texture/Image/UiPartnerTeaching/Chapter/UiPartnerTeachingChapterXuegeStage01.png	Assets/Product/Texture/Image/UiPartnerTeaching/Chapter/UiPartnerTeachingChapterMaoStage01.png	101					1													1	1											1								12051		12051													1				3	Pay attention to CUB tutorial tips.	Learn battle skills of CUB Snow Waltz												1		2	1	2290									Rectangle			1	2	3											
+Resources\table\share\fuben\Stage.tsv:6338:30101088	Mirage Blades	Mirage Blades Description	Assets/Product/Texture/Image/UiPartnerTeaching/Chapter/UiPartnerTeachingChapterHuanyingjianStage01.png	Assets/Product/Texture/Image/UiPartnerTeaching/Chapter/UiPartnerTeachingChapterMaoStage01.png	101					1													1	1											1								12051		12051													1				3	Pay attention to Netherworld Arm tutorial tips.	Learn practical skills of Mirage Blades.												1		2	1	2299									Rectangle			1	2	3											
+Resources\table\share\fuben\Stage.tsv:6339:30101089	Cavaliere	Cavaliere Description	Assets/Product/Texture/Image/UiPartnerTeaching/Chapter/UiPartnerTeachingChapterKewoziiStage01.png	Assets/Product/Texture/Image/UiPartnerTeaching/Chapter/UiPartnerTeachingChapterMaoStage01.png	101					1													1	1											1								12051		12051													1				3	Pay attention to Netherworld Arm tutorial tips.	Learn practical skills of Cavaliere.												1		2	1	2302									Rectangle			1	2	3											
+Resources\table\share\fuben\Stage.tsv:6340:30101092	Wrathfang	Wrathfang Description	Assets/Product/Texture/Image/UiPartnerTeaching/Chapter/UiPartnerTeachingChapterXiaoyaStage01.png	Assets/Product/Texture/Image/UiPartnerTeaching/Chapter/UiPartnerTeachingChapterMaoStage01.png	101					1													1	1											1								12051		12051													1				3	Pay attention to CUB tutorial tips.	Learn practical skills of CUB Wrathfang.												1		2	1	2293									Rectangle			1	2	3											
+Resources\table\share\fuben\Stage.tsv:6341:30101095	Noctiluca	Noctiluca Description	Assets/Product/Texture/Image/UiPartnerTeaching/Chapter/UiPartnerTeachingChapterZhuoLiStage01.png	Assets/Product/Texture/Image/UiPartnerTeaching/Chapter/UiPartnerTeachingChapterMaoStage01.png	101					1													1	1											1								12051		12051													1				3	Pay attention to CUB tutorial tips.	Learn practical skills of CUB Noctiluca.												1		2	1	2305									Rectangle			1	2	3											
+Resources\table\share\fuben\Stage.tsv:6342:30101103	Scaled Rampart	Scaled Rampart Description	Assets/Product/Texture/Image/UiPartnerTeaching/Chapter/UiPartnerTeachingChapterLinleiStage01.png	Assets/Product/Texture/Image/UiPartnerTeaching/Chapter/UiPartnerTeachingChapterMaoStage01.png	101					1													1	1											1								12051		12051													1				3	Pay attention to CUB tutorial tips.	Learn practical skills of CUB Scaled Rampart.												1		2	1	2311									Rectangle			1	2	3											
+Resources\table\share\fuben\Stage.tsv:6343:30101106	Levvi	Levvi Description	Assets/Product/Texture/Image/UiPartnerTeaching/Chapter/UiPartnerTeachingChapterFufuStage01.png	Assets/Product/Texture/Image/UiPartnerTeaching/Chapter/UiPartnerTeachingChapterMaoStage01.png	101					1													1	1											1								12051		12051													1				3	Pay attention to CUB tutorial tips.	Learn practical skills of CUB Levvi.												1		2	1	2314									Rectangle			1	2	3											
+Resources\table\share\fuben\Stage.tsv:6344:30101108	Beep-Boop	Beep-Boop Description	Assets/Product/Texture/Image/UiPartnerTeaching/Chapter/UiPartnerTeachingChapterBiboStage01.png	Assets/Product/Texture/Image/UiPartnerTeaching/Chapter/UiPartnerTeachingChapterMaoStage01.png	101					1													1	1											1								12051		12051													1				3	Pay attention to CUB tutorial tips.	Learn practical skills of CUB Beep-Boop.												1		2	1	2317									Rectangle			1	2	3											
+Resources\table\share\fuben\Stage.tsv:6345:30101110	Buzzling	Buzzling Description	Assets/Product/Texture/Image/UiPartnerTeaching/Chapter/UiPartnerTeachingChapterBuzzlingStage01.png	Assets/Product/Texture/Image/UiPartnerTeaching/Chapter/UiPartnerTeachingChapterMaoStage01.png	101					1													1	1											1								12051		12051													1				3	Pay attention to CUB tutorial tips.	Learn practical skills of CUB Buzzling.												1		2	1	2320									Rectangle			1	2	3											
+Resources\table\share\fuben\Stage.tsv:6346:30101115	Morigan	Morigan Description	Assets/Product/Texture/Image/UiPartnerTeaching/Chapter/UiPartnerTeachingChapterMoliganStage01.png	Assets/Product/Texture/Image/UiPartnerTeaching/Chapter/UiPartnerTeachingChapterMaoStage01.png	101					1													1	1											1								12051		12051													1				3	Pay attention to CUB tutorial tips.	Learn practical skills of CUB Morigan.												1		2	1	2324									Rectangle			1	2	3											
+Resources\table\share\fuben\Stage.tsv:6347:30101117	Ignis	Ignis Description	Assets/Product/Texture/Image/UiPartnerTeaching/Chapter/UiPartnerTeachingChapterYansuiStage01.png	Assets/Product/Texture/Image/UiPartnerTeaching/Chapter/UiPartnerTeachingChapterMaoStage01.png	101					1													1	1											1								12051		12051													1				3	Pay attention to CUB tutorial tips.	Learn practical skills of CUB Ignis.												1		2	1	2327									Rectangle			1	2	3											
+Resources\table\share\fuben\Stage.tsv:6348:30101119	Allos	Allos Description	Assets/Product/Texture/Image/UiPartnerTeaching/Chapter/UiPartnerTeachingChapterYiShenStage01.png	Assets/Product/Texture/Image/UiPartnerTeaching/Chapter/UiPartnerTeachingChapterMaoStage01.png	101					1													1	1											1								12051		12051													1				3	Pay attention to CUB tutorial tips.	Learn practical skills of CUB Allos.												1		2	1	2330									Rectangle			1	2	3											
+Resources\table\share\fuben\Stage.tsv:6349:30101131	Grand Duke	Grand Duke Description	Assets/Product/Texture/Image/UiPartnerTeaching/Chapter/UiPartnerTeachingChapterDaGongStage01.png	Assets/Product/Texture/Image/UiPartnerTeaching/Chapter/UiPartnerTeachingChapterMaoStage01.png	101					1													1	1											1								12051		12051													1				3	Pay attention to CUB tutorial tips.	Learn practical skills of CUB Grand Duke.												1		2	1	2333									Rectangle			1	2	3											
+Resources\table\share\fuben\Stage.tsv:6350:30101137	Patrick	Patrick Description	Assets/Product/Texture/Image/UiPartnerTeaching/Chapter/UiPartnerTeachingChapterStarfishStage01.png	Assets/Product/Texture/Image/UiPartnerTeaching/Chapter/UiPartnerTeachingChapterMaoStage01.png	101					1													1	1											1								12051		12051													1				3	Pay attention to CUB tutorial tips.	Learn practical skills of CUB Patrick.												1		2	1	2336									Rectangle			1	2	3											
+Resources\table\share\fuben\Stage.tsv:6353:30101111	Escape and Find	It has gone, with even no one piece of silver feather left. But she, insists to find.	Assets/Product/Texture/Image/UiPartnerTeaching/Chapter/UiPartnerTeachingHeStory01.png		101					1													1	1											1																							1				3														1		2	1									2	Square			1	2	3											
+Resources\table\share\fuben\Stage.tsv:6354:30101112	Near and Far	It keeps away, seeming to build a power grid for safety. But she, insists to touch.	Assets/Product/Texture/Image/UiPartnerTeaching/Chapter/UiPartnerTeachingHeStory02.png		101					1													2	1											1		30101111																					1				3														1		2	1									2	Square			1	2	3											
+Resources\table\share\fuben\Stage.tsv:6355:30101121	Difference	Under the flickering aurora, she lets the cold wind mixed with frost and snow beat on her body and looks ahead.	Assets/Product/Texture/Image/UiPartnerTeaching/Chapter/UiPartnerTeachingMaStory01.png		101					1													1	1											1																							1				3														1		2	1									2	Square			1	2	3											
+Resources\table\share\fuben\Stage.tsv:6356:30101012	Strider	It is the momentary thrill of breaking free from the surface鈥攖he thrill of freedom.	Assets/Product/Texture/Image/UiPartnerTeaching/Chapter/UiPartnerTeachingChapterMaStage01.png	Assets/Product/Texture/Image/UiPartnerTeaching/Chapter/UiPartnerTeachingChapterMaStage01.png	101					1													2	1											1		30101121						12051		12051													1				3	Pay attention to CUB tutorial tips.	Learn practical skills of CUB Frost Oath												1		2	1	9087									Rectangle			1	2	3											
+Resources\table\share\fuben\Stage.tsv:6357:30101123	Pursuit	Shaking off the snow on her head, Rosetta continues to chase the CUB deep into the snow forest.	Assets/Product/Texture/Image/UiPartnerTeaching/Chapter/UiPartnerTeachingMaStory02.png		101					1													3	1											1		30101012																					1				3														1		2	1									2	Square			1	2	3											
+Resources\table\share\fuben\Stage.tsv:6358:30101124	Act of God	The trees and stones along the way are submerged in an instant.	Assets/Product/Texture/Image/UiPartnerTeaching/Chapter/UiPartnerTeachingMaStory03.png		101					1													4	1											1		30101123																					1				3														1		2	1									2	Square			1	2	3											
+Resources\table\share\fuben\Stage.tsv:6359:30101125	Frost Oath	The snow and storm has witnessed our vows to each other.	Assets/Product/Texture/Image/UiPartnerTeaching/Chapter/UiPartnerTeachingMaStory04.png		101					1													5	1											1		30101124																					1				3														1		2	1									2	Square			1	2	3											
+Resources\table\share\item\Item.tsv:1477:4009	Chac-Chac	An item Sophia sent along with the Activation Date mail.	A pair of Akdilek instruments gifted by Sophia. They make a pleasant sound when you shake them, providing the beat for music and dance. She never thought she would be dancing at a ball. Controlling her body's movement was much more difficult than controlling machines. Still, she found herself enjoying it somehow.The one thing she remembers the most about that moment was the rhythm her partner made with the maracas. She no longer has a chance to dance lately. She wants to keep this wonderful instrument at your place for now while she looks forward to dancing with her partner and the shakers once again in the future.	Assets/Product/Texture/Image/IconTools/ItCharBirthday09.png	Assets/Product/Texture/Image/IconToolsSp/ItCharBirthday09Sp.png	4194308	5	10	99999	999	1	2022/12/30 5:00	1																							
+Resources\table\share\item\Item.tsv:2346:80091	Momotaro	New Life 鈥?Shield Axe	"The golden day sleeps soundly, the streets flicker with lights. It's time for the hero to do her duty. With her heart-shaped partner, she leaps between skyscrapers, sending the bad guys who disturb the peace of the night back to their rabbit holes鈥攄on't laugh! This is a backstory I have been thinking about for a long time!"	Assets/Product/Texture/Image/IconToolsSp/E3SwordaxeMd020011Sp.png	Assets/Product/Texture/Image/IconTools/E3SwordaxeMd020011.png	32	5	2100	1	1													80198	80199					12490001							
+Resources\table\share\partner\Partner.tsv:1:Id	NpcId	Name	Desc	RecommendElement[1]	Icon	LiHuiPath	Priority	InitQuality	CarryCharacterType	ChipItemId	ChipNeedCount	DefaultLock	GoodsDesc	GoodsWorldDesc	DecomposeItemId[1]	DecomposeItemCount[1]	RecommendCharacterId	NoCameraSwitchDuringTransformation	PartnerType	AvaliableTimeId
+Resources\table\share\partner\Partner.tsv:2:16010000	4201	Yuan Ye	Stun	2	Assets/Product/Texture/Image/RolePartner/RolePartnerPet2Niu2.png	Assets/Product/Texture/Image/Pets/Pet2NiuonMd010011.png	10	2	0	201	30	0			61	150	0	0	1	0
+Resources\table\share\partner\Partner.tsv:3:16020000	4401	Noctua	Super Armor	5	Assets/Product/Texture/Image/RolePartner/Pet3Xiao2.png	Assets/Product/Texture/Image/Pets/Pet3XiaoonMd010011.png	20	2	0	202	30	0			61	150	0	0	1	0
+Resources\table\share\partner\Partner.tsv:4:16030000	4203	Toniris	Pull, Charge	4	Assets/Product/Texture/Image/RolePartner/Pet3He2.png	Assets/Product/Texture/Image/Pets/Pet3HeonMd010011.png	30	3	0	203	30	0			62	150	1041003	0	1	0
+Resources\table\share\partner\Partner.tsv:5:16040000	4204	Frost Oath	Crowd Control, Protection	1	Assets/Product/Texture/Image/RolePartner/Pet3Ma1.png	Assets/Product/Texture/Image/Pets/Pet3MaonMd010011.png	40	3	0	204	30	0			62	150	1141003	0	1	0
+Resources\table\share\partner\Partner.tsv:6:16050000	4205	Seeshell	Area, Freeze	3	Assets/Product/Texture/Image/RolePartner/Pet2Bei1.png	Assets/Product/Texture/Image/Pets/Pet2BeionMd010011.png	50	2	0	205	30	0			61	150	0	0	1	0
+Resources\table\share\partner\Partner.tsv:7:16060000	4206	Nitor	DMG	2	Assets/Product/Texture/Image/RolePartner/Pet3Mao1.png	Assets/Product/Texture/Image/Pets/Pet3MaoonMd010011.png	60	3	0	206	30	0			62	150	1071003	0	1	0
+Resources\table\share\partner\Partner.tsv:8:16070000	4207	Lingya	DMG	4	Assets/Product/Texture/Image/RolePartner/Pet2Yang1.png	Assets/Product/Texture/Image/Pets/Pet2YangonMd010011.png	70	2	0	207	30	0			61	150	0	0	1	0
+Resources\table\share\partner\Partner.tsv:9:16080000	4208	Boreas	Charge	3	Assets/Product/Texture/Image/RolePartner/Pet3Ying1.png	Assets/Product/Texture/Image/Pets/Pet3YingonMd010011.png	80	3	0	208	30	0			62	150	1121003	0	1	0
+Resources\table\share\partner\Partner.tsv:10:16090000	4209	Thorny	Charge	1	Assets/Product/Texture/Image/RolePartner/Pet2Ciwei.png	Assets/Product/Texture/Image/Pets/Pet2CiweionMd010011.png	90	2	0	209	30	0			61	150	0	0	1	0
+Resources\table\share\partner\Partner.tsv:11:16100000	4210	Jet Jaeger	Slash	2	Assets/Product/Texture/Image/RolePartner/Pet3Hu.png	Assets/Product/Texture/Image/Pets/Pet3HuonMd010011.png	100	3	0	210	30	0			62	150	1051004	0	1	0
+Resources\table\share\partner\Partner.tsv:12:16110000	4211	Moonhopper	Control	5	Assets/Product/Texture/Image/RolePartner/Pet3Tu1.png	Assets/Product/Texture/Image/Pets/Pet3TuonMd010011.png	110	3	0	211	30	0			62	150	1071004	0	1	0
+Resources\table\share\partner\Partner.tsv:13:16120000	4212	Shimmer	Pull, Charge	1	Assets/Product/Texture/Image/RolePartner/Pet3Yu1.png	Assets/Product/Texture/Image/Pets/Pet3YuonMd010011.png	120	3	0	212	30	0			62	150	1041004	0	1	0
+Resources\table\share\partner\Partner.tsv:14:16130000	4213	Punchy	DMG	2	Assets/Product/Texture/Image/RolePartner/Pet3Quan1.png	Assets/Product/Texture/Image/Pets/Pet3QuanonMd010011.png	130	3	0	213	30	0			62	150	1011004	0	1	0
+Resources\table\share\partner\Partner.tsv:15:16140000	4214	Rainbow	Pull, Damage	3	Assets/Product/Texture/Image/RolePartner/Pet3Wuzei1.png	Assets/Product/Texture/Image/Pets/Pet3WuzeioffMd010011.png	140	3	0	214	30	0			62	150	1091003	0	1	0
+Resources\table\share\partner\Partner.tsv:16:16150000	4215	Motorbolt	Pull, Damage	4	Assets/Product/Texture/Image/RolePartner/Pet3Motor1.png	Assets/Product/Texture/Image/Pets/Pet3MotoroffMd010011.png	150	3	0	215	30	0			62	150	1021005	0	1	0
+Resources\table\share\partner\Partner.tsv:17:16160000	4216	Hades Fangs	Crowd Control, Damage	4	Assets/Product/Texture/Image/RolePartner/Pet3Wolf1.png	Assets/Product/Texture/Image/Pets/Pet3WolfoffMd010011.png	160	3	0	216	30	0			62	150	1221003	0	1	0
+Resources\table\share\partner\Partner.tsv:18:16170000	4217	Dawn Chorus	Damage, Super Armor	1	Assets/Product/Texture/Image/RolePartner/Pet3Griffon1.png	Assets/Product/Texture/Image/Pets/Pet3GriffonoffMd010011.png	170	3	0	217	30	0			62	150	1261003	0	1	0
+Resources\table\share\partner\Partner.tsv:19:16180000	4218	Cetus	Damage, Crowd Control	5	Assets/Product/Texture/Image/RolePartner/Pet3Dolphin1.png	Assets/Product/Texture/Image/Pets/Pet3DolphinoffMd010011.png	180	3	0	218	30	0			62	150	1271003	0	1	0
+Resources\table\share\partner\Partner.tsv:20:16190000	4219	Shadow Wing	Damage, Crowd Control	2	Assets/Product/Texture/Image/RolePartner/Pet3Bat1.png	Assets/Product/Texture/Image/Pets/Pet3BatoffMd010011.png	190	3	0	219	30	0			62	150	1081004	0	1	0
+Resources\table\share\partner\Partner.tsv:21:16200000	4220	Huiyu	Damage, Crowd Control	3	Assets/Product/Texture/Image/RolePartner/Pet3Peacock1.png	Assets/Product/Texture/Image/Pets/Pet3PeacockoffMd010011.png	200	3	0	220	30	0			62	150	1521004	0	1	0
+Resources\table\share\partner\Partner.tsv:22:16210000	4221	Guardrake	Crowd Control, Damage	6	Assets/Product/Texture/Image/RolePartner/Pet3Dragon1.png	Assets/Product/Texture/Image/Pets/Pet3DragonoffMd010011.png	210	3	0	221	30	0			62	150	1171004	0	1	0
+Resources\table\share\partner\Partner.tsv:23:16220000	4222	Dreamwing	Crowd Control, Damage	1	Assets/Product/Texture/Image/RolePartner/Pet3Die1.png	Assets/Product/Texture/Image/Pets/Pet3DieoffMd010011.png	220	3	0	222	30	0			62	150	1241003	0	1	0
+Resources\table\share\partner\Partner.tsv:24:16230000	4223	Snowveil	Crowd Control, Damage	3	Assets/Product/Texture/Image/RolePartner/Pet3Fox1.png	Assets/Product/Texture/Image/Pets/Pet3FoxoffMd010011.png	230	3	0	223	30	0			62	150	1211003	0	1	0
+Resources\table\share\partner\Partner.tsv:25:16240000	4224	Corvus	Crowd Control, Damage	2	Assets/Product/Texture/Image/RolePartner/Pet3Raven1.png	Assets/Product/Texture/Image/Pets/Pet3RavenoffMd010011.png	240	3	0	224	30	0			62	150	1021006	0	1	0
+Resources\table\share\partner\Partner.tsv:26:16250000	4225	Bramble Angler	Pull, Damage	4	Assets/Product/Texture/Image/RolePartner/Pet3Anglerfish1.png	Assets/Product/Texture/Image/Pets/Pet3AnglerfishoffMd010011.png	250	3	0	225	30	0			62	150	1051005	0	1	0
+Resources\table\share\partner\Partner.tsv:27:16260000	4226	Diamaton	Pull, Damage	6	Assets/Product/Texture/Image/RolePartner/Pet3Pandora1.png	Assets/Product/Texture/Image/Pets/Pet3PandoraoffMd010011.png	260	3	0	226	30	0			62	150	1321003	1	1	0
+Resources\table\share\partner\Partner.tsv:28:16270000	4227	Billie	Pull, Damage	5	Assets/Product/Texture/Image/RolePartner/Pet3Chiprobot1.png	Assets/Product/Texture/Image/Pets/Pet3ChiprobotoffMd010011.png	270	3	0	227	30	0			62	150	1331003	0	1	0
+Resources\table\share\partner\Partner.tsv:29:16280000	4228	Snow Waltz	Pull, Damage	1	Assets/Product/Texture/Image/RolePartner/Pet3Speaker1.png	Assets/Product/Texture/Image/Pets/Pet3SpeakeronMd010011.png	280	3	0	228	30	0			62	150	1531005	0	1	0
+Resources\table\share\partner\Partner.tsv:30:16290000	4230	Wrathfang	Pull, Damage	2	Assets/Product/Texture/Image/RolePartner/Pet3Redwolf1.png	Assets/Product/Texture/Image/Pets/Pet3RedwolfoffMd010011.png	290	3	0	229	30	0			62	150	1131004	0	1	0
+Resources\table\share\partner\Partner.tsv:31:16300000	4202	Mirage Blades	Crowd Control, Damage	1	Assets/Product/Texture/Image/RolePartner/Pet3Vmirageblade1.png	Assets/Product/Texture/Image/Pets/Pet3VmiragebladeMd010011.png	300	3	0	230	30	0			62	150	1351003	0	2	910
+Resources\table\share\partner\Partner.tsv:32:16310000	4229	Cavaliere	Pull, Damage	2	Assets/Product/Texture/Image/RolePartner/Pet3Dcavaliere1.png	Assets/Product/Texture/Image/Pets/Pet3DcavaliereMd010011.png	310	3	0	231	30	0			62	150	1361003	0	2	910
+Resources\table\share\partner\Partner.tsv:33:16320000	4231	Noctiluca	Damage	5	Assets/Product/Texture/Image/RolePartner/Pet3Jellyfish1.png	Assets/Product/Texture/Image/Pets/Pet3JellyfishonMd010011.png	320	3	0	232	30	0			62	150	1041005	0	1	0
+Resources\table\share\partner\Partner.tsv:34:16330000	4233	Scaled Rampart	Pull, Damage	1	Assets/Product/Texture/Image/RolePartner/Pet3Bladeshield1.png	Assets/Product/Texture/Image/Pets/Pet3BladeshieldonMd010011.png	330	3	0	233	30	0			62	150	1381003	0	1	0
+Resources\table\share\partner\Partner.tsv:35:16340000	4234	Levvi	Damage, Control	4	Assets/Product/Texture/Image/RolePartner/Pet3Wuya1.png	Assets/Product/Texture/Image/Pets/Pet3WuyaonMd010011.png	340	3	0	234	30	0			62	150	1031005	0	1	0
+Resources\table\share\partner\Partner.tsv:36:16350000	4235	Beep-Boop	Damage, Crowd Control	3	Assets/Product/Texture/Image/RolePartner/Pet3Elecpanda1.png	Assets/Product/Texture/Image/Pets/Pet3ElecpandaonMd010011.png	350	3	0	235	30	0			62	150	1291003	0	1	0
+Resources\table\share\partner\Partner.tsv:37:16360000	4236	Buzzling	Damage, Crowd Control	5	Assets/Product/Texture/Image/RolePartner/Pet3Signal1.png	Assets/Product/Texture/Image/Pets/Pet3SignalonMd010011.png	360	3	0	236	30	0			62	150	1141004	0	1	0
+Resources\table\share\partner\Partner.tsv:38:16370000	4237	Morigan	Damage, Crowd Control	6	Assets/Product/Texture/Image/RolePartner/Pet3Duya1.png	Assets/Product/Texture/Image/Pets/Pet3CrowoffMd010011.png	370	3	0	237	30	0			62	150	1391003	1	1	0
+Resources\table\share\partner\Partner.tsv:39:16380000	4238	Ignis	Damage, Control	2	Assets/Product/Texture/Image/RolePartner/Pet3Lion1.png	Assets/Product/Texture/Image/Pets/Pet3LiononMd010011.png	380	3	0	238	30	0			62	150	1061004	0	1	0
+Resources\table\share\partner\Partner.tsv:40:16390000	4239	Allos	Damage, Control	3	Assets/Product/Texture/Image/RolePartner/Pet3Motordragon1.png	Assets/Product/Texture/Image/Pets/Pet3MotordragononMd010011.png	390	3	0	239	30	0			62	150	1021007	0	1	0
+Resources\table\share\partner\Partner.tsv:41:16400000	4240	Grand Duke	Pull, Damage	4	Assets/Product/Texture/Image/RolePartner/Pet3Chandelier1.png	Assets/Product/Texture/Image/Pets/Pet3ChandelieronMd010011.png	400	3	0	240	30	0			62	150	1401003	1	1	0
+Resources\table\share\partner\Partner.tsv:42:16410000	4241	Patrick	Pull, Damage	1	Assets/Product/Texture/Image/RolePartner/Pet3Starfish1.png	Assets/Product/Texture/Image/Pets/Pet3StarfishonMd010011.png	410	3	0	241	30	0			62	150	1071005	0	1	0
+Resources\table\share\partner\PartnerBreakThrough.tsv:1:Id	PartnerId	BreakTimes	LevelLimit	AttribId	AttribPromotedId	LevelUpTemplateId	CostItemId[1]	CostItemId[2]	CostItemId[3]	CostItemCount[1]	CostItemCount[2]	CostItemCount[3]
+Resources\table\share\partner\PartnerQuality.tsv:1:Id	PartnerId	Quality	SkillColumnCount	EvolutionAttrId	EvolutionCostItemId[1]	EvolutionCostItemCount[1]	StarCostChipCount[1]	StarCostChipCount[2]	StarCostChipCount[3]	StarCostChipCount[4]	StarCostChipCount[5]	AttrId[1]	AttrId[2]	AttrId[3]	AttrId[4]	AttrId[5]
+Resources\table\share\partner\PartnerSkill.tsv:1:PartnerId	UpgradeCostItemId[1]	UpgradeCostItemId[2]	UpgradeCostItemCount[1]	UpgradeCostItemCount[2]	DefaultMainSkillGroupId	MainSkillGroupId[1]	MainSkillGroupId[2]	PassiveSkillGroupId[1]	PassiveSkillGroupId[2]	PassiveSkillGroupId[3]	PassiveSkillGroupId[4]	PassiveSkillGroupId[5]
+Resources\table\share\robot\Robot.tsv:1:Id	CharacterId	CharacterLevel	CharacterQuality	CharacterStar	CharacterGrade	SkillLevel	EnhanceSkillLevel	RemoveSkillId[1]	RemoveSkillId[2]	RemoveSkillId[3]	RemoveSkillId[4]	RemoveSkillId[5]	RemoveSkillId[6]	RemoveSkillId[7]	RemoveSkillId[8]	RemoveSkillId[9]	FashionId	UseFashionId	WeaponId	WeaponLevel	WeaponBeakThrough	WeaponFashion	WeaponResonance	WeaponResonanceType	WaferId[1]	WaferLevel[1]	WaferBreakThrough[1]	WaferAwakeCount[1]	WaferResonance[1]	WaferResonanceType[1]	WaferId[2]	WaferLevel[2]	WaferBreakThrough[2]	WaferAwakeCount[2]	WaferResonance[2]	WaferResonanceType[2]	WaferId[3]	WaferLevel[3]	WaferBreakThrough[3]	WaferAwakeCount[3]	WaferResonance[3]	WaferResonanceType[3]	WaferId[4]	WaferLevel[4]	WaferBreakThrough[4]	WaferAwakeCount[4]	WaferResonance[4]	WaferResonanceType[4]	WaferId[5]	WaferLevel[5]	WaferBreakThrough[5]	WaferAwakeCount[5]	WaferResonance[5]	WaferResonanceType[5]	WaferId[6]	WaferLevel[6]	WaferBreakThrough[6]	WaferAwakeCount[6]	WaferResonance[6]	WaferResonanceType[6]	ShowAbility	LiberateLv	RobotPartnerId	RebuildNpcId	LiberationSkillData
+Resources\table\share\task\Task.tsv:10448:120493	11	8400	Adaptation Fitting: Wrathfang	Complete [Adaptation Fitting: Wrathfang]	Assets/Product/Texture/Image/IconTask/TaskIconActivePartnerTryV304.png	120493	1	15218	7107	Event													
+Resources\table\share\task\Task.tsv:10475:120520	11	9100	Adaptation Fitting: Mirage Blades	Complete [Adaptation Fitting: Mirage Blades]	Assets/Product/Texture/Image/IconTask/TaskIconActivePartnerTry2V305.png	120520	1	15218	7107	Event													
+Resources\table\share\task\Task.tsv:10479:120524	11	8700	Adaptation Fitting: Cavaliere	Complete [Adaptation Fitting: Cavaliere]	Assets/Product/Texture/Image/IconTask/TaskIconActivePartnerTryV305.png	120524	1	15218	7107	Event													
+Resources\table\share\task\Task.tsv:10947:120541	11	9000	Adaptation Fitting: Noctiluca	Complete [Adaptation Fitting: Noctiluca]	Assets/Product/Texture/Image/IconTask/TaskIconActivePartnerTryV306.png	120541	1	15218	7107	Event													
+Resources\table\share\task\Task.tsv:10975:120569	11	9000	Adaptation Fitting: Scaled Rampart	Complete [Adaptation Fitting: Scaled Rampart]	Assets/Product/Texture/Image/IconTask/UiActivityBasePartnerTryV308.png	120569	1	15218	7107	Event													
+Resources\table\share\task\Task.tsv:10992:120586	11	9000	Adaptation Fitting: Levvi	Complete [Adaptation Fitting: Levvi]	Assets/Product/Texture/Image/IconTask/TaskIconActivePartnerTryv400.png	120586	1	15218	7107	Event													
+Resources\table\share\task\Task.tsv:11007:120601	11	8900	Adaptation Fitting: Beep-Boop	Complete [Adaptation Fitting: Beep-Boop]	Assets/Product/Texture/Image/IconTask/TaskIconActivePartnerTryv401.png	120601	1	15218	7107	Event													
+Resources\table\share\task\Task.tsv:11031:120625	11	8900	Adaptation Fitting: Buzzling	Complete [Adaptation Fitting: Buzzling]	Assets/Product/Texture/Image/IconTask/TaskIconActivePartnerTryv402.png	120625	1	15218	7107	Event													
+Resources\table\share\task\Task.tsv:11044:120638	11	9000	Adaptation Fitting: Morigan	Complete [Adaptation Fitting: Morigan]	Assets/Product/Texture/Image/IconTask/TaskIconActivePartnerTryv403.png	120638	1	15218	7107	Event													
+Resources\table\share\task\Task.tsv:11058:120652	11	8900	Adaptation Fitting - Ignis	Complete [Adaptation Fitting: Ignis]	Assets/Product/Texture/Image/IconTask/TaskIconActivePartnerTryv404.png	140099	1	15218	7107	Event													
+Resources\table\share\task\Task.tsv:11080:120674	11	9100	Adaptation Fitting: Allos	Complete [Adaptation Fitting: Allos]	Assets/Product/Texture/Image/IconTask/TaskIconActivePartnerTryv405.png	120674	1	15218	7107	Event													
+Resources\table\share\task\Task.tsv:11095:120689	11	8900	Adaptation Fitting: Grand Duke	Complete [Adaptation Fitting: Grand Duke]	Assets/Product/Texture/Image/IconTask/TaskIconActivePartnerTryv406.png	120689	1	15218	7107	Event													
+Resources\table\share\task\Task.tsv:11110:120709	11	9100	Adaptation Fitting - Patrick	Complete [Adaptation Fitting: Patrick]	Assets/Product/Texture/Image/IconTask/TaskIconActivePartnerTryv407.png	120709	1	15218	7107	Event													
