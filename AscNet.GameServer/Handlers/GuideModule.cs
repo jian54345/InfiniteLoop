@@ -281,7 +281,61 @@ namespace AscNet.GameServer.Handlers
             }
         }
 
-        private static bool IsValidGuide(int guideGroupId)
+        internal static int CompleteAllGuides(Session session)
+{
+    session.player.PlayerData.GuideData ??= new();
+
+    HashSet<long> existingGuides =
+        session.player.PlayerData.GuideData.ToHashSet();
+
+    List<long> addedGuideIds = new();
+
+    foreach (GuideGroupTable guide in GuideGroups.Value.Values)
+    {
+        // 必须存在对应的 GuideComplete 配置。
+        if (!GuideCompletions.Value.ContainsKey(guide.CompleteId))
+            continue;
+
+        if (existingGuides.Contains(guide.Id))
+            continue;
+
+        session.player.PlayerData.GuideData.Add(guide.Id);
+        existingGuides.Add(guide.Id);
+        addedGuideIds.Add(guide.Id);
+    }
+
+    // /guide all 后不应该继续等待某个引导对应的关卡结算。
+    session.OpenedGuideGroupId = null;
+
+    if (addedGuideIds.Count == 0)
+        return 0;
+
+    try
+    {
+        session.player.SaveChecked();
+    }
+    catch (Exception exception)
+    {
+        foreach (long guideId in addedGuideIds)
+            session.player.PlayerData.GuideData.Remove(guideId);
+
+        session.log.Error(
+            $"Failed to persist all guide completion: {exception}");
+
+        throw;
+    }
+
+    foreach (long guideId in addedGuideIds)
+    {
+        session.SendPush(new NotifyGuide
+        {
+            GuideGroupId = checked((int)guideId)
+        });
+    }
+
+    return addedGuideIds.Count;
+}
+		private static bool IsValidGuide(int guideGroupId)
             => GuideGroups.Value.TryGetValue(guideGroupId, out GuideGroupTable? guide)
                 && GuideCompletions.Value.ContainsKey(guide.CompleteId);
     }
