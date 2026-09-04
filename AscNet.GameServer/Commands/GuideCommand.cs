@@ -53,7 +53,7 @@ namespace AscNet.GameServer.Commands
 
             CompleteAllStages();
 
-            // Stage 必须已经 Passed 后再同步 Guide。
+            // Stage 已经 Passed 后，再同步依赖 Stage 的 Guide。
             GuideModule.ReconcileStageCompletedGuides(
                 session.player,
                 session.stage);
@@ -136,49 +136,52 @@ namespace AscNet.GameServer.Commands
         }
 
         private void CompleteAllStages()
-        {
-            session.stage.Stages.Clear();
+{
+    session.stage.Stages.Clear();
 
-            foreach (StageTable stageData in
-                TableReaderV2.Parse<StageTable>()
-                    .Where(x =>
-                        x.StageId >= 10000000 &&
-                        x.StageId <= 20000000))
+    foreach (StageTable stageData in
+        TableReaderV2.Parse<StageTable>()
+            .Where(x =>
+                x.StageId >= 10000000 &&
+                x.StageId <= 20000000))
+    {
+        session.stage.Stages.Add(
+            stageData.StageId,
+            new()
             {
-                session.stage.Stages.Add(
-                    stageData.StageId,
-                    new()
-                    {
-                        StageId = stageData.StageId,
-                        StarsMark = 7,
-                        Passed = true,
-                        PassTimesToday = 0,
-                        PassTimesTotal = 1,
-                        BuyCount = 0,
-                        Score = 0,
-                        LastPassTime =
-                            DateTimeOffset.Now.ToUnixTimeSeconds(),
-                        RefreshTime =
-                            DateTimeOffset.Now.ToUnixTimeSeconds(),
-                        CreateTime =
-                            DateTimeOffset.Now.ToUnixTimeSeconds(),
-                        BestRecordTime = 0,
-                        LastRecordTime = 0,
-                        BestCardIds =
-                            new List<long> { 1021001 },
-                        LastCardIds =
-                            new List<long> { 1021001 }
-                    });
-            }
+                StageId = stageData.StageId,
+                StarsMark = 7,
+                Passed = true,
+                PassTimesToday = 0,
+                PassTimesTotal = 1,
+                BuyCount = 0,
+                Score = 0,
+                LastPassTime =
+                    DateTimeOffset.Now.ToUnixTimeSeconds(),
+                RefreshTime =
+                    DateTimeOffset.Now.ToUnixTimeSeconds(),
+                CreateTime =
+                    DateTimeOffset.Now.ToUnixTimeSeconds(),
+                BestRecordTime = 0,
+                LastRecordTime = 0,
+                BestCardIds =
+                    new List<long> { 1021001 },
+                LastCardIds =
+                    new List<long> { 1021001 }
+            });
+    }
 
-            session.SendPush(
-                new NotifyStageData
-                {
-                    StageList =
-                        session.stage.Stages
-                            .Select(x => x.Value)
-                            .ToList()
-                });
-        }
+    // 先持久化 Stage，再进行 Guide 同步
+    session.stage.Save();
+
+    session.SendPush(
+        new NotifyStageData
+        {
+            StageList =
+                session.stage.Stages
+                    .Select(x => x.Value)
+                    .ToList()
+        });
+}
     }
 }

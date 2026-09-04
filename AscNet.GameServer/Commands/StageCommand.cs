@@ -17,31 +17,41 @@ namespace AscNet.GameServer.Commands
         public override void Execute()
         {
             if (TargetStage == "all")
-            {
-                session.stage.Stages.Clear();
-                foreach (var stageData in TableReaderV2.Parse<StageTable>().Where(x => x.StageId >= 10000000 && x.StageId <= 20000000))
-                {
-                    session.stage.Stages.Add(stageData.StageId, new()
-                    {
-                        StageId = stageData.StageId,
-                        StarsMark = 7,
-                        Passed = true,
-                        PassTimesToday = 0,
-                        PassTimesTotal = 1,
-                        BuyCount = 0,
-                        Score = 0,
-                        LastPassTime = DateTimeOffset.Now.ToUnixTimeSeconds(),
-                        RefreshTime = DateTimeOffset.Now.ToUnixTimeSeconds(),
-                        CreateTime = DateTimeOffset.Now.ToUnixTimeSeconds(),
-                        BestRecordTime = 0,
-                        LastRecordTime = 0,
-                        BestCardIds = new List<long> { 1021001 },
-                        LastCardIds = new List<long> { 1021001 }
-                    });
-                }
+{
+    session.stage.Stages.Clear();
 
-                session.SendPush(new NotifyStageData() { StageList = session.stage.Stages.Select(x => x.Value).ToList() });
-            }
+    foreach (var stageData in TableReaderV2.Parse<StageTable>()
+        .Where(x => x.StageId >= 10000000 && x.StageId <= 20000000))
+    {
+        session.stage.Stages.Add(stageData.StageId, new()
+        {
+            StageId = stageData.StageId,
+            StarsMark = 7,
+            Passed = true,
+            PassTimesToday = 0,
+            PassTimesTotal = 1,
+            BuyCount = 0,
+            Score = 0,
+            LastPassTime = DateTimeOffset.Now.ToUnixTimeSeconds(),
+            RefreshTime = DateTimeOffset.Now.ToUnixTimeSeconds(),
+            CreateTime = DateTimeOffset.Now.ToUnixTimeSeconds(),
+            BestRecordTime = 0,
+            LastRecordTime = 0,
+            BestCardIds = new List<long> { 1021001 },
+            LastCardIds = new List<long> { 1021001 }
+        });
+    }
+
+    // 关键：/stage all 必须真正写入数据库
+    session.stage.Save();
+
+    session.SendPush(new NotifyStageData
+    {
+        StageList = session.stage.Stages
+            .Select(x => x.Value)
+            .ToList()
+    });
+}
             else
             {
                 StageTable? stageData = TableReaderV2.Parse<StageTable>().Find(x => x.StageId == int.Parse(TargetStage));
