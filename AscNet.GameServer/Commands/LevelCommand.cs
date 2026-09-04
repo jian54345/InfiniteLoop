@@ -8,54 +8,84 @@ namespace AscNet.GameServer.Commands
     [CommandName("level")]
     internal class LevelCommand : Command
     {
-        public LevelCommand(Session session, string[] args, bool validate = true) : base(session, args, validate) { }
+        public LevelCommand(
+            Session session,
+            string[] args,
+            bool validate = true)
+            : base(session, args, validate)
+        {
+        }
 
-        public override string Help => "Command to change the Commandant level";
+        public override string Help =>
+            "Command to change the Commandant level";
 
-        [Argument(0, @"^[0-9]+$|^max$", "The target level, value is number or 'max'")]
-        string Level { get; set; } = string.Empty;
+        [Argument(
+            0,
+            @"^[0-9]+$|^max$",
+            "The target level, value is number or 'max'")]
+        private string Level { get; set; } = string.Empty;
 
         public override void Execute()
         {
-            List<PlayerTable> playerLevels = TableReaderV2.Parse<PlayerTable>();
-            int level = Miscs.ParseIntOr(Level);
+            List<PlayerTable> playerLevels =
+                TableReaderV2.Parse<PlayerTable>();
 
-            if (Level == "max")
+            if (playerLevels.Count == 0)
             {
-                session.player.PlayerData.Level = playerLevels.OrderByDescending(x => x.Level).First().Level;
-                NotifyPlayerLevel notifyPlayerLevel = new()
-                {
-                    Level = (int)session.player.PlayerData.Level
-                };
-                session.SendPush(notifyPlayerLevel);
-                session.ExpSanityCheck();
+                throw new InvalidOperationException(
+                    "Player level table is empty!");
             }
-            else if (playerLevels.Any(x => x.Level == level))
+
+            int targetLevel;
+
+            if (string.Equals(
+                    Level,
+                    "max",
+                    StringComparison.OrdinalIgnoreCase))
             {
-                if (session.player.PlayerData.Level > level)
-                {
-                    session.player.PlayerData.Level = level;
-                    // Waiting for SendChatResponse, pls fix later
-                    Task.Run(() =>
-                    {
-                        // ReconnectPlayerLogout
-                        session.SendPush(new ForceLogoutNotify() { Code = 1030 });
-                        session.DisconnectProtocol();
-                    });
-                    return;
-                }
-                session.player.PlayerData.Level = level;
-                NotifyPlayerLevel notifyPlayerLevel = new()
-                {
-                    Level = (int)session.player.PlayerData.Level
-                };
-                session.SendPush(notifyPlayerLevel);
-                session.ExpSanityCheck();
+                targetLevel = playerLevels
+                    .OrderByDescending(x => x.Level)
+                    .First()
+                    .Level;
             }
             else
             {
-                throw new ArgumentException("Invalid Level!");
+                targetLevel = Miscs.ParseIntOr(Level);
+
+                if (targetLevel <= 0 ||
+                    !playerLevels.Any(x => x.Level == targetLevel))
+                {
+                    throw new ArgumentException(
+                        "Invalid Level!");
+                }
             }
+
+            int oldLevel =
+                checked((int)session.player.PlayerData.Level);
+
+            session.player.PlayerData.Level = targetLevel;
+
+            session.ExpSanityCheck();
+
+            session.player.SaveChecked();
+
+            session.SendPush(
+                AccountModule.BuildNotifyLogIn(session));
+
+            if (oldLevel == targetLevel)
+            {
+                SendLevelRefresh();
+            }
+        }
+
+        private void SendLevelRefresh()
+        {
+            session.SendPush(
+                new NotifyPlayerLevel
+                {
+                    Level = checked(
+                        (int)session.player.PlayerData.Level)
+                });
         }
     }
 }
