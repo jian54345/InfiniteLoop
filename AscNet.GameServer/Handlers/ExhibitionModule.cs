@@ -4,6 +4,7 @@ using AscNet.Common.Util;
 using AscNet.Table.V2.share.exhibition;
 using AscNet.Table.V2.share.condition;
 using AscNet.Table.V2.share.equip;
+using AscNet.Table.V2.share.reward;
 
 namespace AscNet.GameServer.Handlers
 {
@@ -46,7 +47,120 @@ namespace AscNet.GameServer.Handlers
             return true;
         }
 
-        internal static bool MeetsCharacterConditions(
+        internal static bool PrepareGatherRewardForCommand(
+    Session session,
+    ExhibitionRewardTable exhibitionReward,
+    out CharacterData? character,
+    out RewardApplicationResult? result)
+{
+    character =
+        session.character.Characters.Find(
+            candidate =>
+                candidate.Id ==
+                (uint)exhibitionReward.CharacterId);
+
+    result = null;
+
+    if (character is null)
+    {
+        return false;
+    }
+
+    /*
+     * GM / character max 专用：
+     *
+     * 不检查 MeetsPrerequisites()。
+     *
+     * 普通玩家领取 ExhibitionReward 时，
+     * 仍然由 GatherRewardRequest 使用
+     * MeetsPrerequisites() 进行正常限制。
+     *
+     * GM max 的目的就是直接完成角色解放，
+     * 所以这里不能再被 Ability / Resonance /
+     * AwakenedMemory 等普通条件卡住。
+     */
+
+    /*
+     * 已经领取过：
+     *
+     * 不重复发奖励，只同步 LiberateLv。
+     */
+    if (session.player.GatherRewards.Contains(
+            exhibitionReward.Id))
+    {
+        character.LiberateLv =
+            Math.Max(
+                character.LiberateLv,
+                exhibitionReward.LevelId);
+
+        return true;
+    }
+
+    /*
+     * 获取正式奖励配置。
+     */
+    List<RewardGoodsTable> rewardGoodsTables =
+        exhibitionReward.RewardId is > 0
+            ? RewardHandler.GetRewardGoods(
+                exhibitionReward.RewardId.Value)
+            : [];
+
+    /*
+     * Exhibition 配置了 RewardId，
+     * 但找不到对应 RewardGoods 时，
+     * 不标记领取。
+     */
+    if (exhibitionReward.RewardId is > 0
+        && rewardGoodsTables.Count == 0)
+    {
+        return false;
+    }
+
+    /*
+     * 标记 ExhibitionReward 已领取。
+     */
+    if (!session.player.AddGatherReward(
+            exhibitionReward.Id))
+    {
+        return false;
+    }
+
+    /*
+     * 使用 ApplyRewards 而不是 GiveRewards。
+     *
+     * ApplyRewards：
+     *   执行奖励
+     *   累计通知
+     *   不立即 SendPushes
+     *
+     * 最后由 CharacterCommand 一次性发送。
+     */
+    result =
+        RewardHandler.ApplyRewards(
+            rewardGoodsTables,
+            session);
+
+    /*
+     * 更新角色解放等级。
+     */
+    character.LiberateLv =
+        Math.Max(
+            character.LiberateLv,
+            exhibitionReward.LevelId);
+
+    /*
+     * 记录 GatherReward 通知。
+     */
+    if (!result.GatherRewardIds.Contains(
+            exhibitionReward.Id))
+    {
+        result.GatherRewardIds.Add(
+            exhibitionReward.Id);
+    }
+
+    return true;
+}
+		internal static bool MeetsCharacterConditions(
             Session session,
             CharacterData character,
             IReadOnlyList<int> conditionIds)
