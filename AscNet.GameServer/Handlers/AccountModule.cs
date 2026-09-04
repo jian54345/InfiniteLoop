@@ -506,7 +506,12 @@ namespace AscNet.GameServer.Handlers
             };
         }
         
-        internal static void SendLoginState(Session session)
+        internal static NotifyLogin BuildNotifyLogIn(Session session)
+        {
+            return BuildNotifyLogin(session);
+        }
+		
+		internal static void SendLoginState(Session session)
         {
             session.SendPush(BuildNotifyLogin(session));
         }
