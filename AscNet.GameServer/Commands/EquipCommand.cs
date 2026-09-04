@@ -300,46 +300,25 @@ internal class EquipCommand : Command
         equip.Exp = 0;
     }
 
-    /*
-     * Partner 普通等级修改。
-     *
-     * /equip modify all level 50
-     *
-     * 不突破。
-     * 只提升当前突破阶段允许的等级。
-     */
     private void SetAllPartnerLevel(
-        int level)
+    int level)
+{
+    if (session.character.Partners is null)
     {
-        if (session.character.Partners is null)
-        {
-            return;
-        }
-
-        foreach (PartnerData partner in
-                 session.character.Partners)
-        {
-            PartnerBreakThroughTable? breakthrough =
-                FindPartnerBreakThrough(
-                    partner);
-
-            if (breakthrough is null)
-            {
-                continue;
-            }
-
-            partner.Level =
-                Math.Min(
-                    Math.Max(
-                        level,
-                        1),
-                    Math.Max(
-                        breakthrough.LevelLimit,
-                        1));
-
-            partner.Exp = 0;
-        }
+        return;
     }
+
+    foreach (PartnerData partner in
+             session.character.Partners)
+    {
+        partner.Level =
+            Math.Max(
+                level,
+                1);
+
+        partner.Exp = 0;
+    }
+}
 
     /*
      * Partner Max。
