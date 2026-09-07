@@ -129,17 +129,19 @@ pub fn load_build() -> Result<Option<LocalBuild>> {
 pub fn prepare(
     repository: &str,
     branch: &str,
+    game: &Path,
     progress: &mut dyn FnMut(&str),
 ) -> Result<LocalBuild> {
     let mut log = LauncherLog::beside_executable()?;
     log.write("Setup attempt started")?;
-    let result = prepare_logged(repository, branch, progress, &mut log);
+    let result = prepare_logged(repository, branch, game, progress, &mut log);
     log.finish(result)
 }
 
 fn prepare_logged(
     repository: &str,
     branch: &str,
+    game: &Path,
     progress: &mut dyn FnMut(&str),
     log: &mut LauncherLog,
 ) -> Result<LocalBuild> {
@@ -200,13 +202,18 @@ fn prepare_logged(
             .context("local setup script has no parent directory")?
             .join("supported-client.json"),
     )?;
-    crate::package::load_package(&build.patch_directory)
+    let package = crate::package::load_package(&build.patch_directory)
         .context("validate prepared patch package")?;
     fs::OpenOptions::new()
         .write(true)
         .open(&pending)?
         .sync_all()
         .context("flush pending local build state")?;
+    crate::install::install_with_consent(game, &package, &mut |message| progress(&message))?;
+    anyhow::ensure!(
+        matches!(crate::install::inspect(game, &package)?, crate::install::PatchState::Current),
+        "prepared patch did not become current"
+    );
     #[cfg(windows)]
     atomic_replace(&pending, &root.join("build-state.json"))?;
     Ok(build)
@@ -301,9 +308,19 @@ mod log_tests {
     }
 }
 
-pub fn check_update(repository: &str, branch: &str) -> Result<Option<bool>> {
+pub fn check_update(
+    repository: &str,
+    branch: &str,
+    installed: Option<&LocalBuild>,
+) -> Result<Option<bool>> {
     validate_repository(repository)?;
     validate_branch(branch)?;
+    let Some(installed) = installed else {
+        return Ok(None);
+    };
+    if installed.repository != repository {
+        bail!("active build belongs to a different repository; run Setup manually");
+    }
     let checkout = root()?.join("checkout");
     if !checkout.join(".git").is_dir() {
         return Ok(None);
@@ -311,16 +328,29 @@ pub fn check_update(repository: &str, branch: &str) -> Result<Option<bool>> {
     let Some(git) = git_executable() else {
         return Ok(None);
     };
-    let mut local = Command::new(&git);
-    local
-        .args(["-C"])
-        .arg(&checkout)
-        .args(["rev-parse", "HEAD"]);
-    let output = match command_output_timeout(local, Duration::from_secs(15)) {
-        Ok(output) if output.status.success() => output,
-        Ok(_) | Err(_) => return Ok(None),
-    };
-    let head = text_output(&output.stdout, "local git revision")?.to_owned();
+    check_checkout_update(&git, &checkout, repository, branch, &installed.revision)
+}
+
+fn check_checkout_update(
+    git: &Path,
+    checkout: &Path,
+    repository: &str,
+    branch: &str,
+    installed_revision: &str,
+) -> Result<Option<bool>> {
+    for (args, expected) in [
+        (["remote", "get-url", "origin"].as_slice(), repository),
+        (["branch", "--show-current"].as_slice(), branch),
+    ] {
+        let mut command = Command::new(&git);
+        command.arg("-C").arg(&checkout).args(args);
+        let output = command_output_timeout(command, Duration::from_secs(15))?;
+        if !output.status.success()
+            || text_output(&output.stdout, "checkout identity")? != expected
+        {
+            bail!("checkout repository or branch differs; run Setup manually");
+        }
+    }
     let mut remote_command = Command::new(&git);
     let remote_ref = format!("refs/heads/{branch}");
     remote_command
@@ -344,8 +374,46 @@ pub fn check_update(repository: &str, branch: &str) -> Result<Option<bool>> {
     if fields.next() != Some(remote_ref.as_str()) || fields.next().is_some() {
         bail!("git returned an unexpected remote branch");
     }
-    let remote = remote.to_owned();
-    Ok(Some(head != remote))
+    if remote.len() != 40 || !remote.bytes().all(|b| b.is_ascii_hexdigit()) {
+        bail!("git returned an invalid remote revision");
+    }
+    Ok(Some(!installed_revision.eq_ignore_ascii_case(remote)))
+}
+
+#[cfg(test)]
+mod update_tests {
+    use super::*;
+
+    #[test]
+    fn advanced_checkout_does_not_hide_failed_build() {
+        let directory = env::temp_dir().join(format!("ascnet-source-{}", uuid::Uuid::new_v4()));
+        fs::create_dir(&directory).unwrap();
+        let git = |args: &[&str]| {
+            let output = Command::new("git").arg("-C").arg(&directory).args(args).output().unwrap();
+            assert!(output.status.success(), "{}", String::from_utf8_lossy(&output.stderr));
+            String::from_utf8(output.stdout).unwrap().trim().to_owned()
+        };
+        git(&["init", "--initial-branch=master"]);
+        git(&["-c", "user.name=Launcher Test", "-c", "user.email=launcher@example.invalid",
+            "commit", "--allow-empty", "-m", "active build"]);
+        let active_revision = git(&["rev-parse", "HEAD"]);
+        git(&["-c", "user.name=Launcher Test", "-c", "user.email=launcher@example.invalid",
+            "commit", "--allow-empty", "-m", "checkout advanced before failed build"]);
+        let remote_revision = git(&["rev-parse", "HEAD"]);
+        let repository = directory.to_str().unwrap();
+        git(&["remote", "add", "origin", repository]);
+
+        assert_eq!(
+            check_checkout_update(Path::new("git"), &directory, repository, "master", &active_revision).unwrap(),
+            Some(true),
+            "checkout and remote match, but active build still needs updating",
+        );
+        assert_eq!(
+            check_checkout_update(Path::new("git"), &directory, repository, "master", &remote_revision).unwrap(),
+            Some(false),
+        );
+        fs::remove_dir_all(directory).unwrap();
+    }
 }
 
 pub struct LocalRuntime {

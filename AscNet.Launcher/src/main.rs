@@ -41,8 +41,12 @@ fn main() {
 }
 
 fn run() -> Result<()> {
+    if ascnet_launcher::updater::startup()? {
+        return Ok(());
+    }
     local::launcher_log("Launcher started")?;
-    let args: Vec<String> = env::args().skip(1).collect();
+    let args: Vec<String> = env::args().skip(1)
+        .filter(|arg| arg != "--self-update-health" && arg != "--self-update-rolled-back").collect();
     if args.is_empty() {
         #[cfg(windows)]
         {
@@ -60,9 +64,7 @@ fn run() -> Result<()> {
             let config: DistributorConfig = serde_json::from_slice(
                 &fs::read(executable_dir()?.join("launcher.json")).context("launcher.json is missing")?,
             ).context("launcher.json is invalid")?;
-            let build = local::prepare(&config.repository_url, &config.branch, &mut |line| eprintln!("{line}"))?;
-            let package = package::load_package(&build.patch_directory)?;
-            install::install_with_consent(&game, &package, &mut |line| eprintln!("{line}"))?;
+            let build = local::prepare(&config.repository_url, &config.branch, &game, &mut |line| eprintln!("{line}"))?;
             println!("{}", build.revision);
         }
         "--inspect" => {

@@ -4,6 +4,7 @@ use ascnet_launcher::{
     install::{self, PatchState},
     local::{self, LocalBuild, LocalRuntime},
     package::{self, PatchPackage},
+    updater,
 };
 use serde::{Deserialize, Serialize};
 use std::{
@@ -175,12 +176,14 @@ enum Event {
     Progress(String),
 }
 enum WorkResult {
+    LauncherChecked(Result<Option<updater::StagedUpdate>>),
     Refresh {
         build: Option<LocalBuild>,
         package: Option<PatchPackage>,
         patch: Option<PatchState>,
         fps: Option<i32>,
         update: Result<Option<bool>>,
+        automatic: bool,
     },
     Prepared {
         build: LocalBuild,
@@ -392,7 +395,11 @@ unsafe fn run_inner() -> Result<()> {
     );
     let _ = ShowWindow(hwnd, SW_SHOW);
     let _ = SetForegroundWindow(hwnd);
-    start_refresh(hwnd, false);
+    if let Err(error) = updater::acknowledge_startup() {
+        let _ = DestroyWindow(hwnd);
+        return Err(error);
+    }
+    start_launcher_check(hwnd);
     let mut msg = MSG::default();
     loop {
         let result = GetMessageW(&mut msg, None, 0, 0).0;
@@ -406,6 +413,9 @@ unsafe fn run_inner() -> Result<()> {
             let _ = TranslateMessage(&msg);
             DispatchMessageW(&msg);
         }
+    }
+    if IsWindow(hwnd).as_bool() {
+        let _ = DestroyWindow(hwnd);
     }
     Ok(())
 }
@@ -590,6 +600,8 @@ unsafe extern "system" fn wndproc(hwnd: HWND, msg: u32, wp: WPARAM, lp: LPARAM) 
                                     | "Starting MongoDB"
                                     | "Starting AscNet server"
                                     | "Local backend is ready"
+                                    | "Checking launcher releases…"
+                                    | "Downloading and verifying launcher update…"
                             ) {
                                 append_log(hwnd, &mut *ptr, &text);
                             }
@@ -1474,7 +1486,6 @@ unsafe fn command(hwnd: HWND, state: &mut Window, id: i32, notification: u16) {
                 } else if m.build.is_none()
                     || m.package.is_none()
                     || !matches!(m.patch, Some(PatchState::Current))
-                    || m.update_available == Some(true)
                 {
                     ID_ACTION
                 } else {
@@ -1563,14 +1574,14 @@ unsafe fn command(hwnd: HWND, state: &mut Window, id: i32, notification: u16) {
                     }
                 }
                 set_text(hwnd, ID_PATH, &text);
-                start_refresh(hwnd, false);
+                start_refresh(hwnd, false, false);
             }
             Ok(None) => {}
             Err(e) => show_fatal(&format!("{e:#}")),
         },
         ID_CHECK => {
             if commit_inputs(hwnd, state) {
-                start_refresh(hwnd, true)
+                start_refresh(hwnd, true, false)
             }
         }
         ID_ACTION => {
@@ -1622,7 +1633,49 @@ unsafe fn commit_inputs(hwnd: HWND, state: &mut Window) -> bool {
     true
 }
 
-fn start_refresh(hwnd: HWND, check_remote: bool) {
+fn start_launcher_check(hwnd: HWND) {
+    if updater::updates_suppressed() {
+        let _ = local::launcher_log("Automatic updates skipped after launcher rollback");
+        start_refresh(hwnd, true, false);
+        return;
+    }
+    let Some(model) = window_model(hwnd) else {
+        return;
+    };
+    let (generation, events, repository) = {
+        let mut m = model.lock().unwrap();
+        if m.busy || m.runtime.is_some() {
+            return;
+        }
+        m.busy = true;
+        (
+            m.generation.fetch_add(1, Ordering::SeqCst) + 1,
+            m.events.clone(),
+            m.config.repository_url.clone(),
+        )
+    };
+    unsafe { set_busy(hwnd, true, "Checking launcher releases…") };
+    thread::spawn(move || {
+        post_progress(hwnd, &events, "Checking launcher releases…");
+        let result = (|| {
+            let Some(release) = updater::check(&repository, LAUNCHER_VERSION)? else {
+                return Ok(None);
+            };
+            post_progress(hwnd, &events, "Downloading and verifying launcher update…");
+            updater::stage(&release).map(Some)
+        })();
+        post_event(
+            hwnd,
+            &events,
+            Event::Work(Work {
+                generation,
+                result: Ok(WorkResult::LauncherChecked(result)),
+            }),
+        );
+    });
+}
+
+fn start_refresh(hwnd: HWND, check_remote: bool, automatic: bool) {
     let Some(model) = window_model(hwnd) else {
         return;
     };
@@ -1657,7 +1710,7 @@ fn start_refresh(hwnd: HWND, check_remote: bool) {
                 _ => None,
             };
             let update = if check_remote {
-                local::check_update(&config.repository_url, &config.branch)
+                local::check_update(&config.repository_url, &config.branch, build.as_ref())
             } else {
                 Ok(None)
             };
@@ -1667,6 +1720,7 @@ fn start_refresh(hwnd: HWND, check_remote: bool) {
                 patch,
                 fps,
                 update,
+                automatic,
             })
         })();
         post_event(hwnd, &events, Event::Work(Work { generation, result }));
@@ -1760,7 +1814,7 @@ fn start_prepare(hwnd: HWND, state: &mut Window) {
     let (generation, events, config, game);
     {
         let mut m = model.lock().unwrap();
-        if m.busy {
+        if m.busy || m.runtime.is_some() {
             return;
         }
         game = match m.settings.selected_game.clone() {
@@ -1786,9 +1840,8 @@ fn start_prepare(hwnd: HWND, state: &mut Window) {
     thread::spawn(move || {
         let result = (|| {
             let mut progress = |s: &str| post_progress(hwnd, &events, s);
-            let build = local::prepare(&config.repository_url, &config.branch, &mut progress)?;
+            let build = local::prepare(&config.repository_url, &config.branch, &game, &mut progress)?;
             let package = package::load_package(&build.patch_directory)?;
-            install::install_with_consent(&game, &package, &mut |s| post_progress(hwnd, &events, &s))?;
             let patch = install::inspect(&game, &package)?;
             Ok(WorkResult::Prepared {
                 build,
@@ -1907,7 +1960,10 @@ unsafe fn finish_work(hwnd: HWND, state: &mut Window, work: Work) {
         return;
     }
     m.busy = false;
+    let mut automatic_prepare = false;
+    let mut source_status = None;
     let log = match &work.result {
+        Ok(WorkResult::LauncherChecked(_)) => "Launcher check complete",
         Ok(WorkResult::Refresh { .. }) => "Check complete",
         Ok(WorkResult::Prepared { .. }) => "Setup complete",
         Ok(WorkResult::Restored) => "Retail files restored",
@@ -1925,12 +1981,39 @@ unsafe fn finish_work(hwnd: HWND, state: &mut Window, work: Work) {
         Err(_) => "Operation failed",
     };
     match work.result {
+        Ok(WorkResult::LauncherChecked(result)) => {
+            let message = match result {
+                Ok(Some(staged)) if m.runtime.is_none() => {
+                    match install::game_running().and_then(|running| {
+                        anyhow::ensure!(!running, "PGR is running; launcher update deferred");
+                        updater::launch_update(staged)
+                    }) {
+                        Ok(()) => {
+                            m.busy = true;
+                            drop(m);
+                            append_log(hwnd, state, "Launcher update verified; restarting…");
+                            PostQuitMessage(0);
+                            return;
+                        }
+                        Err(e) => local::logged_error(&format!("Launcher update deferred: {e:#}")),
+                    }
+                }
+                Ok(Some(_)) => "Launcher update deferred while local services are running".to_owned(),
+                Ok(None) => "Launcher is current".to_owned(),
+                Err(e) => local::logged_error(&format!("Launcher update unavailable: {e:#}")),
+            };
+            drop(m);
+            append_log(hwnd, state, &message);
+            start_refresh(hwnd, true, true);
+            return;
+        }
         Ok(WorkResult::Refresh {
             build,
             package,
             patch,
             fps,
             update,
+            automatic,
         }) => {
             m.build = build;
             m.package = package;
@@ -1946,6 +2029,14 @@ unsafe fn finish_work(hwnd: HWND, state: &mut Window, work: Work) {
                     m.update_error = Some(local::logged_error(&format!("{e:#}")))
                 }
             }
+            automatic_prepare = automatic
+                && m.update_available == Some(true)
+                && can_play(&m).is_ok();
+            source_status = Some(match m.update_available {
+                Some(true) => "Source update available".to_owned(),
+                Some(false) => "Local source build is current".to_owned(),
+                None => m.update_error.clone().unwrap_or_else(|| "Source revision not checked".to_owned()),
+            });
         }
         Ok(WorkResult::Prepared {
             build,
@@ -1955,7 +2046,7 @@ unsafe fn finish_work(hwnd: HWND, state: &mut Window, work: Work) {
             m.build = Some(build);
             m.package = Some(package);
             m.patch = Some(patch);
-            m.update_available = Some(false);
+            m.update_available = None;
             m.update_error = None;
         }
         Ok(WorkResult::Restored) => m.patch = Some(PatchState::Unpatched),
@@ -1988,7 +2079,20 @@ unsafe fn finish_work(hwnd: HWND, state: &mut Window, work: Work) {
     }
     drop(m);
     append_log(hwnd, state, log);
+    if let Some(message) = source_status {
+        append_log(hwnd, state, &message);
+    }
     update_view(hwnd, &state.model);
+    if automatic_prepare {
+        match install::game_running() {
+            Ok(false) => start_prepare(hwnd, state),
+            Ok(true) => append_log(hwnd, state, "Source update deferred while PGR is running"),
+            Err(e) => {
+                let message = local::logged_error(&format!("Source update deferred: {e:#}"));
+                append_log(hwnd, state, &message);
+            }
+        }
+    }
 }
 
 unsafe fn update_view(hwnd: HWND, model: &Arc<Mutex<Model>>) {
@@ -2012,7 +2116,7 @@ unsafe fn update_view(hwnd: HWND, model: &Arc<Mutex<Model>>) {
             "&Setup / Update"
         },
     );
-    set_enabled(hwnd, ID_ACTION, !busy);
+    set_enabled(hwnd, ID_ACTION, !busy && !runtime);
     set_enabled(hwnd, ID_RESTORE, !busy && can_restore);
     set_enabled(hwnd, ID_PLAY, !busy && can_launch);
     let fps_value = fps_status.flatten();
@@ -2044,7 +2148,7 @@ unsafe fn update_view(hwnd: HWND, model: &Arc<Mutex<Model>>) {
         "RUNNING"
     } else if !can_restore {
         "SELECT GAME"
-    } else if update_available == Some(true) {
+    } else if update_available == Some(true) && !can_launch {
         "UPDATE"
     } else if !can_launch {
         "SETUP"

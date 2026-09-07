@@ -1,6 +1,6 @@
 [package]
 name = "ascnet-launcher"
-version = "0.1.0"
+version = "1.0.3"
 edition = "2021"
 
 [dependencies]
@@ -13,6 +13,8 @@ sha2 = "0.10"
 lz4_flex = "0.11"
 reqwest = { version = "0.12", features = ["blocking", "json"] }
 uuid = { version = "1", features = ["v4"] }
+semver = "1"
+zip = { version = "2", default-features = false, features = ["deflate"] }
 windows = { version = "0.57", features = [
     "Wdk_Storage_FileSystem",
     "Win32_System_IO",
