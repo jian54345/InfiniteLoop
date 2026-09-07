@@ -1,0 +1,224 @@
+﻿
+[InfiniteLoop] cwd=F:\000000\2\InfiniteLoop-master within KRSDK
+[InfiniteLoop] PYTHON=C:\Users\Administrator\AppData\Local\Programs\Python\Python314\python.exe
+
+python-ok
+[Proxy] setting proxy to 127.0.0.1:8081 ...
+[Proxy] enabled: 127.0.0.1:8081
+
+[InfiniteLoop] starting run_steam.py ...
+
+AscNet SDK URL: http://127.0.0.1:8080
++ F:\0.MongoDB\mongod.exe --dbpath F:\000000\2\InfiniteLoop-master within KRSDK\.runtime\mongo --bind_ip 127.0.0.1 --port 27017 --logpath F:\000000\2\InfiniteLoop-master within KRSDK\.runtime\mongod.log --logappend --quiet
+MongoDB OK: 127.0.0.1:27017
+Waiting for AscNet build lock: F:\000000\2\InfiniteLoop-master within KRSDK\.runtime\ascnet-build.lock
++ C:\Program Files\dotnet\dotnet.EXE build -c Release AscNet/AscNet.csproj
+还原完成(0.6)
+  AscNet.Table netstandard2.0 已成功 (0.0 秒) → AscNet.Table\bin\Release\netstandard2.0\AscNet.Table.dll
+  AscNet.Logging net8.0 已成功 (0.2 秒) → AscNet.Logging\bin\Release\net8.0\AscNet.Logging.dll
+  AscNet.Common net8.0 已成功 (0.1 秒) → AscNet.Common\bin\Release\net8.0\AscNet.Common.dll
+  AscNet.GameServer net8.0 已成功 (0.1 秒) → AscNet.GameServer\bin\Release\net8.0\AscNet.GameServer.dll
+  AscNet.SDKServer net8.0 已成功 (0.1 秒) → AscNet.SDKServer\bin\Release\net8.0\AscNet.SDKServer.dll
+  AscNet net8.0 已成功 (0.1 秒) → AscNet\bin\Release\net8.0\AscNet.dll
+
+在 1.7 秒内生成 已成功
++ C:\Program Files\dotnet\dotnet.EXE run -c Release --no-build --project AscNet/AscNet.csproj -- --urls http://127.0.0.1:8080
+从 AscNet\Properties\launchSettings.json 使用启动设置...
+[08:13:56.593][INFO][Program]: Starting...
+[08:13:57.014][INFO][PacketFactory]: Loading Packet Handlers...
+[08:13:57.029][INFO][PacketFactory]: Finished loading packet handlers
+[08:13:57.030][INFO][CommandFactory]: Loading commands...
+[08:13:57.032][INFO][CommandFactory]: Finished loading commands
+[08:13:57.274][INFO][SDKServer]: SDKServer started in port 8080!
+[08:13:57.286][DEBUG][TableReaderV2]: CurrentTaskTable Loaded From F:\000000\2\InfiniteLoop-master within KRSDK\Resources\table/share/task/CurrentTask.tsv
+[08:13:57.290][DEBUG][TableReaderV2]: StoryTaskTable Loaded From F:\000000\2\InfiniteLoop-master within KRSDK\Resources\table/share/task/StoryTask.tsv
+[08:13:57.292][DEBUG][TableReaderV2]: StoryTaskConditionTable Loaded From F:\000000\2\InfiniteLoop-master within KRSDK\Resources\table/share/task/StoryTaskCondition.tsv
+[08:13:57.298][DEBUG][TableReaderV2]: CurrentConditionTable Loaded From F:\000000\2\InfiniteLoop-master within KRSDK\Resources\table/share/task/CurrentCondition.tsv
+[08:13:57.369][DEBUG][TableReaderV2]: ConditionTable Loaded From F:\000000\2\InfiniteLoop-master within KRSDK\Resources\table/share/task/Condition.tsv
+[08:13:57.398][INFO][SDKServer]: 200 GET /prod/client/config/9jY3H6OqsppPLu31/com.kurogame.punishing.grayraven.en/4.6.0/standalone/config.tab
+Smoke OK [global-client]: http://127.0.0.1:8080/prod/client/config/9jY3H6OqsppPLu31/com.kurogame.punishing.grayraven.en/4.6.0/standalone/config.tab
+[08:13:57.401][INFO][SDKServer]: 200 GET /prod/client/config/9jY3H6OqsppPLu31/com.kurogame.pc.punishing.grayraven.en/4.6.0/standalone/config.tab
+Smoke OK [steam-pc-package]: http://127.0.0.1:8080/prod/client/config/9jY3H6OqsppPLu31/com.kurogame.pc.punishing.grayraven.en/4.6.0/standalone/config.tab
++ C:\Users\Administrator\AppData\Local\Programs\Python\Python314\Scripts\mitmdump.EXE --listen-host 127.0.0.1 --listen-port 8081 -s proxy.py
+Proxy env: http_proxy=http://127.0.0.1:8081; ASCNET_PROXY_TARGET=http://127.0.0.1:8080; flow log=.runtime/proxy-flows.log
++ F:\Punishing Gray Raven\Punishing Gray Raven Game\PGR.exe
+Launch command started; keeping AscNet Steam bridge running. Press Ctrl-C to stop.
+[08:13:57.458][DEBUG][TableReaderV2]: TaskTable Loaded From F:\000000\2\InfiniteLoop-master within KRSDK\Resources\table/share/task/Task.tsv
+[08:13:57.461][INFO][Server]: GameServer started and listening on port 2335
+[08:13:58.351] Loading script proxy.py
+[08:13:58.360] HTTP(S) proxy listening at 127.0.0.1:8081.
+[08:14:05.427][127.0.0.1:60942] client connect
+[08:14:05.452] ascnet candidate sni:prod-zspnslog.zspms-game.com
+127.0.0.1:60942: POST https://prod-zspnslog.zspms-game.com/feedback
+              << 204 No Content 0b
+127.0.0.1:60942: POST https://prod-zspnslog.zspms-game.com/feedback
+              << 204 No Content 0b
+127.0.0.1:60942: POST https://prod-zspnslog.zspms-game.com/feedback
+              << 204 No Content 0b
+127.0.0.1:60942: POST https://prod-zspnslog.zspms-game.com/feedback
+              << 204 No Content 0b
+[08:14:06.070][127.0.0.1:60944] client connect
+127.0.0.1:60942: POST https://prod-zspnslog.zspms-game.com/feedback
+              << 204 No Content 0b
+[08:14:06.080] ascnet candidate sni:prod-zspns-txcdn.kurogame.com
+[08:14:06.083][127.0.0.1:60944] server connect 127.0.0.1:8080
+[08:14:06.085][INFO][SDKServer]: 200 GET /prod/client/config/dT16VA12XA3cuGwy/com.kurogame.haru.kuro/4.7.0/standalone/config.tab
+127.0.0.1:60944: GET http://127.0.0.1:8080/prod/client/config/dT16VA12XA3cuGwy/com.kurogame.haru.kuro/4.7.0/standalo…
+              << 200 OK 2.0k
+127.0.0.1:60942: POST https://prod-zspnslog.zspms-game.com/feedback
+              << 204 No Content 0b
+127.0.0.1:60942: POST https://prod-zspnslog.zspms-game.com/feedback
+              << 204 No Content 0b
+[08:14:06.136][127.0.0.1:60947] client connect
+127.0.0.1:60942: POST https://prod-zspnslog.zspms-game.com/feedback
+              << 204 No Content 0b
+[08:14:06.145] ascnet candidate sni:prod-zspnslog.zspms-game.com
+127.0.0.1:60947: POST https://prod-zspnslog.zspms-game.com/feedback
+              << 204 No Content 0b
+127.0.0.1:60942: POST https://prod-zspnslog.zspms-game.com/feedback
+              << 204 No Content 0b
+127.0.0.1:60942: POST https://prod-zspnslog.zspms-game.com/feedback
+              << 204 No Content 0b
+127.0.0.1:60942: POST https://prod-zspnslog.zspms-game.com/feedback
+              << 204 No Content 0b
+[08:14:08.453][127.0.0.1:60948] client connect
+[08:14:08.457][127.0.0.1:60949] client connect
+[08:14:08.460][127.0.0.1:60950] client connect
+[08:14:08.503] ascnet candidate sni:dc.services.visualstudio.com
+[08:14:08.504] ascnet candidate sni:dc.services.visualstudio.com
+[08:14:08.505] ascnet candidate sni:dc.services.visualstudio.com
+127.0.0.1:60948: POST https://dc.services.visualstudio.com/v2/track
+              << 204 No Content 0b
+127.0.0.1:60949: POST https://dc.services.visualstudio.com/v2/track
+              << 204 No Content 0b
+127.0.0.1:60950: POST https://dc.services.visualstudio.com/v2/track
+              << 204 No Content 0b
+127.0.0.1:60948: POST https://dc.services.visualstudio.com/v2/track
+              << 204 No Content 0b
+127.0.0.1:60949: POST https://dc.services.visualstudio.com/v2/track
+              << 204 No Content 0b
+127.0.0.1:60949: POST https://dc.services.visualstudio.com/v2/track
+              << 204 No Content 0b
+127.0.0.1:60942: POST https://prod-zspnslog.zspms-game.com/feedback
+              << 204 No Content 0b
+127.0.0.1:60949: POST https://dc.services.visualstudio.com/v2/track
+              << 204 No Content 0b
+127.0.0.1:60948: POST https://dc.services.visualstudio.com/v2/track
+              << 204 No Content 0b
+127.0.0.1:60948: POST https://dc.services.visualstudio.com/v2/track
+              << 204 No Content 0b
+127.0.0.1:60942: POST https://prod-zspnslog.zspms-game.com/feedback
+              << 204 No Content 0b
+127.0.0.1:60948: POST https://dc.services.visualstudio.com/v2/track
+              << 204 No Content 0b
+127.0.0.1:60942: POST https://prod-zspnslog.zspms-game.com/feedback
+              << 204 No Content 0b
+127.0.0.1:60949: POST https://dc.services.visualstudio.com/v2/track
+              << 204 No Content 0b
+127.0.0.1:60948: POST https://dc.services.visualstudio.com/v2/track
+              << 204 No Content 0b
+127.0.0.1:60942: POST https://prod-zspnslog.zspms-game.com/feedback
+              << 204 No Content 0b
+127.0.0.1:60947: POST https://prod-zspnslog.zspms-game.com/feedback
+              << 204 No Content 0b
+127.0.0.1:60942: POST https://prod-zspnslog.zspms-game.com/feedback
+              << 204 No Content 0b
+127.0.0.1:60942: POST https://prod-zspnslog.zspms-game.com/feedback
+              << 204 No Content 0b
+127.0.0.1:60942: POST https://prod-zspnslog.zspms-game.com/feedback
+              << 204 No Content 0b
+127.0.0.1:60942: POST https://prod-zspnslog.zspms-game.com/feedback
+              << 204 No Content 0b
+127.0.0.1:60947: POST https://prod-zspnslog.zspms-game.com/feedback
+              << 204 No Content 0b
+127.0.0.1:60942: POST https://prod-zspnslog.zspms-game.com/feedback
+              << 204 No Content 0b
+127.0.0.1:60942: POST https://prod-zspnslog.zspms-game.com/feedback
+              << 204 No Content 0b
+127.0.0.1:60942: POST https://prod-zspnslog.zspms-game.com/feedback
+              << 204 No Content 0b
+127.0.0.1:60948: POST https://dc.services.visualstudio.com/v2/track
+              << 204 No Content 0b
+127.0.0.1:60942: POST https://prod-zspnslog.zspms-game.com/feedback
+              << 204 No Content 0b
+127.0.0.1:60942: POST https://prod-zspnslog.zspms-game.com/feedback
+              << 204 No Content 0b
+127.0.0.1:60948: POST https://dc.services.visualstudio.com/v2/track
+              << 204 No Content 0b
+127.0.0.1:60942: POST https://prod-zspnslog.zspms-game.com/feedback
+              << 204 No Content 0b
+127.0.0.1:60947: POST https://prod-zspnslog.zspms-game.com/feedback
+              << 204 No Content 0b
+127.0.0.1:60949: POST https://dc.services.visualstudio.com/v2/track
+              << 204 No Content 0b
+[08:14:09.342][127.0.0.1:60951] client connect
+[08:14:09.350] ascnet candidate sni:prod-zspnslog.zspms-game.com
+127.0.0.1:60951: POST https://prod-zspnslog.zspms-game.com/feedback
+              << 204 No Content 0b
+127.0.0.1:60942: POST https://prod-zspnslog.zspms-game.com/feedback
+              << 204 No Content 0b
+127.0.0.1:60942: POST https://prod-zspnslog.zspms-game.com/feedback
+              << 204 No Content 0b
+127.0.0.1:60942: POST https://prod-zspnslog.zspms-game.com/feedback
+              << 204 No Content 0b
+127.0.0.1:60942: POST https://prod-zspnslog.zspms-game.com/feedback
+              << 204 No Content 0b
+127.0.0.1:60942: POST https://prod-zspnslog.zspms-game.com/feedback
+              << 204 No Content 0b
+127.0.0.1:60942: POST https://prod-zspnslog.zspms-game.com/feedback
+              << 204 No Content 0b
+127.0.0.1:60942: POST https://prod-zspnslog.zspms-game.com/feedback
+              << 204 No Content 0b
+127.0.0.1:60942: POST https://prod-zspnslog.zspms-game.com/feedback
+              << 204 No Content 0b
+127.0.0.1:60942: POST https://prod-zspnslog.zspms-game.com/feedback
+              << 204 No Content 0b
+127.0.0.1:60942: POST https://prod-zspnslog.zspms-game.com/feedback
+              << 204 No Content 0b
+[08:14:15.269][127.0.0.1:60954] client connect
+127.0.0.1:60954: GET http://icanhazip.com/
+              << 200 OK 10b
+[08:14:15.274][127.0.0.1:60944] client disconnect
+[08:14:15.274][127.0.0.1:60944] server disconnect 127.0.0.1:8080
+127.0.0.1:60942: POST https://prod-zspnslog.zspms-game.com/feedback
+              << 204 No Content 0b
+127.0.0.1:60942: POST https://prod-zspnslog.zspms-game.com/feedback
+              << 204 No Content 0b
+[08:14:15.612][127.0.0.1:60955] client connect
+[08:14:15.614][127.0.0.1:60954] server connect 127.0.0.1:8080
+[08:14:15.616][127.0.0.1:60955] server connect 127.0.0.1:8080
+[08:14:15.616][INFO][SDKServer]: 200 GET /prod/client/notice/config/dT16VA12XA3cuGwy/com.kurogame.haru.kuro/4.7.0/LoginNotice.json
+127.0.0.1:60954: GET http://127.0.0.1:8080/prod/client/notice/config/dT16VA12XA3cuGwy/com.kurogame.haru.kuro/4.7.0/L…
+              << 200 OK 223b
+[08:14:15.619][INFO][SDKServer]: 200 GET /prod/client/notice/config/dT16VA12XA3cuGwy/com.kurogame.haru.kuro/4.7.0/GameNotice.json
+127.0.0.1:60955: GET http://127.0.0.1:8080/prod/client/notice/config/dT16VA12XA3cuGwy/com.kurogame.haru.kuro/4.7.0/G…
+              << 200 OK 4.3k
+[08:14:15.622][127.0.0.1:60947] client disconnect
+127.0.0.1:60942: POST https://prod-zspnslog.zspms-game.com/feedback
+              << 204 No Content 0b
+127.0.0.1:60942: POST https://prod-zspnslog.zspms-game.com/feedback
+              << 204 No Content 0b
+127.0.0.1:60942: POST https://prod-zspnslog.zspms-game.com/feedback
+              << 204 No Content 0b
+[08:14:46.978][127.0.0.1:60963] client connect
+[08:14:46.980][127.0.0.1:60963] server connect 127.0.0.1:8080
+[08:14:47.074][INFO][SDKServer]: 200 POST /api/AscNet/login
+127.0.0.1:60963: POST http://127.0.0.1:8080/api/AscNet/login
+              << 200 OK 135b
+[08:14:47.077][127.0.0.1:60963] client disconnect
+[08:14:47.078][127.0.0.1:60963] server disconnect 127.0.0.1:8080
+127.0.0.1:60942: POST https://prod-zspnslog.zspms-game.com/feedback
+              << 204 No Content 0b
+127.0.0.1:60942: POST https://prod-zspnslog.zspms-game.com/feedback
+              << 204 No Content 0b
+127.0.0.1:60942: POST https://prod-zspnslog.zspms-game.com/feedback
+              << 204 No Content 0b
+[08:14:53.148][127.0.0.1:60942] client disconnect
+[08:14:53.149][127.0.0.1:60951] client disconnect
+[08:14:53.150][127.0.0.1:60954] client disconnect
+[08:14:53.150][127.0.0.1:60955] client disconnect
+[08:14:53.151][127.0.0.1:60954] server disconnect 127.0.0.1:8080
+[08:14:53.151][127.0.0.1:60955] server disconnect 127.0.0.1:8080
+[08:15:11.226][127.0.0.1:60949] client disconnect
+[08:15:11.227][127.0.0.1:60948] client disconnect
+[08:15:11.227][127.0.0.1:60950] client disconnect
