@@ -1,0 +1,33 @@
+之前的测试记录
+哈希和 Document 版本不对，客户端去 CDN 校验资源索引就会失败 → 「获取资源失败」。
+把真实哈希写进本地：
+F:\InfiniteLoop-master\Resources\Configs\version_config.json
+IndexMd5            从 1.30 到 4.7 全是同一个占位值
+IndexSha1           4.7 条目里的值
+LaunchIndexSha1
+
+不同区域版本号客户端对照version_config
+服务端开着时执行：（台服客户端为例，其它区域版本号不同于Pxk4VQxGusWDqGN5/com.kurogame.punishing.grayraven.tw）
+curl -s "http://127.0.0.1:8080/prod/client/config/Pxk4VQxGusWDqGN5/com.kurogame.punishing.grayraven.tw/4.7.0/standalone/config.tab"
+先关掉 Windows 系统代理（避免再被转到本地），在 cmd 执行：
+curl -s "http://prod-twcdn-tx.kurogame.net/prod/client/config/Pxk4VQxGusWDqGN5/com.kurogame.punishing.grayraven.tw/4.7.0/standalone/config.tab"
+
+修改 ConfigController.cs
+打开：
+F:\InfiniteLoop-master\AscNet.SDKServer\Controllers\ConfigController.cs
+找到 GetPackageConfig（大约 384 行），改成下面这样（只多了台服分支）：
+{
+    return package switch
+    {
+        "com.kurogame.haru.kuro" => (
+            "http://prod-zspnsalicdn.kurogame.com/prod",
+            "http://prod-zspnstxcdn.kurogame.com/prod",
+            2),
+        // 台服（你的客户端）
+        "com.kurogame.punishing.grayraven.tw" when currentClient => (
+            "http://prod-twcdn-ak.pgr-game.com/prod",
+            "http://prod-twcdn-aliyun.kurogame.net/prod",
+            5),
+
+在proxy.py添加需要转向到服务端的
+def _is_ascnet_host(host):
