@@ -261,6 +261,7 @@ unsafe fn run_inner() -> Result<()> {
             Ok(music) => (Some(music), None),
             Err(error) => {
                 eprintln!("could not start background music: {error:#}");
+                local::launcher_log(&format!("Background music unavailable: {error:#}"))?;
                 (
                     None,
                     Some("Music unavailable; could not start background.wav.".to_owned()),
@@ -1787,7 +1788,7 @@ fn start_prepare(hwnd: HWND, state: &mut Window) {
             let mut progress = |s: &str| post_progress(hwnd, &events, s);
             let build = local::prepare(&config.repository_url, &config.branch, &mut progress)?;
             let package = package::load_package(&build.patch_directory)?;
-            install::install(&game, &package, &mut |s| post_progress(hwnd, &events, &s))?;
+            install::install_with_consent(&game, &package, &mut |s| post_progress(hwnd, &events, &s))?;
             let patch = install::inspect(&game, &package)?;
             Ok(WorkResult::Prepared {
                 build,
@@ -1832,7 +1833,7 @@ fn start_restore(hwnd: HWND, state: &mut Window) {
                 .selected_game
                 .clone()
                 .context("Select a game folder")?;
-            install::restore(&game, &mut |s| post_progress(hwnd, &events, &s))?;
+            install::restore_with_consent(&game, &mut |s| post_progress(hwnd, &events, &s))?;
             Ok(WorkResult::Restored)
         })();
         post_event(hwnd, &events, Event::Work(Work { generation, result }));
@@ -1867,13 +1868,14 @@ fn start_play(hwnd: HWND, state: &mut Window) {
             return;
         }
     };
-    unsafe { set_busy(hwnd, true, "Starting MongoDB and local server…") };
+    unsafe { set_busy(hwnd, true, "Checking game and resource access…") };
     thread::spawn(move || {
         let result = (|| {
             let patch = install::inspect(&game, &package)?;
             if !matches!(patch, PatchState::Current) {
                 anyhow::bail!("Run Setup / Update to install the current local patch")
             }
+            install::install_with_consent(&game, &package, &mut |s| post_progress(hwnd, &events, &s))?;
             let mut runtime =
                 LocalRuntime::start(&build, &mut |s| post_progress(hwnd, &events, s))?;
             let origin = local_origin(&build)?;
@@ -1918,6 +1920,8 @@ unsafe fn finish_work(hwnd: HWND, state: &mut Window, work: Work) {
         }
         Ok(WorkResult::FpsChanged(None)) => "FPS tweak disabled",
         Ok(WorkResult::Launched { .. }) => "Local backend is ready",
+        Err(e) if e.downcast_ref::<install::ElevationCancelled>().is_some() =>
+            "Administrator approval cancelled; game files were not changed",
         Err(_) => "Operation failed",
     };
     match work.result {
@@ -1939,7 +1943,7 @@ unsafe fn finish_work(hwnd: HWND, state: &mut Window, work: Work) {
                 }
                 Err(e) => {
                     m.update_available = None;
-                    m.update_error = Some(format!("{e:#}"))
+                    m.update_error = Some(local::logged_error(&format!("{e:#}")))
                 }
             }
         }
@@ -1967,11 +1971,18 @@ unsafe fn finish_work(hwnd: HWND, state: &mut Window, work: Work) {
             m.runtime = Some(runtime);
             m.server = Some(server);
         }
-        Err(e) => {
+        Err(e) if e.downcast_ref::<install::ElevationCancelled>().is_some() => {
             drop(m);
             append_log(hwnd, state, log);
             update_view(hwnd, &state.model);
-            show_fatal(&format!("{e:#}"));
+            return;
+        }
+        Err(e) => {
+            let message = local::logged_error(&format!("{e:#}"));
+            drop(m);
+            append_log(hwnd, state, log);
+            update_view(hwnd, &state.model);
+            show_fatal(&message);
             return;
         }
     }
@@ -2686,8 +2697,9 @@ unsafe fn paint(hwnd: HWND, state: &Window) {
     let _ = EndPaint(hwnd, &ps);
 }
 pub fn show_fatal(message: &str) {
+    let message = local::logged_error(message);
     unsafe {
-        let text = wide(message);
+        let text = wide(&message);
         MessageBoxW(
             None,
             PCWSTR(text.as_ptr()),

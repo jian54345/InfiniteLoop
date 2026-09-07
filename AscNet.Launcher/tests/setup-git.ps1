@@ -23,6 +23,22 @@ try {
     Update-Checkout $git $checkout
     if ([IO.File]::ReadAllText((Join-Path $checkout 'value.txt')) -ne 'one') { throw 'clone contents wrong' }
 
+    # An obsolete checkout script must not take control from the bundled setup.
+    $checkoutLauncher = Join-Path $Repository 'AscNet.Launcher'
+    [IO.Directory]::CreateDirectory($checkoutLauncher) | Out-Null
+    [IO.File]::WriteAllText((Join-Path $checkoutLauncher 'setup-local.ps1'), "throw 'obsolete checkout setup ran'")
+    Invoke-Checked $git @('-C', $Repository, 'add', 'AscNet.Launcher/setup-local.ps1') 'fixture obsolete setup'
+    Invoke-Checked $git @('-C', $Repository, 'commit', '-m', 'obsolete setup') 'fixture obsolete setup commit'
+    $Root = $temp
+    $lock = $null
+    function Ensure-Git { return $git }
+    function Ensure-DotNet { throw 'bundled setup reached SDK stage' }
+    $orchestration = $ast.EndBlock.Statements | Where-Object { $_ -is [System.Management.Automation.Language.TryStatementAst] } | Select-Object -Last 1
+    $reachedSdk = $false
+    try { . ([scriptblock]::Create($orchestration.Extent.Text)) }
+    catch { $reachedSdk = $_.Exception.Message -eq 'bundled setup reached SDK stage' }
+    if (-not $reachedSdk) { throw 'bundled setup delegated to the obsolete checkout instead of preparing the build itself' }
+
     [IO.File]::WriteAllText((Join-Path $Repository 'value.txt'), 'two')
     Invoke-Checked $git @('-C', $Repository, 'commit', '-am', 'two') 'fixture update'
     Update-Checkout $git $checkout
@@ -54,7 +70,7 @@ try {
         try { Assert-FreePort $listener.LocalEndpoint.Port 'fixture' } catch { $refused = $true }
         if (-not $refused) { throw 'occupied port accepted' }
     } finally { $listener.Stop() }
-    Write-Output 'PASS: clone, fast-forward, dirty preservation, divergence refusal, occupied-port refusal'
+    Write-Output 'PASS: clone, fast-forward, bundled orchestration, dirty preservation, divergence refusal, occupied-port refusal'
 } finally {
     Remove-Item -LiteralPath $temp -Recurse -Force
 }

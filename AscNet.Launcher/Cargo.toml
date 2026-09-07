@@ -14,12 +14,15 @@ lz4_flex = "0.11"
 reqwest = { version = "0.12", features = ["blocking", "json"] }
 uuid = { version = "1", features = ["v4"] }
 windows = { version = "0.57", features = [
+    "Wdk_Storage_FileSystem",
+    "Win32_System_IO",
     "Win32_Foundation",
     "Win32_Graphics_Dwm",
     "Win32_Graphics_Gdi",
     "Win32_Media_MediaFoundation",
     "Win32_Media_Audio",
     "Win32_Security",
+    "Win32_Security_Authorization",
     "Win32_Storage_FileSystem",
     "Win32_System_Com",
     "Win32_System_Diagnostics_ToolHelp",

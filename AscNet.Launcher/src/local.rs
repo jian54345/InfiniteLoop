@@ -9,10 +9,10 @@ use std::{
     process::{Child, Command, Stdio},
     sync::{
         atomic::{AtomicBool, Ordering},
-        mpsc,
+        mpsc, Mutex,
     },
     thread,
-    time::{Duration, Instant},
+    time::{Duration, Instant, SystemTime, UNIX_EPOCH},
 };
 
 const SCHEMA_VERSION: u32 = 1;
@@ -20,6 +20,67 @@ const START_TIMEOUT: Duration = Duration::from_secs(45);
 const SETUP_TIMEOUT: Duration = Duration::from_secs(60 * 60);
 const STOP_TIMEOUT: Duration = Duration::from_secs(10);
 static OPERATION: AtomicBool = AtomicBool::new(false);
+static LOG_WRITE: Mutex<()> = Mutex::new(());
+
+struct LauncherLog {
+    path: PathBuf,
+    file: fs::File,
+}
+
+impl LauncherLog {
+    fn open(path: PathBuf) -> Result<Self> {
+        let file = fs::OpenOptions::new()
+            .create(true)
+            .append(true)
+            .open(&path)
+            .with_context(|| format!("open launcher log {}", path.display()))?;
+        Ok(Self { path, file })
+    }
+
+    fn beside_executable() -> Result<Self> {
+        Self::open(
+            env::current_exe()?
+                .parent()
+                .context("launcher executable has no parent directory")?
+                .join("launcher.log"),
+        )
+    }
+
+    fn write(&mut self, message: &str) -> Result<()> {
+        let _guard = LOG_WRITE.lock().unwrap_or_else(|e| e.into_inner());
+        let timestamp = SystemTime::now().duration_since(UNIX_EPOCH)?.as_millis();
+        writeln!(self.file, "[{timestamp} unix-ms] {message}")
+            .and_then(|_| self.file.flush())
+            .with_context(|| format!("write launcher log {}", self.path.display()))
+    }
+
+    fn finish<T>(&mut self, result: Result<T>) -> Result<T> {
+        let message = match &result {
+            Ok(_) => "Setup attempt completed".to_owned(),
+            Err(error) => format!("Setup attempt failed: {error:#}"),
+        };
+        let logged = self.write(&message).and_then(|_| {
+            self.file.sync_data()
+                .with_context(|| format!("flush launcher log {}", self.path.display()))
+        });
+        match (result, logged) {
+            (Err(error), Err(log_error)) => Err(error.context(format!("{log_error:#}"))),
+            (result, Ok(())) => result,
+            (Ok(_), Err(error)) => Err(error),
+        }
+    }
+}
+
+pub fn launcher_log(message: &str) -> Result<()> {
+    LauncherLog::beside_executable()?.write(message)
+}
+
+pub fn logged_error(message: &str) -> String {
+    match launcher_log(&format!("Launcher error: {message}")) {
+        Ok(()) => message.to_owned(),
+        Err(error) => format!("{message}\n\nCould not save launcher diagnostics: {error:#}"),
+    }
+}
 #[derive(Clone, Deserialize)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct LocalBuild {
@@ -55,6 +116,13 @@ pub fn load_build() -> Result<Option<LocalBuild>> {
     };
     let build: LocalBuild = serde_json::from_slice(&bytes).context("invalid local build state")?;
     validate_build(&root, &build)?;
+    crate::package::refresh_supported_client(
+        &build.patch_directory,
+        &env::current_exe()?
+            .parent()
+            .context("launcher executable has no parent directory")?
+            .join("supported-client.json"),
+    )?;
     Ok(Some(build))
 }
 
@@ -62,6 +130,18 @@ pub fn prepare(
     repository: &str,
     branch: &str,
     progress: &mut dyn FnMut(&str),
+) -> Result<LocalBuild> {
+    let mut log = LauncherLog::beside_executable()?;
+    log.write("Setup attempt started")?;
+    let result = prepare_logged(repository, branch, progress, &mut log);
+    log.finish(result)
+}
+
+fn prepare_logged(
+    repository: &str,
+    branch: &str,
+    progress: &mut dyn FnMut(&str),
+    log: &mut LauncherLog,
 ) -> Result<LocalBuild> {
     validate_repository(repository)?;
     validate_branch(branch)?;
@@ -107,54 +187,19 @@ pub fn prepare(
     );
     #[cfg(windows)]
     assign_to_job(&setup_job, &child.0)?;
-    let (send, receive) = mpsc::channel();
-    stream_lines(
-        child
-            .0
-            .stdout
-            .take()
-            .context("capture local setup output")?,
-        send.clone(),
-    );
-    stream_lines(
-        child
-            .0
-            .stderr
-            .take()
-            .context("capture local setup errors")?,
-        send.clone(),
-    );
-    drop(send);
-    let deadline = Instant::now() + SETUP_TIMEOUT;
-    loop {
-        if Instant::now() >= deadline {
-            terminate_child(&mut child.0);
-            bail!("local setup timed out after one hour");
-        }
-        match receive.recv_timeout(Duration::from_millis(250)) {
-            Ok(line) => progress(&line.context("read local setup output")?),
-            Err(mpsc::RecvTimeoutError::Disconnected) => break,
-            Err(mpsc::RecvTimeoutError::Timeout) => {}
-        }
-    }
-    let status = loop {
-        if let Some(status) = child.0.try_wait().context("wait for local setup")? {
-            break status;
-        }
-        if Instant::now() >= deadline {
-            terminate_child(&mut child.0);
-            bail!("local setup timed out after one hour");
-        }
-        thread::sleep(Duration::from_millis(100));
-    };
-    if !status.success() {
-        bail!("local setup failed with {status}");
-    }
+    capture_setup(&mut child.0, log, progress, SETUP_TIMEOUT)?;
     let pending = root.join("build-state.pending.json");
     let bytes = fs::read(&pending).with_context(|| format!("read {}", pending.display()))?;
     let build: LocalBuild =
         serde_json::from_slice(&bytes).context("invalid pending local build state")?;
     validate_build(&root, &build)?;
+    crate::package::refresh_supported_client(
+        &build.patch_directory,
+        &script
+            .parent()
+            .context("local setup script has no parent directory")?
+            .join("supported-client.json"),
+    )?;
     crate::package::load_package(&build.patch_directory)
         .context("validate prepared patch package")?;
     fs::OpenOptions::new()
@@ -165,6 +210,95 @@ pub fn prepare(
     #[cfg(windows)]
     atomic_replace(&pending, &root.join("build-state.json"))?;
     Ok(build)
+}
+
+fn capture_setup(
+    child: &mut Child,
+    log: &mut LauncherLog,
+    progress: &mut dyn FnMut(&str),
+    timeout: Duration,
+) -> Result<()> {
+    let (send, receive) = mpsc::channel();
+    stream_lines(
+        child.stdout.take().context("capture local setup output")?,
+        send.clone(),
+    );
+    stream_lines(
+        child.stderr.take().context("capture local setup errors")?,
+        send.clone(),
+    );
+    drop(send);
+    let deadline = Instant::now() + timeout;
+    loop {
+        if Instant::now() >= deadline {
+            terminate_child(child);
+            bail!("local setup timed out after {} seconds", timeout.as_secs());
+        }
+        match receive.recv_timeout(Duration::from_millis(250)) {
+            Ok(line) => {
+                let line = line.context("read local setup output")?;
+                log.write(&line)?;
+                progress(&line);
+            }
+            Err(mpsc::RecvTimeoutError::Disconnected) => break,
+            Err(mpsc::RecvTimeoutError::Timeout) => {}
+        }
+    }
+    let status = loop {
+        if let Some(status) = child.try_wait().context("wait for local setup")? {
+            break status;
+        }
+        if Instant::now() >= deadline {
+            terminate_child(child);
+            bail!("local setup timed out after {} seconds", timeout.as_secs());
+        }
+        thread::sleep(Duration::from_millis(100));
+    };
+    log.write(&format!("Setup process exited with {status}"))?;
+    if !status.success() {
+        bail!("local setup failed with {status}; see {}", log.path.display());
+    }
+    Ok(())
+}
+
+#[cfg(test)]
+mod log_tests {
+    use super::*;
+
+    #[test]
+    fn failed_setup_retains_both_streams_across_attempts() {
+        let directory = env::temp_dir().join(format!("ascnet-log-{}", uuid::Uuid::new_v4()));
+        fs::create_dir(&directory).unwrap();
+        let path = directory.join("launcher.log");
+        for _ in 0..2 {
+            let mut log = LauncherLog::open(path.clone()).unwrap();
+            log.write("Setup attempt started").unwrap();
+            #[cfg(windows)]
+            let mut command = {
+                let mut command = Command::new("cmd.exe");
+                command.args(["/D", "/C", "echo compiler-output & echo dependency-failure 1>&2 & exit /b 7"]);
+                command
+            };
+            #[cfg(not(windows))]
+            let mut command = {
+                let mut command = Command::new("sh");
+                command.args(["-c", "printf 'compiler-output\\n'; printf 'dependency-failure\\n' >&2; exit 7"]);
+                command
+            };
+            let mut child = OwnedChild(command.stdout(Stdio::piped()).stderr(Stdio::piped()).spawn().unwrap());
+            // The visible UI may discard every detailed line.
+            let result = capture_setup(&mut child.0, &mut log, &mut |_| {}, Duration::from_secs(10));
+            let error = log.finish(result).unwrap_err();
+            assert!(format!("{error:#}").contains("local setup failed"));
+        }
+        let contents = fs::read_to_string(&path).unwrap();
+        assert_eq!(contents.matches("compiler-output").count(), 2);
+        assert_eq!(contents.matches("dependency-failure").count(), 2);
+        assert_eq!(contents.matches("Setup attempt started").count(), 2);
+        assert_eq!(contents.matches("Setup process exited with").count(), 2);
+        assert_eq!(contents.matches("Setup attempt failed: local setup failed").count(), 2);
+        fs::remove_dir_all(directory).unwrap();
+    }
 }
 
 pub fn check_update(repository: &str, branch: &str) -> Result<Option<bool>> {
