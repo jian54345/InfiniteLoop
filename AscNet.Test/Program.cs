@@ -81,6 +81,46 @@ namespace AscNet.Test
             try
             {
                 UseResourceWorkingDirectory();
+                if (args.Contains("--wheelchair-manual-compat-only"))
+                {
+                    ValidateWheelchairManualFullCompatibility();
+                    return;
+                }
+                if (args.Contains("--wheelchair-manual-purchases-only"))
+                {
+                    ValidateWheelchairManualPurchaseCompatibility();
+                    return;
+                }
+                if (args.Contains("--wheelchair-manual-tasks-only"))
+                {
+                    ValidateWheelchairManualNaturalTaskCompatibility();
+                    return;
+                }
+                if (args.Contains("--wheelchair-manual-power-only"))
+                {
+                    ValidateWheelchairManualPowerTaskCompatibility();
+                    return;
+                }
+                if (args.Contains("--wheelchair-manual-bp-only"))
+                {
+                    ValidateWheelchairManualBattlePassCompatibility();
+                    return;
+                }
+                if (args.Contains("--wheelchair-manual-lotto-only"))
+                {
+                    ValidateWheelchairManualLottoCompatibility();
+                    return;
+                }
+                if (args.Contains("--wheelchair-manual-guides-only"))
+                {
+                    ValidateWheelchairManualGuideCompatibility();
+                    return;
+                }
+                if (args.Contains("--wheelchair-manual-guild-only"))
+                {
+                    ValidateWheelchairManualGuildCompatibility();
+                    return;
+                }
                 if (args.Contains("--chat-report-compat-only"))
                 {
                     ValidateReportBanChatCompatibility();
@@ -192,6 +232,12 @@ namespace AscNet.Test
                 if (args.Contains("--stronghold-compat-only"))
                 {
                     ValidateStrongholdCompatibility();
+                    ValidateStrongholdRolloverCompatibility();
+                    return;
+                }
+                if (args.Contains("--stronghold-rollover-compat-only"))
+                {
+                    ValidateStrongholdRolloverCompatibility();
                     return;
                 }
                 if (args.Contains("--simulate-train-compat-only"))
@@ -316,12 +362,6 @@ namespace AscNet.Test
                     return;
                 }
 
-                if (args.Contains("--wheelchair-manual-compat-only"))
-                {
-                    ValidateWheelchairManualCompatibility();
-                    return;
-                }
-
                 if (args.Contains("--team-prefab-compat-only"))
                 {
                     ValidateTeamPrefabCompatibility();
@@ -427,7 +467,7 @@ namespace AscNet.Test
 
                 if (args.Contains("--stage-bookmark-compat-only"))
                 {
-                    ValidateStageBookmarkCompatibilityShape();
+                    ValidateStageBookmarkCompatibility();
                     return;
                 }
 
@@ -654,6 +694,7 @@ namespace AscNet.Test
                 if (args.Contains("--item-use-compat-only"))
                 {
                     ValidateItemUseCompatibility();
+                    ValidateAutoUseGiftCompatibility();
                     return;
                 }
 
@@ -699,9 +740,9 @@ namespace AscNet.Test
                 }
 
 
-                if (args.Contains("--overclock-material-box-compat-only"))
+                if (args.Contains("--auto-use-gift-compat-only") || args.Contains("--overclock-material-box-compat-only"))
                 {
-                    ValidateOverclockMaterialBoxCompatibility();
+                    ValidateAutoUseGiftCompatibility();
                     return;
                 }
 
@@ -735,7 +776,7 @@ namespace AscNet.Test
                 }
                 if (args.Contains("--purchase-request-compat-only"))
                 {
-                    ValidatePurchaseRequestCompatibility();
+                    ValidateWheelchairManualPurchaseCompatibility();
                     return;
                 }
 
@@ -792,7 +833,7 @@ namespace AscNet.Test
                 ValidateNotifyLoginCurrentClientCompatibilityShape();
                 ValidateLoginAccountCompatibility();
                 ValidateSessionClientLoopFramingCompatibility();
-                ValidateStageBookmarkCompatibilityShape();
+                ValidateStageBookmarkCompatibility();
                 ValidateMainLine2UpdateExhibitionChapterCompatibility();
                 ValidateMainLine2LoginDataBsonCompatibility();
                 ValidateMainLine2ReceiveMainTreasureCompatibility();
@@ -810,12 +851,14 @@ namespace AscNet.Test
                 ValidateCourseCompatibility();
                 ValidateEquipGuideGoalCompatibility();
                 ValidateStrongholdSweepCompatibility();
+                ValidateStrongholdRolloverCompatibility();
                 ValidateBossSingleLoginCompatibilityShape();
                 ValidateBossActivityCompatibility();
                 ValidateBossSingleCompatibility();
                 ValidateBossSingleIntensiveStageHydration();
                 ValidateSimulatedBattlefieldCompatibility();
                 ValidateCurrentClientGuideTableCompatibility();
+                ValidateWheelchairManualFullCompatibility();
                 ValidatePlayerCostTimeUploadCompatibility();
                 ValidateRecordPlayerPointCompatibility();
                 ValidateBoardMutualClientPushCompatibility();
@@ -845,6 +888,7 @@ namespace AscNet.Test
                 ValidateEquipChipRecycleCompatibility();
                 ValidateDrawCompatibility();
                 ValidateItemUseCompatibility();
+                ValidateAutoUseGiftCompatibility();
                 ValidateItemSellCompatibility();
                 ValidateInventoryMaxCountCompatibility();
                 ValidateChatCompatibility();
@@ -852,7 +896,7 @@ namespace AscNet.Test
                 ValidateSceneCommandCompatibility();
                 ValidateMissingFeatureCompatibility();
                 ValidateShopCompatibility();
-                ValidatePurchaseRequestCompatibility();
+                ValidateWheelchairManualPurchaseCompatibility();
                 ValidateCurrentClientNoticeFixtures();
                 ValidateCurrentClientNoticeEndpoints().GetAwaiter().GetResult();
                 ValidateLifeTreeFinishProcessRequestCompatibility();
@@ -867,6 +911,17 @@ namespace AscNet.Test
                 Console.Error.WriteLine(ex);
                 Environment.ExitCode = 1;
             }
+        }
+
+        private static void ValidateWheelchairManualFullCompatibility()
+        {
+            ValidateWheelchairManualCompatibility();
+            ValidateWheelchairManualPurchaseCompatibility();
+            ValidateWheelchairManualBattlePassCompatibility();
+            ValidateWheelchairManualLottoCompatibility();
+            ValidateWheelchairManualNaturalTaskCompatibility();
+            ValidateWheelchairManualGuideCompatibility();
+            ValidateWheelchairManualGuildCompatibility();
         }
 
         private static void ValidateWeaponOverrunCompatibility()
@@ -5033,15 +5088,11 @@ namespace AscNet.Test
                 startupPushesByName,
                 "NotifyWheelchairManualActivity",
                 "AccountModule.DoLogin NotifyWheelchairManualActivity startup payload");
-            AssertEqual(1L, RequiredValue<long>(manualPayload, "ActivityId", JTokenType.Integer, "AccountModule.DoLogin NotifyWheelchairManualActivity startup payload"), "AccountModule.DoLogin NotifyWheelchairManualActivity.ActivityId");
-            AssertEqual(1007L, RequiredValue<long>(manualPayload, "PlanId", JTokenType.Integer, "AccountModule.DoLogin NotifyWheelchairManualActivity startup payload"), "AccountModule.DoLogin NotifyWheelchairManualActivity.PlanId");
-            AssertEqual(1L, RequiredValue<long>(manualPayload, "BpLevel", JTokenType.Integer, "AccountModule.DoLogin NotifyWheelchairManualActivity startup payload"), "AccountModule.DoLogin NotifyWheelchairManualActivity.BpLevel fresh-account level");
-            AssertEqual(false, RequiredValue<bool>(manualPayload, "IsSeniorManualUnlock", JTokenType.Boolean, "AccountModule.DoLogin NotifyWheelchairManualActivity startup payload"), "AccountModule.DoLogin NotifyWheelchairManualActivity.IsSeniorManualUnlock fresh-account lock state");
-            AssertEmptyJsonArray(manualPayload, "GetRewardManualRewardIds", "AccountModule.DoLogin NotifyWheelchairManualActivity startup payload");
-            AssertEmptyJsonArray(manualPayload, "GetRewardPlanIds", "AccountModule.DoLogin NotifyWheelchairManualActivity startup payload");
-            AssertEmptyJsonArray(manualPayload, "FinishStageIds", "AccountModule.DoLogin NotifyWheelchairManualActivity startup payload");
-            AssertEmptyJsonArray(manualPayload, "TimeLimitActivityInfos", "AccountModule.DoLogin NotifyWheelchairManualActivity startup payload");
-            AssertEmptyJsonArray(manualPayload, "WeekActivityInfos", "AccountModule.DoLogin NotifyWheelchairManualActivity startup payload");
+            int manualPlanId = RequiredValue<int>(manualPayload, "PlanId", JTokenType.Integer,
+                "AccountModule.DoLogin manual phase");
+            AssertEqual(true, TableReaderV2.Parse<AscNet.Table.V2.share.wheelchairmanual.WheelchairManualBattlePassPlanTable>()
+                .Single(plan => plan.Id == manualPlanId).TaskIds.Contains(8010),
+                "AccountModule.DoLogin manual phase exposes guide task 8010");
             AssertEqual(
                 RequiredValue<long>(calendarPayload, "CurrentGuildBossEndTime", JTokenType.Integer, "AccountModule.DoLogin NotifyNewActivityCalendarData startup payload"),
                 RequiredValue<long>(manualPayload, "CurrentGuildBossEndTime", JTokenType.Integer, "AccountModule.DoLogin NotifyWheelchairManualActivity startup payload"),
@@ -6546,97 +6597,6 @@ namespace AscNet.Test
                 throw new InvalidDataException("MailDeleteResponse DelIdList: expected initialized list.");
         }
 
-        private static void ValidatePurchaseRequestCompatibility()
-        {
-            using MongoCollectionOverride mongoOverride = MongoCollectionOverride.InstallForShopCompatibility();
-            const string requestName = nameof(PurchaseRequest);
-            const string responseName = nameof(PurchaseResponse);
-            const uint purchaseId = 90_943;
-            const int purchaseCount = 1;
-            int[] capturedUiTypes = [5, 6, 7, 8, 9, 10, 11, 12, 14, 15, 16];
-
-            MethodInfo handlerMethod = GetRegisteredRequestHandlerMethod(requestName);
-            AssertEqual("PurchaseRequestHandler", handlerMethod.Name, $"{requestName} registered handler method");
-
-            PurchaseRequest request = new()
-            {
-                Count = purchaseCount,
-                Param = null,
-                Id = purchaseId,
-                DiscountId = 0,
-                UiTypeList = capturedUiTypes.ToList()
-            };
-            PurchaseRequest requestRoundTrip = MessagePackSerializer.Deserialize<PurchaseRequest>(
-                MessagePackSerializer.Serialize(request));
-            AssertEqual(purchaseCount, requestRoundTrip.Count, $"{requestName} Count MessagePack round-trip");
-            if (requestRoundTrip.Param is not null)
-                throw new InvalidDataException($"{requestName} Param MessagePack round-trip: expected captured nil Param.");
-            AssertEqual(purchaseId, requestRoundTrip.Id, $"{requestName} Id MessagePack round-trip");
-            AssertEqual(0, requestRoundTrip.DiscountId, $"{requestName} DiscountId MessagePack round-trip");
-            AssertIntegerList(
-                capturedUiTypes.Select(uiType => (long)uiType).ToArray(),
-                requestRoundTrip.UiTypeList.Select(uiType => (long)uiType).ToArray(),
-                $"{requestName} UiTypeList MessagePack round-trip");
-
-            const long playerId = 88_009;
-            AscNet.Common.Database.Player player = CreateDrawCompatibilityPlayer(playerId);
-            player.PurchaseBuyTimes.Remove(purchaseId);
-            AscNet.Common.Database.Inventory inventory = CreateDrawCompatibilityInventory(playerId, []);
-            using LoopbackSessionHarness harness = new(
-                CreateDrawCompatibilityCharacter(playerId),
-                player,
-                inventory,
-                "purchase-request-compat-test");
-
-            const int packetId = 13_013;
-            InvokeRegisteredRequestHandler(requestName, harness.Session, packetId, requestRoundTrip);
-
-            NotifyItemDataList rewardPush = ReadPushPayload<NotifyItemDataList>(
-                harness,
-                nameof(NotifyItemDataList),
-                $"{requestName} reward inventory push");
-            Item pushedReward = rewardPush.ItemDataList.Single(item => item.Id == 90_031);
-            AssertEqual(1L, pushedReward.Count, $"{requestName} NotifyItemDataList reward item count");
-
-            PurchaseResponse response = ReadResponsePayload<PurchaseResponse>(
-                harness,
-                packetId,
-                responseName,
-                $"{requestName} response");
-            AssertEqual(0, response.Code, $"{responseName} Code");
-            AssertEqual(1, response.RewardList.Count, $"{responseName} RewardList count");
-            RewardGoods reward = response.RewardList[0];
-            AssertEqual(90_031, reward.TemplateId, $"{responseName} RewardList[0].TemplateId");
-            AssertEqual(1, reward.Count, $"{responseName} RewardList[0].Count");
-
-            System.Collections.IDictionary purchaseInfo = RequiredDynamicMap(
-                response.PurchaseInfo,
-                $"{responseName} PurchaseInfo");
-            AssertEqual((int)purchaseId, RequiredDynamicInteger(purchaseInfo, "Id", $"{responseName} PurchaseInfo"), $"{responseName} PurchaseInfo.Id");
-            AssertEqual(1, RequiredDynamicInteger(purchaseInfo, "BuyTimes", $"{responseName} PurchaseInfo"), $"{responseName} PurchaseInfo.BuyTimes");
-
-            System.Collections.IDictionary newPurchaseInfo = RequiredPurchaseInfoById(
-                response.NewPurchaseInfoList,
-                purchaseId,
-                $"{responseName} NewPurchaseInfoList");
-            AssertEqual(1, RequiredDynamicInteger(newPurchaseInfo, "BuyTimes", $"{responseName} NewPurchaseInfoList[{purchaseId}]"), $"{responseName} NewPurchaseInfoList[{purchaseId}].BuyTimes");
-
-            if (!harness.Session.player.PurchaseBuyTimes.TryGetValue(purchaseId, out int persistedBuyTimes))
-                throw new InvalidDataException($"{requestName}: expected Player.PurchaseBuyTimes to contain purchase id {purchaseId}.");
-            AssertEqual(1, persistedBuyTimes, $"{requestName} persisted Player.PurchaseBuyTimes[{purchaseId}]");
-
-            static System.Collections.IDictionary RequiredPurchaseInfoById(IEnumerable<object?> purchaseInfoList, uint requiredPurchaseId, string name)
-            {
-                foreach (object? purchaseInfo in purchaseInfoList)
-                {
-                    System.Collections.IDictionary purchaseInfoMap = RequiredDynamicMap(purchaseInfo, $"{name} item");
-                    if (RequiredDynamicInteger(purchaseInfoMap, "Id", $"{name} item") == (int)requiredPurchaseId)
-                        return purchaseInfoMap;
-                }
-
-                throw new InvalidDataException($"{name}: missing purchase id {requiredPurchaseId}.");
-            }
-        }
 
 
 
@@ -10456,79 +10416,6 @@ namespace AscNet.Test
             AssertEqual(20043006, ReadResponsePayload<AddVoteResponse>(
                 harness, 11_109, nameof(AddVoteResponse), "AddVoteRequest unknown response").Code,
                 "AddVoteRequest unknown vote rejection");
-
-            const int guildDetailPacketId = 11_007;
-            InvokeRegisteredRequestHandler(
-                nameof(GuildListDetailRequest),
-                harness.Session,
-                guildDetailPacketId,
-                new GuildListDetailRequest { GuildId = 365 });
-            GuildListDetailResponse guildDetailResponse = ReadResponsePayload<GuildListDetailResponse>(
-                harness,
-                guildDetailPacketId,
-                nameof(GuildListDetailResponse),
-                "GuildListDetailRequest response");
-            AssertEqual(0, guildDetailResponse.Code, "GuildListDetailResponse Code");
-            AssertEqual(365U, guildDetailResponse.GuildId, "GuildListDetailResponse GuildId");
-            AssertEqual(player.PlayerData.Name, guildDetailResponse.GuildLeaderName, "GuildListDetailResponse GuildLeaderName");
-            if (guildDetailResponse.GiftLevelGot is null)
-                throw new InvalidDataException("GuildListDetailResponse GiftLevelGot: expected initialized list.");
-
-            const int guildMemberPacketId = 11_008;
-            InvokeRegisteredRequestHandler(
-                nameof(GuildMemberDetailRequest),
-                harness.Session,
-                guildMemberPacketId,
-                new GuildMemberDetailRequest { GuildId = 365 });
-            GuildMemberDetailResponse guildMemberResponse = ReadResponsePayload<GuildMemberDetailResponse>(
-                harness,
-                guildMemberPacketId,
-                nameof(GuildMemberDetailResponse),
-                "GuildMemberDetailRequest response");
-            AssertEqual(0, guildMemberResponse.Code, "GuildMemberDetailResponse Code");
-            AssertEqual(1, guildMemberResponse.MembersData.Count, "GuildMemberDetailResponse MembersData count");
-            GuildMemberDetailResponse.GuildMemberDetailResponseMembersData guildMember = guildMemberResponse.MembersData.Single();
-            AssertEqual((uint)playerId, guildMember.Id, "GuildMemberDetailResponse current member Id");
-            AssertEqual(player.PlayerData.Name, guildMember.Name, "GuildMemberDetailResponse current member Name");
-
-            const int guildChatPacketId = 11_009;
-            InvokeRegisteredRequestHandler(nameof(GuildListChatRequest), harness.Session, guildChatPacketId, new GuildListChatRequest());
-            GuildListChatResponse guildChatResponse = ReadResponsePayload<GuildListChatResponse>(
-                harness,
-                guildChatPacketId,
-                nameof(GuildListChatResponse),
-                "GuildListChatRequest response");
-            AssertEqual(0, guildChatResponse.Code, "GuildListChatResponse Code");
-            if (guildChatResponse.ChatList is null)
-                throw new InvalidDataException("GuildListChatResponse ChatList: expected initialized list.");
-            AssertEqual(1, guildChatResponse.ChatList.Count, "GuildListChatResponse ChatList count");
-            JObject guildChat = JObject.Parse(guildChatResponse.ChatList.Single());
-            AssertEqual(6, guildChat.Value<int>("ChannelType"), "GuildListChatResponse ChatList[0] ChannelType");
-            AssertEqual(1, guildChat.Value<int>("MsgType"), "GuildListChatResponse ChatList[0] MsgType");
-            AssertEqual("AscNet", guildChat.Value<string>("GuildName"), "GuildListChatResponse ChatList[0] GuildName");
-            if (string.IsNullOrWhiteSpace(guildChat.Value<string>("Content")))
-                throw new InvalidDataException("GuildListChatResponse ChatList[0] Content: expected visible text.");
-
-            const int guildSupportPacketId = 11_010;
-            InvokeRegisteredRequestHandler(
-                nameof(GuildWarOpenSupportPanelRequest),
-                harness.Session,
-                guildSupportPacketId,
-                new GuildWarOpenSupportPanelRequest());
-            GuildWarOpenSupportPanelResponse guildSupportResponse = ReadResponsePayload<GuildWarOpenSupportPanelResponse>(
-                harness,
-                guildSupportPacketId,
-                nameof(GuildWarOpenSupportPanelResponse),
-                "GuildWarOpenSupportPanelRequest response");
-            AssertEqual(0, guildSupportResponse.Code, "GuildWarOpenSupportPanelResponse Code");
-            if (guildSupportResponse.SupportDetail is null)
-                throw new InvalidDataException("GuildWarOpenSupportPanelResponse SupportDetail: expected initialized detail.");
-            AssertEqual(1021001, guildSupportResponse.SupportDetail.CharacterId, "GuildWarOpenSupportPanelResponse SupportDetail CharacterId");
-            if (guildSupportResponse.SupportDetail.ToAssistRecords is null
-                || guildSupportResponse.SupportDetail.MyLogs is null
-                || guildSupportResponse.SupportDetail.GetAssistRecords is null
-                || guildSupportResponse.SupportDetail.MyAssistRecords is null)
-                throw new InvalidDataException("GuildWarOpenSupportPanelResponse SupportDetail: expected initialized record lists.");
 
             const int fixedShopPacketId = 11_011;
             InvokeRegisteredRequestHandler(
@@ -14500,7 +14387,10 @@ namespace AscNet.Test
 
         private static void ValidateItemUseCompatibility()
         {
-            using MongoCollectionOverride mongoOverride = MongoCollectionOverride.InstallForShopCompatibility();
+            using MongoCollectionOverride mongoOverride = MongoCollectionOverride.InstallForDailySignInCompatibility(
+                out RecordingMongoCollectionProxy<AscNet.Common.Database.Player> players,
+                out _,
+                out RecordingMongoCollectionProxy<AscNet.Common.Database.Inventory> inventories);
 
             const long playerId = 99_201;
             const int cogPackSmallId = 90_011;
@@ -14525,18 +14415,13 @@ namespace AscNet.Test
             };
             InvokeRegisteredRequestHandler(nameof(AscNet.GameServer.Handlers.ItemUseRequest), harness.Session, packetId, request);
 
-            NotifyItemDataList consumePush = ReadPushPayload<NotifyItemDataList>(
+            NotifyItemDataList itemPush = ReadPushPayload<NotifyItemDataList>(
                 harness,
                 nameof(NotifyItemDataList),
-                "ItemUseRequest consumed pack push");
-            Item consumedPack = consumePush.ItemDataList.Single(item => item.Id == cogPackSmallId);
+                "ItemUseRequest combined consumption and reward push");
+            Item consumedPack = itemPush.ItemDataList.Single(item => item.Id == cogPackSmallId);
             AssertEqual(1L, consumedPack.Count, "ItemUseRequest consumed Cog Pack count");
-
-            NotifyItemDataList rewardPush = ReadPushPayload<NotifyItemDataList>(
-                harness,
-                nameof(NotifyItemDataList),
-                "ItemUseRequest reward push");
-            Item rewardedCogs = rewardPush.ItemDataList.Single(item => item.Id == AscNet.Common.Database.Inventory.Coin);
+            Item rewardedCogs = itemPush.ItemDataList.Single(item => item.Id == AscNet.Common.Database.Inventory.Coin);
             AssertEqual(20_100L, rewardedCogs.Count, "ItemUseRequest rewarded Cog count");
 
             AscNet.GameServer.Handlers.ItemUseResponse response = ReadResponsePayload<AscNet.GameServer.Handlers.ItemUseResponse>(
@@ -14549,6 +14434,17 @@ namespace AscNet.Test
             AssertEqual(1, rewardGoods.RewardType, "ItemUseResponse RewardGoodsList[0] RewardType");
             AssertEqual(AscNet.Common.Database.Inventory.Coin, rewardGoods.TemplateId, "ItemUseResponse RewardGoodsList[0] TemplateId");
             AssertEqual(20_000, rewardGoods.Count, "ItemUseResponse RewardGoodsList[0] Count");
+            AscNet.Common.Database.Inventory reloaded = MongoDB.Bson.Serialization.BsonSerializer.Deserialize<AscNet.Common.Database.Inventory>(
+                inventories.LastSuccessfulReplacementBson
+                ?? throw new InvalidDataException("Cog Pack inventory was not durably saved."));
+            AssertEqual(1L, reloaded.Items.Single(item => item.Id == cogPackSmallId).Count, "Cog Pack consumption survives reload");
+            AssertEqual(20_100L, reloaded.Items.Single(item => item.Id == AscNet.Common.Database.Inventory.Coin).Count, "Cog Pack reward survives reload");
+            AssertEqual(true, MongoDB.Bson.Serialization.BsonSerializer.Deserialize<AscNet.Common.Database.Player>(
+                players.LastSuccessfulReplacementBson
+                ?? throw new InvalidDataException("Cog Pack player was not durably saved.")).PendingItemUse is null,
+                "Cog Pack pending operation is durably cleared");
+            if (harness.TryReadAvailablePacket("Cog Pack unexpected packet", out _))
+                throw new InvalidDataException("Cog Pack use emitted more than one combined item push and its response.");
         }
 
         private static void ValidateTeamPrefabCompatibility()
@@ -17442,96 +17338,6 @@ namespace AscNet.Test
             AssertEqual(2, inventoryCollection.ReplaceOneCalls, "ItemSellRequest multi-item persisted inventory saves");
         }
 
-        private static void ValidateOverclockMaterialBoxCompatibility()
-        {
-            using MongoCollectionOverride mongoOverride = MongoCollectionOverride.InstallForShopCompatibility();
-            AssertOverclockMaterialBoxUse(
-                itemId: 60_001,
-                expectedRewardPool: [40_100, 40_101, 40_102, 40_103, 40_104],
-                packetId: 14_101,
-                playerId: 99_301,
-                name: "ItemUseRequest low-grade Overclock Material box");
-            AssertOverclockMaterialBoxUse(
-                itemId: 60_002,
-                expectedRewardPool: [40_110, 40_111, 40_112, 40_113, 40_114],
-                packetId: 14_102,
-                playerId: 99_302,
-                name: "ItemUseRequest high-grade Overclock Material box");
-
-            AssertOverclockMaterialBoxUse(
-                itemId: 90_101,
-                expectedRewardPool: [40_100, 40_101, 40_102, 40_103, 40_104],
-                packetId: 14_103,
-                playerId: 99_303,
-                name: "ItemUseRequest activity low-grade Overclock Material box");
-
-            AssertOverclockMaterialBoxUse(
-                itemId: 90_110,
-                expectedRewardPool: [40_110, 40_111, 40_112, 40_113, 40_114],
-                packetId: 14_104,
-                playerId: 99_304,
-                name: "ItemUseRequest activity high-grade Overclock Material box");
-
-        }
-
-        private static void AssertOverclockMaterialBoxUse(int itemId, int[] expectedRewardPool, int packetId, long playerId, string name)
-        {
-            const int useCount = 1;
-            int[] unopenedBoxItemIds = [60_001, 60_002, 90_101, 90_110];
-            Dictionary<int, ItemTable> itemRowsById = TableReaderV2.Parse<ItemTable>().ToDictionary(item => item.Id);
-            ItemTable boxItem = itemRowsById.TryGetValue(itemId, out ItemTable? itemRow)
-                ? itemRow
-                : throw new InvalidDataException($"{name}: expected Item.tsv row {itemId}.");
-            if (boxItem.SubTypeParams.Count == 0)
-                throw new InvalidDataException($"{name} Item.tsv row {boxItem.Id} {boxItem.Name}: expected SubTypeParams[0] to mark random gift box behavior.");
-            AssertEqual(2, boxItem.SubTypeParams[0], $"{name} Item.tsv row {boxItem.Id} {boxItem.Name} SubTypeParams[0] random gift box behavior");
-            AscNet.Common.Database.Inventory inventory = CreateDrawCompatibilityInventory(
-                playerId,
-                [new Item { Id = itemId, Count = 1 }]);
-            using LoopbackSessionHarness harness = new(
-                CreateDrawCompatibilityCharacter(playerId),
-                CreateDrawCompatibilityPlayer(playerId),
-                inventory,
-                $"{name}-compat-test");
-
-            AscNet.GameServer.Handlers.ItemUseRequest request = new()
-            {
-                Id = itemId,
-                Count = useCount
-            };
-            InvokeRegisteredRequestHandler(nameof(AscNet.GameServer.Handlers.ItemUseRequest), harness.Session, packetId, request);
-
-            NotifyItemDataList consumePush = ReadPushPayload<NotifyItemDataList>(
-                harness,
-                nameof(NotifyItemDataList),
-                $"{name} consumed box push");
-            Item consumedBox = consumePush.ItemDataList.Single(item => item.Id == itemId);
-            AssertEqual(0L, consumedBox.Count, $"{name} consumed box count");
-
-            NotifyItemDataList rewardPush = ReadPushPayload<NotifyItemDataList>(
-                harness,
-                nameof(NotifyItemDataList),
-                $"{name} reward push");
-            AssertEqual(1, rewardPush.ItemDataList.Count(item => expectedRewardPool.Contains(item.Id)), $"{name} reward push contains exactly one expected-pool material");
-            AssertEqual(false, rewardPush.ItemDataList.Any(item => unopenedBoxItemIds.Contains(item.Id)), $"{name} reward push does not award unopened Overclock Material box ids");
-            Item awardedMaterial = rewardPush.ItemDataList.Single(item => expectedRewardPool.Contains(item.Id));
-            AssertEqual(1L, awardedMaterial.Count, $"{name} NotifyItemDataList awarded material count");
-
-            AscNet.GameServer.Handlers.ItemUseResponse response = ReadResponsePayload<AscNet.GameServer.Handlers.ItemUseResponse>(
-                harness,
-                packetId,
-                nameof(AscNet.GameServer.Handlers.ItemUseResponse),
-                $"{name} response");
-            AssertEqual(0, response.Code, $"{name} ItemUseResponse Code");
-            RewardGoods rewardGoods = response.RewardGoodsList.Single();
-            AssertEqual((int)RewardType.Item, rewardGoods.RewardType, $"{name} RewardGoodsList[0] RewardType");
-            AssertEqual(true, expectedRewardPool.Contains(rewardGoods.TemplateId), $"{name} RewardGoodsList[0] TemplateId expected pool membership");
-            AssertEqual(false, unopenedBoxItemIds.Contains(rewardGoods.TemplateId), $"{name} RewardGoodsList[0] TemplateId is not an unopened Overclock Material box");
-            AssertEqual(1, rewardGoods.Count, $"{name} RewardGoodsList[0] Count");
-            AssertEqual(awardedMaterial.Id, rewardGoods.TemplateId, $"{name} response/push awarded material TemplateId match");
-            AssertEqual((int)awardedMaterial.Count, rewardGoods.Count, $"{name} response/push awarded material Count match");
-        }
-
         private static void ValidateChatCompatibility()
         {
             using MongoCollectionOverride mongoOverride = MongoCollectionOverride.InstallForDrawCompatibility();
@@ -18640,6 +18446,8 @@ namespace AscNet.Test
             public int ReplaceOneCalls { get; private set; }
             public TDocument? LastReplacement { get; private set; }
             public bool ThrowOnReplaceOne { get; set; }
+            public Action<TDocument>? BeforeReplaceOne { get; set; }
+            public byte[]? LastSuccessfulReplacementBson { get; private set; }
             public Queue<long> CountDocumentsResults { get; } = new();
             public IReadOnlyList<TDocument>? FindResults { get; set; }
             public int? LastFindLimit { get; private set; }
@@ -18683,10 +18491,13 @@ namespace AscNet.Test
                     {
                         ReplaceOneCalls++;
                         LastReplacement = document;
+                        BeforeReplaceOne?.Invoke(document);
                     }
 
                     if (ThrowOnReplaceOne)
                         throw new MongoException($"Injected {typeof(TDocument).Name} ReplaceOne failure.");
+                    if (replacement is TDocument successful)
+                        LastSuccessfulReplacementBson = successful.ToBson();
                     return new ReplaceOneResult.Acknowledged(1, 1, null);
                 }
 
@@ -20220,16 +20031,6 @@ namespace AscNet.Test
             CheckState(clearedReload.EquipGuideData, [], "guide cleared BSON reload");
         }
 
-        private static void ValidateStageBookmarkCompatibilityShape()
-        {
-            GetStageBookmarkResponse response = new();
-            GetStageBookmarkResponse roundTrip = MessagePackSerializer.Deserialize<GetStageBookmarkResponse>(MessagePackSerializer.Serialize(response));
-
-            AssertEqual(0, roundTrip.Code, "GetStageBookmarkResponse Code");
-            AssertEmptyList(roundTrip.StageBookmarkList, "GetStageBookmarkResponse StageBookmarkList");
-            AssertEmptyList(roundTrip.BookmarkList, "GetStageBookmarkResponse BookmarkList");
-            ValidateRequestHandlerRegistration("GetStageBookmarkRequest");
-        }
 
         private static void ValidateMainLine2UpdateExhibitionChapterCompatibility()
         {
@@ -28698,8 +28499,10 @@ namespace AscNet.Test
                 "Pain Cage selected level persistence");
             if (!player.SimulatedBattlefield.BossList.SequenceEqual(selectedSections))
                 throw new InvalidDataException("Pain Cage selected boss list differs from the offered table-derived option.");
-            AssertEqual(0, selectPushes.Count,
+            AssertEqual(0, selectPushes.Count(name => name == nameof(NotifyStageData)),
                 "Pain Cage selection does not duplicate login stage pushes");
+            AssertEqual(true, selectPushes.Contains(nameof(NotifyWheelchairManualActivityUpdate)),
+                "Pain Cage selection refreshes the manual guide subtype");
             foreach (int stageId in selectedSections
                          .SelectMany(sectionId => sections.Single(row => row.SectionId == sectionId && row.AfreshId == 1).StageId))
             {
@@ -29902,24 +29705,27 @@ namespace AscNet.Test
             AssertNoAvailablePacket(guideCompleteHarness, "GuideComplete invalid request");
             Dictionary<int, GuideCompleteTable> completionRows = TableReaderV2.Parse<GuideCompleteTable>()
                 .ToDictionary(completion => completion.Id);
-            List<(GuideGroupTable Guide, GuideCompleteTable Completion)> serverCompletedGuides = guideGroups
+            List<(GuideGroupTable Guide, GuideCompleteTable Completion)> stageAndCourseGuides = guideGroups
                 .Where(guide => guide.RewardId == 0 && completionRows.ContainsKey(guide.CompleteId))
                 .Select(guide => (Guide: guide, Completion: completionRows[guide.CompleteId]))
                 .Where(entry => entry.Completion.Param.Count >= 2
                     && entry.Completion.Param[0] is 2 or 12)
                 .ToList();
-            if (serverCompletedGuides.Count < 2)
-                throw new InvalidDataException("Guide login reconciliation requires two server-completed guides.");
-
-            (GuideGroupTable Guide, GuideCompleteTable Completion) reconciledGuide = serverCompletedGuides[0];
+            (GuideGroupTable Guide, GuideCompleteTable Completion) reconciledGuide =
+                stageAndCourseGuides.Single(entry => entry.Completion.Param[0] == 2);
             (GuideGroupTable Guide, GuideCompleteTable Completion) unreconciledGuide =
-                serverCompletedGuides.First(entry => entry.Guide.Id != reconciledGuide.Guide.Id);
+                stageAndCourseGuides.Single(entry => entry.Completion.Param[0] == 12);
             const long reconcilePlayerId = 88_150;
             AscNet.Common.Database.Player reconcilePlayer = CreateDrawCompatibilityPlayer(reconcilePlayerId);
             AscNet.Common.Database.Stage reconcileStage = CreateLoginAccountCompatibilityStage(reconcilePlayerId);
             reconcileStage.AddStage(new StageDatum
             {
                 StageId = reconciledGuide.Completion.Param[1],
+                Passed = true
+            });
+            reconcileStage.AddStage(new StageDatum
+            {
+                StageId = unreconciledGuide.Completion.Param[1],
                 Passed = true
             });
             MethodInfo reconcileStageCompletedGuides = RequiredMethod(
@@ -29937,13 +29743,27 @@ namespace AscNet.Test
                 AssertEqual(true, reconcilePlayer.PlayerData.GuideData.Contains(reconciledGuide.Guide.Id),
                     "Guide login reconciliation records passed-stage guide");
                 AssertEqual(false, reconcilePlayer.PlayerData.GuideData.Contains(unreconciledGuide.Guide.Id),
-                    "Guide login reconciliation leaves unmatched guide incomplete");
+                    "Guide login reconciliation leaves passed but unclaimed course guide incomplete");
                 AssertEqual(1, reconcilePlayerSaves.ReplaceOneCalls,
                     "Guide login reconciliation persists once");
 
                 reconcileStageCompletedGuides.Invoke(null, [reconcilePlayer, reconcileStage]);
                 AssertEqual(1, reconcilePlayerSaves.ReplaceOneCalls,
                     "Guide login reconciliation is idempotent");
+
+                reconcileStage.Course.Add(checked((uint)unreconciledGuide.Completion.Param[1]));
+                reconcileStage = MongoDB.Bson.Serialization.BsonSerializer.Deserialize<AscNet.Common.Database.Stage>(
+                    reconcileStage.ToBson());
+                reconcilePlayer = MongoDB.Bson.Serialization.BsonSerializer.Deserialize<AscNet.Common.Database.Player>(
+                    reconcilePlayer.ToBson());
+                reconcileStageCompletedGuides.Invoke(null, [reconcilePlayer, reconcileStage]);
+                AssertEqual(true, reconcilePlayer.PlayerData.GuideData.Contains(unreconciledGuide.Guide.Id),
+                    "Guide relog completes a persisted claimed course");
+                reconcileStageCompletedGuides.Invoke(null, [reconcilePlayer, reconcileStage]);
+                AssertEqual(1, reconcilePlayer.PlayerData.GuideData.Count(id => id == unreconciledGuide.Guide.Id),
+                    "Guide course reconciliation retry does not duplicate completion");
+                AssertEqual(2, reconcilePlayerSaves.ReplaceOneCalls,
+                    "Guide claimed course reconciliation persists once");
             }
 
             ValidateMainLineLastPassStageProgression();
@@ -29960,7 +29780,7 @@ namespace AscNet.Test
                 throw new InvalidDataException("Mainline last-pass progression requires two configured chapters.");
             Dictionary<int, GuideCompleteTable> guideCompletions = TableReaderV2.Parse<GuideCompleteTable>()
                 .ToDictionary(completion => completion.Id);
-            List<(GuideGroupTable Guide, GuideCompleteTable Completion)> stageCompletedGuides =
+            List<(GuideGroupTable Guide, GuideCompleteTable Completion)> stageAndCourseGuides =
                 TableReaderV2.Parse<GuideGroupTable>()
                     .Where(guide => guide.RewardId == 0 && guideCompletions.ContainsKey(guide.CompleteId))
                     .Select(guide => (Guide: guide, Completion: guideCompletions[guide.CompleteId]))
@@ -29968,20 +29788,20 @@ namespace AscNet.Test
                         && entry.Completion.Param[0] is 2 or 12
                         && entry.Completion.Param[1] > 0)
                     .ToList();
-            if (stageCompletedGuides.Count < 2)
-                throw new InvalidDataException("Guide stage completion requires two configured completion modes.");
+            if (stageAndCourseGuides.Count < 2)
+                throw new InvalidDataException("Guide completion requires configured stage and course conditions.");
 
             uint matchingGuideStageId = checked((uint)chapters[0].StageId.First(stageId => stageId > 0));
             (GuideGroupTable Guide, GuideCompleteTable Completion) matchingGuide =
-                stageCompletedGuides.First(entry => entry.Completion.Param[1] == matchingGuideStageId);
+                stageAndCourseGuides.Single(entry => entry.Completion.Param[0] == 2
+                    && entry.Completion.Param[1] == matchingGuideStageId);
             (GuideGroupTable Guide, GuideCompleteTable Completion) nonmatchingGuide =
-                stageCompletedGuides.First(entry => entry.Guide.Id != matchingGuide.Guide.Id
-                    && entry.Completion.Param[1] != chapters[1].StageId.First(stageId => stageId > 0));
+                stageAndCourseGuides.Single(entry => entry.Completion.Param[0] == 12);
 
 
             const long uid = 88_200;
             using MongoCollectionOverride mongo =
-                MongoCollectionOverride.InstallForBossCompatibility(out _, out _);
+                MongoCollectionOverride.InstallForBossCompatibility(out var guidePlayerSaves, out _);
             AscNet.Common.Database.Player player = CreateDrawCompatibilityPlayer(uid);
             using LoopbackSessionHarness harness = new(
                 CreateDrawCompatibilityCharacter(uid),
@@ -30050,8 +29870,71 @@ namespace AscNet.Test
                 }
             }
 
+            uint courseStageId = checked((uint)nonmatchingGuide.Completion.Param[1]);
+            harness.Session.fight = new AscNet.GameServer.Game.Fight(
+                new PreFightRequest { PreFightData = new() { StageId = courseStageId } }, 88_220);
+            InvokeRegisteredRequestHandler(nameof(FightSettleRequest), harness.Session, 88_221,
+                CreateMissingStageSettleRequest(courseStageId, 88_220, uid));
+            AssertEqual(0, ((FightSettleResponse)ReadResponsePayload(
+                harness, 88_221, nameof(FightSettleResponse), "Course stage settle",
+                typeof(FightSettleResponse), maxPacketsToRead: 20)).Code, "Course stage settle Code");
+            AssertEqual(false, player.PlayerData.GuideData.Contains(nonmatchingGuide.Guide.Id),
+                "Matching course stage settlement cannot replace the reward claim");
+            AssertEqual(nonmatchingGuide.Guide.Id, harness.Session.OpenedGuideGroupId,
+                "Unclaimed course guide remains pending");
+
+            InvokeRegisteredRequestHandler(nameof(GetCourseRewardRequest), harness.Session, 88_222,
+                new GetCourseRewardRequest { StageId = checked((int)courseStageId) });
+            AssertEqual(0, ((GetCourseRewardResponse)ReadResponsePayload(
+                harness, 88_222, nameof(GetCourseRewardResponse), "Course guide reward claim",
+                typeof(GetCourseRewardResponse), maxPacketsToRead: 20)).Code, "Course guide claim Code");
+            AssertEqual(nonmatchingGuide.Guide.Id, ReadPushPayload<NotifyGuide>(
+                harness, nameof(NotifyGuide), "Course guide claim notification").GuideGroupId,
+                "Course guide notification follows the claim response");
+            AssertEqual(true, player.PlayerData.GuideData.Contains(nonmatchingGuide.Guide.Id),
+                "Course reward claim completes the pending course guide");
+            AssertEqual(null, harness.Session.OpenedGuideGroupId,
+                "Course reward claim clears the pending guide");
+            AssertEqual(true, harness.Session.stage.Course.Contains(courseStageId),
+                "Course reward claim records claimed state");
+            InvokeRegisteredRequestHandler(nameof(GetCourseRewardRequest), harness.Session, 88_223,
+                new GetCourseRewardRequest { StageId = checked((int)courseStageId) });
+            AssertEqual(20026014, ReadResponsePayload<GetCourseRewardResponse>(
+                harness, 88_223, nameof(GetCourseRewardResponse), "Course guide claim retry").Code,
+                "Course reward duplicate claim retains its error contract");
+            AssertEqual(1, player.PlayerData.GuideData.Count(id => id == nonmatchingGuide.Guide.Id),
+                "Course reward retry cannot duplicate guide completion");
+            AssertNoAvailablePacket(harness, "Course guide claim retry");
+
+            // A durable course claim can outlive a failed guide save.
+            player.PlayerData.GuideData.Remove(nonmatchingGuide.Guide.Id);
+            harness.Session.OpenedGuideGroupId = nonmatchingGuide.Guide.Id;
+            guidePlayerSaves.ThrowOnReplaceOne = true;
+            InvokeRegisteredRequestHandler(nameof(GetCourseRewardRequest), harness.Session, 88_224,
+                new GetCourseRewardRequest { StageId = checked((int)courseStageId) });
+            guidePlayerSaves.ThrowOnReplaceOne = false;
+            AssertEqual(20026014, ReadResponsePayload<GetCourseRewardResponse>(
+                harness, 88_224, nameof(GetCourseRewardResponse), "Course guide save failure").Code,
+                "Course guide save failure retains already-claimed response");
+            AssertEqual(false, player.PlayerData.GuideData.Contains(nonmatchingGuide.Guide.Id),
+                "Failed course guide save rolls back completion");
+            AssertNoAvailablePacket(harness, "Failed course guide save sends no completion");
+            InvokeRegisteredRequestHandler(nameof(GetCourseRewardRequest), harness.Session, 88_225,
+                new GetCourseRewardRequest { StageId = checked((int)courseStageId) });
+            AssertEqual(20026014, ReadResponsePayload<GetCourseRewardResponse>(
+                harness, 88_225, nameof(GetCourseRewardResponse), "Course guide recovered claim").Code,
+                "Recovered guide does not regrant the course reward");
+            AssertEqual(nonmatchingGuide.Guide.Id, ReadPushPayload<NotifyGuide>(
+                harness, nameof(NotifyGuide), "Course guide recovered claim notification").GuideGroupId,
+                "Persisted course claim retry notifies the waiting guide after response");
+            AssertNoAvailablePacket(harness, "Recovered course guide claim");
+
+            expectedLastPassStages[chapters[0].ChapterId] = courseStageId;
+
             AscNet.Common.Database.Player reload =
                 MongoDB.Bson.Serialization.BsonSerializer.Deserialize<AscNet.Common.Database.Player>(player.ToBson());
+            AssertEqual(true, reload.PlayerData.GuideData.Contains(nonmatchingGuide.Guide.Id),
+                "Claimed course guide survives player reload");
             foreach ((int chapterId, long stageId) in expectedLastPassStages)
             {
                 AssertEqual(stageId,

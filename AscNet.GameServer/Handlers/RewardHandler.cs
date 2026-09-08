@@ -31,7 +31,9 @@ namespace AscNet.GameServer.Handlers
 
     internal sealed record RewardGrant(
         string ClaimKey,
-        IReadOnlyList<RewardGoodsTable> Goods);
+        IReadOnlyList<RewardGoodsTable> Goods,
+        IReadOnlyDictionary<int, int>? Costs = null,
+        int? EventCause = null);
 
     internal sealed class RewardApplicationResult
     {
@@ -45,11 +47,21 @@ namespace AscNet.GameServer.Handlers
         internal NotifyHeadPortraitInfos HeadPortraitData { get; } = new();
         internal bool DormFurnitureChanged { get; set; }
         internal NotifyScoreTitleInfo ScoreTitleData { get; } = new() { IsLogined = true };
+        internal bool ManualGuideChanged { get; set; }
         internal List<int> GatherRewardIds { get; } = [];
 
 
         public void SendPushes(Session session)
         {
+            bool manualChanged = ItemData.ItemDataList.Any(item => item.Id == WheelchairManualModule.ExperienceItemId)
+                && WheelchairManualModule.RefreshProgress(session);
+            if (manualChanged)
+            {
+                Item experience = session.inventory.Items.First(item => item.Id == WheelchairManualModule.ExperienceItemId);
+                for (int index = 0; index < ItemData.ItemDataList.Count; index++)
+                    if (ItemData.ItemDataList[index].Id == experience.Id)
+                        ItemData.ItemDataList[index] = experience;
+            }
             if (ItemData.ItemDataList.Count > 0)
                 session.SendPush(ItemData);
             if (EquipData.EquipDataList.Count > 0)
@@ -71,6 +83,10 @@ namespace AscNet.GameServer.Handlers
                 session.SendPush(HeadPortraitData);
             if (ScoreTitleData.Titles.Count > 0)
                 session.SendPush(ScoreTitleData);
+            if (manualChanged || ItemData.ItemDataList.Any(item => item.Id == Inventory.TeamExp))
+                session.SendPush(WheelchairManualModule.BuildPayload(session, DateTimeOffset.UtcNow));
+            else if (ManualGuideChanged)
+                Game.WheelchairManualGuideManager.SendUpdate(session);
         }
 
         internal void AddPushes(RewardApplicationResult source)
@@ -205,10 +221,13 @@ namespace AscNet.GameServer.Handlers
             if (grants.Any(grant =>
                     string.IsNullOrWhiteSpace(grant.ClaimKey)
                     || grant.ClaimKey.Length > 128
-                    || grant.Goods.Count == 0))
-                throw new ArgumentException("Reward grants require a bounded claim key and configured goods.", nameof(grants));
+                    || (grant.Goods.Count == 0 && grant.Costs is not { Count: > 0 })))
+                throw new ArgumentException("Reward grants require a bounded claim key and configured goods or costs.", nameof(grants));
             if (grants.Select(grant => grant.ClaimKey).Distinct(StringComparer.Ordinal).Count() != grants.Count)
                 throw new ArgumentException("Reward claim keys must be unique within a grant batch.", nameof(grants));
+            if (grants.Any(grant => grant.Costs?.Any(cost =>
+                    cost.Value <= 0 || !Inventory.IsValidClientItemId(cost.Key)) == true))
+                throw new ArgumentException("Reward costs require known item IDs and positive amounts.", nameof(grants));
 
             Inventory originalInventory = session.inventory;
             Character originalCharacter = session.character;
@@ -221,6 +240,7 @@ namespace AscNet.GameServer.Handlers
                 })
                 .ToList();
             List<int> originalGatherRewards = session.player.GatherRewards.ToList();
+            List<WheelchairManualGuideRewardReceipt> originalGuideReceipts = session.player.WheelchairManualGuideRewardReceipts;
             PlayerDormState? originalDorm = grants.SelectMany(grant => grant.Goods)
                 .Any(goods => GetRewardType(goods) == RewardType.Furniture)
                 ? BsonSerializer.Deserialize<PlayerDormState>(session.player.Dorm.ToBson())
@@ -231,6 +251,7 @@ namespace AscNet.GameServer.Handlers
             Character stagedCharacter =
                 BsonSerializer.Deserialize<Character>(originalCharacter.ToBson());
             stagedInventory.AppliedRewardClaims ??= [];
+            stagedInventory.RewardClaimTimes ??= new();
             stagedCharacter.AppliedRewardClaims ??= [];
             session.inventory = stagedInventory;
             session.character = stagedCharacter;
@@ -253,6 +274,21 @@ namespace AscNet.GameServer.Handlers
                         StringComparer.Ordinal);
 
                     RewardApplicationResult grantResult = new();
+                    if (grant.Costs is not null)
+                    {
+                        foreach ((int itemId, int count) in grant.Costs)
+                        {
+                            Item? item = stagedInventory.Items.FirstOrDefault(value => value.Id == itemId);
+                            if (!inventoryClaimed)
+                            {
+                                if (item is null || item.Count < count)
+                                    throw new InvalidOperationException($"Insufficient item {itemId} for reward claim {grant.ClaimKey}.");
+                                item = stagedInventory.Do(itemId, -count);
+                            }
+                            if (item is not null)
+                                grantResult.ItemData.ItemDataList.Add(item);
+                        }
+                    }
                     List<Reward> prepared = PrepareRewards(grant.Goods, session, grantResult);
                     if (prepared.Count != grant.Goods.Count)
                         throw new InvalidDataException(
@@ -275,7 +311,10 @@ namespace AscNet.GameServer.Handlers
                     ApplyResolvedRewards(
                         resolved.Where(reward =>
                             (!inventoryClaimed && IsInventoryDocumentReward(reward))
-                            || (!characterClaimed && IsCharacterDocumentReward(reward))),
+                            || (!characterClaimed && IsCharacterDocumentReward(reward))
+                            // A character receipt cannot prove the later player-owned entitlement save succeeded.
+                            || (reward.Type == RewardType.HeadPortrait
+                                && !session.player.HeadPortraits.Any(head => head.Id == reward.Id))),
                         session,
                         grantResult);
                     result.AddPushes(grantResult);
@@ -283,12 +322,20 @@ namespace AscNet.GameServer.Handlers
                     if (!inventoryClaimed)
                     {
                         stagedInventory.AppliedRewardClaims.Add(grant.ClaimKey);
+                        if (grant.EventCause.HasValue)
+                            stagedInventory.RewardClaimTimes[grant.ClaimKey] = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
                         inventoryDirty = true;
                     }
                     if (!characterClaimed)
                     {
                         stagedCharacter.AppliedRewardClaims.Add(grant.ClaimKey);
                         characterDirty = true;
+                    }
+                    if (grant.EventCause is int eventCause
+                        && stagedInventory.RewardClaimTimes.TryGetValue(grant.ClaimKey, out long grantedAt))
+                    {
+                        Game.WheelchairManualGuideManager.RecordReward(session, grant.ClaimKey, eventCause,
+                            grant.Goods, DateTimeOffset.FromUnixTimeSeconds(grantedAt));
                     }
                 }
 
@@ -304,7 +351,8 @@ namespace AscNet.GameServer.Handlers
                 }
                 if (result.DormFurnitureChanged
                     || result.GatherRewardIds.Count > 0
-                    || session.player.HeadPortraits.Count != originalHeadPortraits.Count)
+                    || session.player.HeadPortraits.Count != originalHeadPortraits.Count
+                    || !ReferenceEquals(session.player.WheelchairManualGuideRewardReceipts, originalGuideReceipts))
                 {
                     session.player.SaveChecked();
                     playerPersisted = true;
@@ -312,6 +360,8 @@ namespace AscNet.GameServer.Handlers
 
 
                 CopyInventory(originalInventory, stagedInventory);
+                result.ManualGuideChanged = grants.Any(grant => grant.EventCause.HasValue
+                    && stagedInventory.RewardClaimTimes.ContainsKey(grant.ClaimKey));
                 CopyCharacter(originalCharacter, stagedCharacter);
                 return result;
             }
@@ -325,6 +375,7 @@ namespace AscNet.GameServer.Handlers
                 {
                     session.player.HeadPortraits = originalHeadPortraits;
                     session.player.GatherRewards = originalGatherRewards;
+                    session.player.WheelchairManualGuideRewardReceipts = originalGuideReceipts;
                     if (originalDorm is not null)
                         session.player.Dorm = originalDorm;
                 }
@@ -476,6 +527,7 @@ namespace AscNet.GameServer.Handlers
             target.Uid = source.Uid;
             target.Items = source.Items;
             target.AppliedRewardClaims = source.AppliedRewardClaims;
+            target.RewardClaimTimes = source.RewardClaimTimes;
         }
 
         private static void CopyCharacter(Character target, Character source)

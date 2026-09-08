@@ -848,6 +848,8 @@ namespace AscNet.GameServer.Handlers
 
             if (isCourseStage)
                 CourseModule.CancelPendingResult(session);
+            // Retain the resolved deployment, including a server-selected default team.
+            req.PreFightData.CardIds = cardIdsToDeploy.ToList();
             session.fight = new(req, rsp.FightData.FightId);
             session.SendResponse(rsp, packet.Id);
         }
@@ -2648,19 +2650,15 @@ namespace AscNet.GameServer.Handlers
             session.ExpSanityCheck();
             NotifyCharacterDataList? deferredCharacterData = null;
 
-            if (cardExp > 0)
+            if (cardExp > 0 && session.fight?.PreFight.PreFightData.CardIds is { } fightingCards)
             {
-                Dictionary<int, long> team = session.player.TeamGroups[(int)session.player.PlayerData.CurrTeamId].TeamData;
                 NotifyCharacterDataList charData = new();
                 
-                foreach (KeyValuePair<int, long> member in team)
+                foreach (uint characterId in fightingCards.Where(id => id > 0).Distinct())
                 {
-                    if (member.Value > 0)
-                    {
-                        var character = session.character.AddCharacterExp((int)member.Value, cardExp, (int)session.player.PlayerData.Level);
-                        if (character is not null)
-                            charData.CharacterDataList.Add(character);
-                    }
+                    var character = session.character.AddCharacterExp(checked((int)characterId), cardExp, (int)session.player.PlayerData.Level);
+                    if (character is not null)
+                        charData.CharacterDataList.Add(character);
                 }
                 
                 deferredCharacterData = charData;
@@ -2759,6 +2757,12 @@ namespace AscNet.GameServer.Handlers
                 }
             };
 
+            if (isSuccessfulSettle && arenaResult is not null
+                && session.fight?.PreFight.PreFightData.CardIds is { } acceptedCards)
+            {
+                TaskModule.RecordStageParticipation(session, checked((int)req.Result.StageId),
+                    acceptedCards.Select(id => checked((int)id)).ToArray(), challengeCount);
+            }
             session.fight = null;
             session.SendPush(new NotifyStageData() { StageList = new() { stageData } });
             if (simulateTrainArchiveRecord is not null)
@@ -2776,6 +2780,8 @@ namespace AscNet.GameServer.Handlers
             // Generic fights do not deduct ActionPoint; sweep and special-mode owners record their own costs.
             TaskModule.RecordStageClear(session, (int)req.Result.StageId, challengeCount, 0, isFirstClear);
             GuideModule.CompleteOpenedGuideOnStageSettle(session, [req.Result.StageId, responseStageId]);
+            if (isSuccessfulSettle)
+                session.SendPush(WheelchairManualModule.BuildPayload(session, DateTimeOffset.UtcNow));
             session.SendResponse(fightSettleResponse, packet.Id);
         }
 

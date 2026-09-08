@@ -171,6 +171,9 @@ namespace AscNet.Common.Database
 
         [BsonElement("applied_reward_claims")]
         public List<string> AppliedRewardClaims { get; set; } = new();
+
+        [BsonElement("reward_claim_times")]
+        public Dictionary<string, long> RewardClaimTimes { get; set; } = new();
     }
 
     public partial class ItemConfig

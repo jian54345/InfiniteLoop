@@ -34,6 +34,7 @@ public sealed class StrongholdState
     [BsonElement("mine_records")] public List<StrongholdMineRecord> MineRecords { get; set; } = new();
     [BsonElement("claimed_reward_ids")] public List<int> ClaimedRewardIds { get; set; } = new();
     [BsonElement("last_result_record")] public StrongholdResultRecord LastResultRecord { get; set; } = new();
+    [BsonElement("current_result_record")] public StrongholdResultRecord? CurrentResultRecord { get; set; }
     [BsonElement("pending_group_id")] public int PendingGroupId { get; set; }
     [BsonElement("pending_stage_id")] public int PendingStageId { get; set; }
 }

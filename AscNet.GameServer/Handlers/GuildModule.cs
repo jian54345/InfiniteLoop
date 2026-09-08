@@ -1,226 +1,411 @@
+using AscNet.Common;
+using AscNet.Common.Database;
 using AscNet.Common.MsgPack;
+using AscNet.Common.Util;
+using AscNet.Table.V2.share.guild;
+using AscNet.Table.V2.share.config;
+using AscNet.Table.V2.share.condition;
+using AscNet.Table.V2.share.functional;
 using MessagePack;
-using Newtonsoft.Json;
+using MongoDB.Driver;
+using System.Globalization;
 
-namespace AscNet.GameServer.Handlers
+namespace AscNet.GameServer.Handlers;
+
+[MessagePackObject(true)]
+public class GuildListRecommendRequest { public int PageNo; }
+[MessagePackObject(true)]
+public class GuildListRecommendResponse { public int Code; public List<object> Datas = []; public long JoinCdEnd; }
+[MessagePackObject(true)]
+public class GuildCreateRequest { public string GuildName = string.Empty; public string GuildDeclaration = string.Empty; public int IconId; }
+[MessagePackObject(true)]
+public class GuildCreateResponse { public int Code; }
+[MessagePackObject(true)]
+public class GuildFindRequest { public int GuildId; }
+[MessagePackObject(true)]
+public class GuildFindResponse { public int Code; public List<object> GuildList = []; }
+[MessagePackObject(true)]
+public class GuildApplyRequest { public int GuildId; }
+[MessagePackObject(true)]
+public class GuildApplyResponse { public int Code; public bool IsPass; }
+[MessagePackObject(true)]
+public class GuildListApplyRequest { }
+[MessagePackObject(true)]
+public class GuildAckApplyRequest { public long PlayId; public bool IsAgree; }
+[MessagePackObject(true)]
+public class GuildAckApplyResponse { public int Code; }
+[MessagePackObject(true)]
+public class GuildWarPopupActionRequest { public List<int> ActionPlayed = []; }
+[MessagePackObject(true)]
+public class GuildWarPopupActionResponse { public int Code; }
+
+internal class GuildModule
 {
+    // EN XGuildConfig.ApplySetting/GuildRankLevel and XGuildData initial compatibility defaults.
+    private const int DirectAdmission = 1, NeedsApproval = 2, ForbiddenAdmission = 3;
+    private const int LeaderRank = 1, MemberRank = 4, NoGuildRank = 9;
+    // ponytail: one game-server process serializes membership/cost orchestration; database indexes and
+    // guarded admission enforce membership/capacity, distributed debit orchestration needs transactions.
+    private static readonly object MembershipLock = new();
+    private static readonly Lazy<Dictionary<string, string>> Config = new(() => TableReaderV2.Parse<ConfigTable>().ToDictionary(row => row.Key, row => row.Value));
+    private static readonly Lazy<Dictionary<int, ConditionTable>> Conditions = new(() => TableReaderV2.Parse<ConditionTable>().ToDictionary(row => row.Id));
+    private static int Setting(string name) => int.Parse(Config.Value[name], CultureInfo.InvariantCulture);
+    private static GuildLevelTable Level(Guild guild) => TableReaderV2.Parse<GuildLevelTable>().Single(row => row.Level == guild.Level);
+    private static long Now => DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+    private static Guild? Resolve(Session session, int id) => id == 0 ? Guild.FindByMember(session.player.PlayerData.Id) : id > 0 && Guild.FindById((uint)id) is { Active: true } guild ? guild : null;
+    private static bool IsOnline(long id) => Server.Instance.SessionFromUID(id) is not null;
+    private static void Require(bool valid, int code) { if (!valid) throw new ServerCodeException("Guild request rejected", code); }
+    private static int Failure(Exception exception, int fallback) => exception is ServerCodeException code ? code.Code : fallback;
 
-    #region MsgPackScheme
-#pragma warning disable CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider declaring as nullable.
-    [MessagePackObject(true)]
-    public class GuildListRecommendRequest
+    private static bool ConditionSatisfied(Session session, int id, HashSet<int> visiting)
     {
-        public int PageNo;
-    }
-
-    [MessagePackObject(true)]
-    public class GuildListRecommendResponse
-    {
-        public int Code;
-        public List<object> Datas = [];
-        public long JoinCdEnd;
-    }
-
-    [MessagePackObject(true)]
-    public class GuildWarPopupActionRequest
-    {
-        public List<int> ActionPlayed;
-    }
-
-    [MessagePackObject(true)]
-    public class GuildWarPopupActionResponse
-    {
-        public int Code;
-    }
-#pragma warning restore CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider declaring as nullable.
-    #endregion
-
-    internal class GuildModule
-    {
-        private const uint DefaultGuildId = 365;
-        private const int GuildWarActionSaveFailed = 1;
-
-        // Guild recommendation data is unavailable until guild persistence exists.
-        [RequestPacketHandler("GuildListRecommendRequest")]
-        public static void GuildListRecommendRequestHandler(Session session, Packet.Request packet)
+        if (!Conditions.Value.TryGetValue(id, out ConditionTable? condition) || !visiting.Add(id)) return false;
+        try
         {
-            _ = packet.Deserialize<GuildListRecommendRequest>();
-            session.SendResponse(new GuildListRecommendResponse
+            if (!string.IsNullOrWhiteSpace(condition.Formula))
             {
-                Code = 0,
-                Datas = [],
-                JoinCdEnd = 0
-            }, packet.Id);
-        }
-
-        [RequestPacketHandler("GuildListDetailRequest")]
-        public static void GuildListDetailRequestHandler(Session session, Packet.Request packet)
-        {
-            GuildListDetailRequest request = packet.Deserialize<GuildListDetailRequest>();
-            uint guildId = ResolveGuildId(request.GuildId);
-
-            session.SendResponse(new GuildListDetailResponse
-            {
-                Code = 0,
-                GuildId = guildId,
-                GuildName = "AscNet",
-                GuildIconId = 1,
-                GuildLevel = 1,
-                GuildMemberCount = 1,
-                GuildMemberMaxCount = 80,
-                GuildTouristCount = 0,
-                GuildTouristMaxCount = 10,
-                GuildContributeLeft = 0,
-                GuildContributeIn7Days = 0,
-                GuildLeaderName = session.player.PlayerData.Name,
-                GuildDeclaration = "AscNet private guild",
-                RankNames = string.Empty,
-                GiftContribute = 0,
-                GiftGuildLevel = 1,
-                GiftLevel = 0,
-                GiftLevelGot = [],
-                GiftGuildGot = (int)guildId,
-                Build = 0,
-                Option = 0,
-                MinLevel = 1,
-                MaintainState = 0,
-                EmergenceTime = 0,
-                TalentPointFromBuild = 0,
-                Notice = string.Empty,
-                TalentSumLevel = 0
-            }, packet.Id);
-        }
-
-        [RequestPacketHandler("GuildMemberDetailRequest")]
-        public static void GuildMemberDetailRequestHandler(Session session, Packet.Request packet)
-        {
-            GuildMemberDetailRequest request = packet.Deserialize<GuildMemberDetailRequest>();
-            GuildMemberDetailResponse response = new()
-            {
-                Code = 0,
-                GuildId = ResolveGuildId(request.GuildId),
-                CanImpeach = false,
-                HasImpeach = false
-            };
-            response.MembersData.Add(BuildCurrentPlayerGuildMember(session));
-
-            session.SendResponse(response, packet.Id);
-        }
-
-        [RequestPacketHandler("GuildListChatRequest")]
-        public static void GuildListChatRequestHandler(Session session, Packet.Request packet)
-        {
-            session.SendResponse(new GuildListChatResponse
-            {
-                Code = 0,
-                ChatList = [BuildGuildChatCacheMessage(session)]
-            }, packet.Id);
-        }
-
-        [RequestPacketHandler("GuildWarOpenSupportPanelRequest")]
-        public static void GuildWarOpenSupportPanelRequestHandler(Session session, Packet.Request packet)
-        {
-            session.SendResponse(new GuildWarOpenSupportPanelResponse
-            {
-                Code = 0,
-                SupportDetail = new()
-                {
-                    CharacterId = (int)(session.character.Characters.FirstOrDefault()?.Id ?? 0),
-                    SupportSupply = 0,
-                    ToAssistRecords = [],
-                    MyLogs = [],
-                    GetAssistRecords = [],
-                    MyAssistRecords = [],
-                    LastRecvTime = (int)DateTimeOffset.Now.ToUnixTimeSeconds()
-                }
-            }, packet.Id);
-        }
-
-        [RequestPacketHandler("GuildWarPopupActionRequest")]
-        public static void GuildWarPopupActionRequestHandler(Session session, Packet.Request packet)
-        {
-            GuildWarPopupActionRequest request = packet.Deserialize<GuildWarPopupActionRequest>();
-            List<int> played = session.player.GuildWar.PlayedActionIds;
-            List<int> added = [];
-            foreach (int actionId in request.ActionPlayed ?? [])
-            {
-                if (actionId > 0 && !played.Contains(actionId))
-                {
-                    played.Add(actionId);
-                    added.Add(actionId);
-                }
+                bool any = condition.Formula.Contains('|');
+                if (any && condition.Formula.Contains('&')) return false;
+                string[] terms = condition.Formula.Split(any ? '|' : '&', StringSplitOptions.RemoveEmptyEntries);
+                bool Evaluate(string term) => int.TryParse(term.Trim(), out int child) && ConditionSatisfied(session, child, visiting);
+                return terms.Length > 0 && (any ? terms.Any(Evaluate) : terms.All(Evaluate));
             }
-
-            if (added.Count > 0)
+            return condition.Params.Count > 0 && (condition.Type switch
             {
-                try
-                {
-                    session.player.SaveChecked();
-                }
-                catch
-                {
-                    foreach (int actionId in added)
-                        played.Remove(actionId);
-                    session.SendResponse(new GuildWarPopupActionResponse { Code = GuildWarActionSaveFailed }, packet.Id);
-                    return;
-                }
-            }
-
-            session.SendResponse(new GuildWarPopupActionResponse { Code = 0 }, packet.Id);
-        }
-
-        private static uint ResolveGuildId(int guildId)
-        {
-            return guildId > 0 ? (uint)guildId : DefaultGuildId;
-        }
-
-        private static GuildMemberDetailResponse.GuildMemberDetailResponseMembersData BuildCurrentPlayerGuildMember(Session session)
-        {
-            return new()
-            {
-                Id = (uint)session.player.PlayerData.Id,
-                Name = session.player.PlayerData.Name,
-                HeadPortraitId = (uint)session.player.PlayerData.CurrHeadPortraitId,
-                HeadFrameId = (int)session.player.PlayerData.CurrHeadFrameId,
-                Level = (int)session.player.PlayerData.Level,
-                RankLevel = 1,
-                ContributeIn7Days = 0,
-                ContributeAct = 0,
-                ContributeHistory = 0,
-                Popularity = 0,
-                LastLoginTime = (uint)session.player.PlayerData.LastLoginTime,
-                OnlineFlag = 1
-            };
-        }
-
-        private static string BuildGuildChatCacheMessage(Session session)
-        {
-            return JsonConvert.SerializeObject(new
-            {
-                MessageId = 0,
-                ChannelType = 6,
-                MsgType = 1,
-                SenderId = session.player.PlayerData.Id,
-                TargetId = 0,
-                Icon = (int)session.player.PlayerData.CurrHeadPortraitId,
-                HeadFrameId = (int)session.player.PlayerData.CurrHeadFrameId,
-                CreateTime = DateTimeOffset.Now.ToUnixTimeSeconds(),
-                NickName = session.player.PlayerData.Name,
-                NameplateId = 0,
-                Content = "Welcome to AscNet.",
-                CustomContent = (string?)null,
-                GiftId = 0,
-                GiftCount = 0,
-                GiftStatus = 0,
-                CurrMedalId = (int)session.player.PlayerData.CurrMedalId,
-                BabelTowerTitleInfo = (object?)null,
-                GuildRankLevel = 1,
-                GuildName = "AscNet",
-                MentorType = 1,
-                CollectWordId = 0,
-                ChatBoardId = (int)session.player.PlayerData.CurrentChatBoardId
+                10101 => session.player.PlayerData.Level >= condition.Params[0],
+                10105 => session.stage.Stages.TryGetValue(condition.Params[0], out StageDatum? stage) && stage.Passed,
+                _ => false
             });
         }
+        finally { visiting.Remove(id); }
+    }
 
+    private static bool GuildOpen(Session session) => TableReaderV2.Parse<FunctionalOpenTable>()
+        .Single(row => row.Id == 1901).Condition.All(id => ConditionSatisfied(session, id, []));
+
+    private static Dictionary<int, int> CreationCosts()
+    {
+        GuildCreateTable rule = TableReaderV2.Parse<GuildCreateTable>().Single();
+        if (rule.ItemId.Count != rule.ItemNum.Count) throw new InvalidDataException("Guild creation cost table mismatch.");
+        return rule.ItemId.Select((id, index) => (Id: id, Count: rule.ItemNum[index]))
+            .GroupBy(cost => cost.Id).ToDictionary(group => group.Key, group => group.Sum(cost => cost.Count));
+    }
+
+    private static void RecoverMembershipProgress(Session session, bool sendNotification = true)
+    {
+        Guild? guild = Guild.FindByMember(session.player.PlayerData.Id);
+        if (guild is null || session.player.GuildProgressRecordedId == guild.Id) return;
+        TaskModule.EnsureMissionResets(session);
+        session.player.GuildProgressRecordedId = guild.Id;
+        try
+        {
+            TaskModule.RecordTableDrivenProgress(session, [(35002, null, 1)], sendNotification);
+        }
+        catch
+        {
+            // Resolve an uncertain save from durable state before an in-session retry.
+            Player persisted = Player.collection.Find(player => player.PlayerData.Id == session.player.PlayerData.Id).Single();
+            session.player.GuildProgressRecordedId = persisted.GuildProgressRecordedId;
+            session.player.MissionProgress = persisted.MissionProgress;
+            throw;
+        }
+    }
+
+    internal static void PrepareLogin(Session session)
+    {
+        lock (MembershipLock)
+        {
+            Guild? pending = Guild.FindPendingByFounder(session.player.PlayerData.Id);
+            if (pending is not null && session.inventory.AppliedRewardClaims.Contains($"guild-create:{pending.Id}"))
+                CompleteCreation(session, pending);
+            RecoverMembershipProgress(session, sendNotification: false);
+        }
+    }
+
+    internal static NotifyGuildData BuildLoginData(Session session)
+    {
+        Guild? guild = Guild.FindByMember(session.player.PlayerData.Id);
+        return new NotifyGuildData
+        {
+            GuildId = guild?.Id ?? 0, GuildName = guild?.Name ?? string.Empty,
+            GuildLevel = guild?.Level ?? 0, IconId = guild?.IconId ?? 0,
+            GuildRankLevel = guild is null ? NoGuildRank : guild.LeaderId == session.player.PlayerData.Id ? LeaderRank : MemberRank,
+        };
+    }
+
+    private static RewardApplicationResult CompleteCreation(Session session, Guild guild)
+    {
+        GuildCreateTable rule = TableReaderV2.Parse<GuildCreateTable>().Single();
+        long period = (Now - Setting("DailyResetTimestamp")) / 86_400;
+        try { Guild.EnsureCreationQuota(guild, period, rule.DailyLimit); }
+        catch (InvalidOperationException exception) when (exception.Message == "GuildCreateReachDailyLimit")
+        {
+            throw new ServerCodeException(exception.Message, 20063325);
+        }
+        // Read the durable receipt on retries after a partial save, rather than trusting a stale session.
+        session.inventory = Inventory.FromUid(session.player.PlayerData.Id);
+        Dictionary<int, int> costs = CreationCosts();
+        string claimKey = $"guild-create:{guild.Id}";
+        Require(session.inventory.AppliedRewardClaims.Contains(claimKey)
+            || costs.All(cost => (session.inventory.Items.FirstOrDefault(item => item.Id == cost.Key)?.Count ?? 0) >= cost.Value), 20063018);
+        RewardApplicationResult result = RewardHandler.ApplyRewardsOnceAndPersist(
+            [new RewardGrant(claimKey, [], costs)], session);
+        Require(Guild.Activate(guild.Id, session.player.PlayerData.Id) is not null, 20063020);
+        return result;
+    }
+
+    [RequestPacketHandler("GuildCreateRequest")]
+    public static void GuildCreateRequestHandler(Session session, Packet.Request packet)
+    {
+        GuildCreateRequest request = packet.Deserialize<GuildCreateRequest>();
+        GuildCreateResponse response = new();
+        try
+        {
+            lock (MembershipLock)
+            {
+                Guild? existing = Guild.FindByMember(session.player.PlayerData.Id);
+                if (existing is not null)
+                {
+                    Require(existing.LeaderId == session.player.PlayerData.Id && existing.Name == request.GuildName, 20063010);
+                }
+                else
+                {
+                    Guild? guild = Guild.FindPendingByFounder(session.player.PlayerData.Id);
+                    Require(guild is null || (guild.Name == request.GuildName
+                        && guild.Declaration == request.GuildDeclaration && guild.IconId == request.IconId), 20063009);
+                    if (guild is null)
+                    {
+                        Require(GuildOpen(session), 20063324);
+                        Require(!string.IsNullOrWhiteSpace(request.GuildName), 20063002);
+                        int length = new StringInfo(request.GuildName).LengthInTextElements;
+                        Require(length >= Setting("GuildNameMinLen") && length <= Setting("GuildNameMaxLen"), 20063003);
+                        Require(!request.GuildName.Any(char.IsWhiteSpace) && !request.GuildName.Any(char.IsControl), 20063004);
+                        Require(!string.IsNullOrWhiteSpace(request.GuildDeclaration), 20063005);
+                        Require(new StringInfo(request.GuildDeclaration).LengthInTextElements <= Setting("GuildDeclarationMaxLen"), 20063006);
+                        Require(!request.GuildDeclaration.Any(char.IsControl), 20063007);
+                        GuildHeadPortraitTable? icon = TableReaderV2.Parse<GuildHeadPortraitTable>().SingleOrDefault(row => row.Id == request.IconId);
+                        Require(icon is not null && !(icon.ConditionId > 0) && !(icon.Cost > 0), 20063017);
+                        GuildCreateTable rule = TableReaderV2.Parse<GuildCreateTable>().Single();
+                        Require(ConditionSatisfied(session, rule.ConditionIds, []), 20063324);
+                        Dictionary<int, int> costs = CreationCosts();
+                        Require(costs.All(cost => (session.inventory.Items.FirstOrDefault(item => item.Id == cost.Key)?.Count ?? 0) >= cost.Value), 20063018);
+                        GuildLevelTable initial = TableReaderV2.Parse<GuildLevelTable>().MinBy(row => row.Level)!;
+                        guild = Guild.ReserveCreation(new Guild
+                        {
+                            Name = request.GuildName, Declaration = request.GuildDeclaration, IconId = request.IconId,
+                            LeaderId = session.player.PlayerData.Id, CreatedAt = Now, Level = initial.Level,
+                            Option = NeedsApproval, MinLevel = 1, MaxMembers = initial.Capacity,
+                            MaxTourists = initial.PositionNum[2]
+                        });
+                    }
+                    if (!guild.Active) CompleteCreation(session, guild).SendPushes(session);
+                }
+                RecoverMembershipProgress(session);
+                session.SendPush(BuildLoginData(session));
+            }
+        }
+        catch (MongoWriteException exception) when (exception.WriteError.Category == ServerErrorCategory.DuplicateKey) { response.Code = 20063012; }
+        catch (Exception exception) { response.Code = Failure(exception, 20063019); }
+        session.SendResponse(response, packet.Id);
+    }
+
+    private static object Summary(Guild guild) => new
+    {
+        Id = guild.Id, Name = guild.Name, IconId = guild.IconId, Level = guild.Level,
+        MemberCount = guild.MemberIds.Count, ContributeIn7Days = 0
+    };
+
+    [RequestPacketHandler("GuildListRecommendRequest")]
+    public static void GuildListRecommendRequestHandler(Session session, Packet.Request packet)
+    {
+        GuildListRecommendRequest request = packet.Deserialize<GuildListRecommendRequest>();
+        int pageSize = Setting("GuildRecommendCountPage");
+        session.SendResponse(new GuildListRecommendResponse
+        {
+            Datas = request.PageNo <= 0 ? [] : Guild.AllActive().Where(guild => guild.Option != ForbiddenAdmission && guild.MemberIds.Count < Level(guild).Capacity)
+                .OrderBy(guild => guild.Id).Skip((int)Math.Min(int.MaxValue, (long)(request.PageNo - 1) * pageSize)).Take(pageSize).Select(Summary).ToList()
+        }, packet.Id);
+    }
+
+    [RequestPacketHandler("GuildFindRequest")]
+    public static void GuildFindRequestHandler(Session session, Packet.Request packet)
+    {
+        GuildFindRequest request = packet.Deserialize<GuildFindRequest>();
+        Guild? guild = request.GuildId > 0 ? Resolve(session, request.GuildId) : null;
+        session.SendResponse(new GuildFindResponse { GuildList = guild is null ? [] : [Summary(guild)] }, packet.Id);
+    }
+
+    [RequestPacketHandler("GuildApplyRequest")]
+    public static void GuildApplyRequestHandler(Session session, Packet.Request packet)
+    {
+        GuildApplyRequest request = packet.Deserialize<GuildApplyRequest>();
+        GuildApplyResponse response = new();
+        try
+        {
+            lock (MembershipLock)
+            {
+                Guild? guild = request.GuildId > 0 ? Resolve(session, request.GuildId) : null;
+                Require(guild is not null, 20063026);
+                Guild? membership = Guild.FindByMember(session.player.PlayerData.Id);
+                Require(membership is null || membership.Id == guild!.Id, 20063022);
+                if (membership is null)
+                {
+                    Require(GuildOpen(session), 20063038);
+                    Require(session.player.PlayerData.Level >= guild!.MinLevel, 20063038);
+                    Require(guild.Option != ForbiddenAdmission, 20063037);
+                    Require(guild.MemberIds.Count < Level(guild).Capacity, 20063028);
+                    if (guild.Option == DirectAdmission)
+                        Require(Guild.TryAdmit(guild.Id, session.player.PlayerData.Id, Level(guild).Capacity, null) is not null, 20063028);
+                    else
+                    {
+                        Require(guild.Option == NeedsApproval, 20063037);
+                        long cutoff = Now - Setting("GuildApplyTimeoutSec");
+                        bool alreadyPending = guild.Applications.Any(application => application.PlayerId == session.player.PlayerData.Id && application.CreatedAt > cutoff);
+                        Require(alreadyPending || Guild.collection.CountDocuments(value => value.Active
+                            && value.Applications.Any(application => application.PlayerId == session.player.PlayerData.Id && application.CreatedAt > cutoff))
+                            < Setting("GuildApplyPlayerMaxCount"), 20063023);
+                        Require(Guild.AddApplication(guild.Id, session.player.PlayerData.Id, Now, Setting("GuildApplyGuildMaxCount"), Setting("GuildApplyTimeoutSec")) is not null, 20063027);
+                    }
+                }
+                response.IsPass = membership is not null || guild!.Option == DirectAdmission;
+                if (response.IsPass)
+                {
+                    RecoverMembershipProgress(session);
+                    session.SendPush(BuildLoginData(session));
+                }
+            }
+        }
+        catch (Exception exception) { response.Code = Failure(exception, 20063025); }
+        session.SendResponse(response, packet.Id);
+    }
+
+    [RequestPacketHandler("GuildAckApplyRequest")]
+    public static void GuildAckApplyRequestHandler(Session session, Packet.Request packet)
+    {
+        GuildAckApplyRequest request = packet.Deserialize<GuildAckApplyRequest>();
+        GuildAckApplyResponse response = new();
+        try
+        {
+            lock (MembershipLock)
+            {
+                Guild? guild = Guild.FindByMember(session.player.PlayerData.Id);
+                Require(guild is not null, 20063029);
+                Require(guild!.LeaderId == session.player.PlayerData.Id, 20063032);
+                bool admitted = guild.MemberIds.Contains(request.PlayId);
+                Require(admitted || guild.Applications.Any(application => application.PlayerId == request.PlayId && application.CreatedAt > Now - Setting("GuildApplyTimeoutSec")), 20063034);
+                if (request.IsAgree)
+                {
+                    Require(Guild.FindByMember(request.PlayId) is not { } other || other.Id == guild.Id, 20063033);
+                    Require(Guild.TryAdmit(guild.Id, request.PlayId, Level(guild).Capacity, Now - Setting("GuildApplyTimeoutSec")) is not null, 20063035);
+                    Session? applicant = Server.Instance.SessionFromUID(request.PlayId);
+                    if (applicant is not null)
+                    {
+                        RecoverMembershipProgress(applicant);
+                        applicant.SendPush(BuildLoginData(applicant));
+                    }
+                }
+                else Guild.RemoveApplication(guild.Id, request.PlayId);
+            }
+        }
+        catch (Exception exception) { response.Code = Failure(exception, 20063036); }
+        session.SendResponse(response, packet.Id);
+    }
+
+    [RequestPacketHandler("GuildListApplyRequest")]
+    public static void GuildListApplyRequestHandler(Session session, Packet.Request packet)
+    {
+        GuildListApplyResponse response = new();
+        Guild? guild = Guild.FindByMember(session.player.PlayerData.Id);
+        if (guild is null || guild.LeaderId != session.player.PlayerData.Id) response.Code = 20063032;
+        else foreach (GuildApplication application in guild.Applications.Where(application => application.CreatedAt > Now - Setting("GuildApplyTimeoutSec")))
+        {
+            Player? player = Player.TryFromPlayerId(application.PlayerId);
+            if (player is null) continue;
+            response.Data.Add(new
+            {
+                PlayerId = player.PlayerData.Id, PlayerName = player.PlayerData.Name, Level = player.PlayerData.Level,
+                HeadPortraitId = player.PlayerData.CurrHeadPortraitId, HeadFrameId = player.PlayerData.CurrHeadFrameId,
+                // EN XGuildConfig.GuildCoin is item 39 (distinct from contribution item 38).
+                GuildCoin = Inventory.collection.Find(inventory => inventory.Uid == player.PlayerData.Id).FirstOrDefault()?.Items.FirstOrDefault(item => item.Id == 39)?.Count ?? 0,
+                LastLoginTime = player.PlayerData.LastLoginTime, OnlineFlag = IsOnline(player.PlayerData.Id) ? 1 : 0
+            });
+        }
+        session.SendResponse(response, packet.Id);
+    }
+
+    [RequestPacketHandler("GuildListDetailRequest")]
+    public static void GuildListDetailRequestHandler(Session session, Packet.Request packet)
+    {
+        Guild? guild = Resolve(session, packet.Deserialize<GuildListDetailRequest>().GuildId);
+        GuildListDetailResponse response = new() { Code = guild is null ? 20063026 : 0, GuildName = string.Empty, GuildLeaderName = string.Empty, GuildDeclaration = string.Empty, RankNames = string.Empty };
+        if (guild is not null)
+        {
+            GuildLevelTable level = Level(guild);
+            response.GuildId = guild.Id; response.GuildName = guild.Name; response.GuildIconId = guild.IconId; response.GuildLevel = guild.Level;
+            response.GuildMemberCount = guild.MemberIds.Count; response.GuildMemberMaxCount = level.Capacity; response.GuildTouristMaxCount = level.PositionNum[2];
+            response.GuildLeaderName = Player.TryFromPlayerId(guild.LeaderId)?.PlayerData.Name ?? string.Empty;
+            response.GuildDeclaration = guild.Declaration; response.Option = guild.Option; response.MinLevel = guild.MinLevel;
+            response.GiftGuildLevel = guild.Level; response.GiftGuildGot = checked((int)guild.Id); response.Notice = string.Empty;
+        }
+        session.SendResponse(response, packet.Id);
+    }
+
+    [RequestPacketHandler("GuildMemberDetailRequest")]
+    public static void GuildMemberDetailRequestHandler(Session session, Packet.Request packet)
+    {
+        Guild? guild = Resolve(session, packet.Deserialize<GuildMemberDetailRequest>().GuildId);
+        GuildMemberDetailResponse response = new() { Code = guild is null ? 20063026 : 0, GuildId = guild?.Id ?? 0 };
+        if (guild is not null) foreach (long id in guild.MemberIds)
+        {
+            Player? player = id == session.player.PlayerData.Id ? session.player : Player.TryFromPlayerId(id);
+            if (player is null) continue;
+            response.MembersData.Add(new()
+            {
+                Id = checked((uint)id), Name = player.PlayerData.Name, HeadPortraitId = checked((uint)player.PlayerData.CurrHeadPortraitId),
+                HeadFrameId = (int)player.PlayerData.CurrHeadFrameId, Level = (int)player.PlayerData.Level,
+                RankLevel = id == guild.LeaderId ? LeaderRank : MemberRank,
+                LastLoginTime = (uint)player.PlayerData.LastLoginTime, OnlineFlag = IsOnline(id) ? 1 : 0
+            });
+        }
+        session.SendResponse(response, packet.Id);
+    }
+
+    [RequestPacketHandler("GuildListChatRequest")]
+    public static void GuildListChatRequestHandler(Session session, Packet.Request packet) =>
+        session.SendResponse(new GuildListChatResponse { ChatList = [] }, packet.Id);
+
+    [RequestPacketHandler("GuildWarOpenSupportPanelRequest")]
+    public static void GuildWarOpenSupportPanelRequestHandler(Session session, Packet.Request packet)
+    {
+        session.SendResponse(new GuildWarOpenSupportPanelResponse
+        {
+            Code = 0, SupportDetail = new()
+            {
+                CharacterId = (int)(session.character.Characters.FirstOrDefault()?.Id ?? 0), SupportSupply = 0,
+                ToAssistRecords = [], MyLogs = [], GetAssistRecords = [], MyAssistRecords = [],
+                LastRecvTime = (int)DateTimeOffset.Now.ToUnixTimeSeconds()
+            }
+        }, packet.Id);
+    }
+
+    [RequestPacketHandler("GuildWarPopupActionRequest")]
+    public static void GuildWarPopupActionRequestHandler(Session session, Packet.Request packet)
+    {
+        GuildWarPopupActionRequest request = packet.Deserialize<GuildWarPopupActionRequest>();
+        List<int> played = session.player.GuildWar.PlayedActionIds;
+        List<int> added = [];
+        foreach (int actionId in request.ActionPlayed ?? [])
+            if (actionId > 0 && !played.Contains(actionId)) { played.Add(actionId); added.Add(actionId); }
+        if (added.Count > 0)
+        {
+            try { session.player.SaveChecked(); }
+            catch
+            {
+                foreach (int actionId in added) played.Remove(actionId);
+                session.SendResponse(new GuildWarPopupActionResponse { Code = 1 }, packet.Id);
+                return;
+            }
+        }
+        session.SendResponse(new GuildWarPopupActionResponse(), packet.Id);
     }
 }

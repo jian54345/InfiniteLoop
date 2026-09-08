@@ -533,8 +533,11 @@ namespace AscNet.GameServer.Handlers
             return DateTimeOffset.FromUnixTimeSeconds(unixSeconds).ToUniversalTime().ToString("yyyy/M/d H:mm");
         }
 
-        private static List<TimeLimitCtrlConfigList> BuildTimeLimitControlConfigList() =>
-            BuildTimeLimitControlConfigList(DateTimeOffset.UtcNow, BuildWheelchairManualActivityPayload().ActivityId > 0);
+        private static List<TimeLimitCtrlConfigList> BuildTimeLimitControlConfigList()
+        {
+            DateTimeOffset now = DateTimeOffset.UtcNow;
+            return BuildTimeLimitControlConfigList(now, WheelchairManualModule.IsActive(now));
+        }
 
         internal static List<TimeLimitCtrlConfigList> BuildTimeLimitControlConfigList(
             DateTimeOffset now,
@@ -661,6 +664,10 @@ namespace AscNet.GameServer.Handlers
                         AddDerived(timeId, 0, 0);
                     }
                 }
+                // Server-owned policy: configured manual periods remain available without a supplied window.
+                foreach (int timeId in TableReaderV2.Parse<AscNet.Table.V2.share.wheelchairmanual.WheelchairManualGuideActivityPeriodTable>()
+                    .Select(period => period.TimeId).Distinct())
+                    AddDerived(timeId, 0, 0);
             }
 
             return controls.Values.OrderBy(control => control.Id).ToList();
@@ -719,6 +726,10 @@ namespace AscNet.GameServer.Handlers
 
         private static NotifyLogin BuildNotifyLogin(Session session)
         {
+            ItemModule.ResumePendingItemUse(session);
+            PayModule.ResumePendingPurchase(session);
+            GuildModule.PrepareLogin(session);
+            WheelchairManualModule.RefreshProgress(session);
             BossModule.PrepareLogin(session);
             BossInshotModule.PrepareLogin(session.player, DateTimeOffset.UtcNow);
             FashionStoryModule.PrepareLogin(session.player, DateTimeOffset.UtcNow);
@@ -1113,22 +1124,6 @@ namespace AscNet.GameServer.Handlers
                 ["MonthlyStudentCount"] = 0,
                 ["Message"] = null
             }),
-            ["NotifyGuildData"] = SerializeStartupPayload(new Dictionary<string, object?>
-            {
-                ["GuildId"] = 0,
-                ["GuildName"] = string.Empty,
-                ["GuildLevel"] = 0,
-                ["IconId"] = 0,
-                ["GuildRankLevel"] = 0,
-                ["HasContributeReward"] = 0,
-                ["HasRecruit"] = false,
-                ["BossEndTime"] = 0,
-                ["FreeChangeGuildNameCount"] = 0,
-                ["ShopCoin"] = 0,
-                ["HeadPortraits"] = Array.Empty<object>(),
-                ["DormThemes"] = Array.Empty<object>(),
-                ["DormBgms"] = Array.Empty<object>()
-            }),
             ["NotifyMentorChat"] = SerializeStartupPayload(new Dictionary<string, object?>
             {
                 ["ChatMessages"] = Array.Empty<object>()
@@ -1155,12 +1150,17 @@ namespace AscNet.GameServer.Handlers
             }
             if (name == nameof(NotifyWheelchairManualActivity))
             {
-                session.SendPush(BuildWheelchairManualActivityPayload());
+                session.SendPush(WheelchairManualModule.BuildPayload(session, DateTimeOffset.UtcNow));
                 return;
             }
             if (name == nameof(NotifyWheelchairManualActivityUpdate))
             {
-                session.SendPush(BuildWheelchairManualActivityUpdatePayload());
+                session.SendPush(WheelchairManualGuideManager.BuildUpdate(session, DateTimeOffset.UtcNow));
+                return;
+            }
+            if (name == nameof(NotifyGuildData))
+            {
+                session.SendPush(GuildModule.BuildLoginData(session));
                 return;
             }
             if (name == "NotifySelfChoiceLottoData")

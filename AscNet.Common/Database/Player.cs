@@ -732,6 +732,10 @@ namespace AscNet.Common.Database
         [BsonElement("mission_progress")]
         public MissionProgressState MissionProgress { get; set; } = new();
 
+        [BsonElement("wheelchair_manual_claimed_plan_ids")]
+        [BsonDictionaryOptions(DictionaryRepresentation.ArrayOfDocuments)]
+        public Dictionary<int, List<int>> WheelchairManualClaimedPlanIds { get; set; } = new();
+
         [BsonElement("simulated_battlefield")]
         public SimulatedBattlefieldState SimulatedBattlefield { get; set; } = new();
 

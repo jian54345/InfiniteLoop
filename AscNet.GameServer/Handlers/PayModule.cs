@@ -1,4 +1,8 @@
 ﻿using AscNet.Common.MsgPack;
+using AscNet.Common.Database;
+using AscNet.Table.V2.share.condition;
+using AscNet.Table.V2.share.reward;
+using AscNet.Table.V2.share.wheelchairmanual;
 using AscNet.Common.Util;
 using MessagePack;
 using Newtonsoft.Json.Linq;
@@ -52,10 +56,10 @@ namespace AscNet.GameServer.Handlers
         public static void GetPurchaseListRequestHandler(Session session, Packet.Request packet)
         {
             GetPurchaseListRequest request = packet.Deserialize<GetPurchaseListRequest>();
-            session.SendResponse(BuildPurchaseListResponse(request.UiTypeList, session.player.PurchaseBuyTimes), packet.Id);
+            session.SendResponse(BuildPurchaseListResponse(request.UiTypeList, session.player), packet.Id);
         }
 
-        private static GetPurchaseListResponse BuildPurchaseListResponse(IEnumerable<int>? uiTypes, IReadOnlyDictionary<uint, int>? purchaseBuyTimes = null)
+        private static GetPurchaseListResponse BuildPurchaseListResponse(IEnumerable<int>? uiTypes, Player? player = null)
         {
             JObject root = RetailPurchaseSnapshot.Value;
             JObject? responses = root["Responses"] as JObject;
@@ -69,7 +73,8 @@ namespace AscNet.GameServer.Handlers
             }
 
             GetPurchaseListResponse response = ReadPurchaseResponse(data);
-            ApplyPurchaseBuyTimes(response.PurchaseInfoList, purchaseBuyTimes);
+            ApplyPurchaseState(response.PurchaseInfoList, player);
+            ApplyPurchaseState(response.PurchaseComboInfoList, player);
             return response;
         }
 
@@ -93,19 +98,20 @@ namespace AscNet.GameServer.Handlers
             };
         }
 
-        private static void ApplyPurchaseBuyTimes(List<dynamic> purchaseInfoList, IReadOnlyDictionary<uint, int>? purchaseBuyTimes)
+        private static void ApplyPurchaseState(List<dynamic> purchaseInfoList, Player? player)
         {
-            if (purchaseBuyTimes is null || purchaseBuyTimes.Count == 0)
-                return;
-
             foreach (dynamic purchaseInfo in purchaseInfoList)
             {
                 if (purchaseInfo is not Dictionary<dynamic, dynamic> data)
                     continue;
-
-                uint purchaseId = ReadDynamicUInt(data, "Id");
-                if (purchaseBuyTimes.TryGetValue(purchaseId, out int buyTimes))
-                    data["BuyTimes"] = buyTimes;
+                uint id = ReadDynamicUInt(data, "Id");
+                data["BuyTimes"] = player?.PurchaseBuyTimes.GetValueOrDefault(id) ?? 0;
+                data["LastBuyTime"] = player?.PurchaseLastBuyTimes.GetValueOrDefault(id) ?? 0L;
+                data["DailyRewardRemainDay"] = 0;
+                data["BuyLimitRemainDay"] = 0;
+                data["IsDailyRewardGet"] = false;
+                data["PurchaseSignInInfo"] = null!;
+                data["DailyRewardSupplementGetData"] = null!;
             }
         }
 
@@ -113,47 +119,155 @@ namespace AscNet.GameServer.Handlers
         public static void PurchaseRequestHandler(Session session, Packet.Request packet)
         {
             PurchaseRequest request = packet.Deserialize<PurchaseRequest>();
-            int count = Math.Max(1, request.Count);
-            session.log.Debug($"PurchaseRequest Id={request.Id} Count={count} DiscountId={request.DiscountId} UiTypes={string.Join(',', request.UiTypeList)}");
-
-            PurchaseResponse response = new()
+            PurchaseResponse response = new() { Id = request.Id <= int.MaxValue ? (int)request.Id : 0 };
+            lock (session.player)
             {
-                Code = 0,
-                NewPurchaseInfoList = BuildPurchaseListResponse(request.UiTypeList, session.player.PurchaseBuyTimes).PurchaseInfoList
-            };
-
-            Dictionary<dynamic, dynamic>? purchaseInfo = FindPurchaseInfo(response.NewPurchaseInfoList, request.Id);
-            if (purchaseInfo is null)
-                TryFindPurchaseInfo(request.Id, request.UiTypeList, out purchaseInfo);
-
-            if (purchaseInfo is not null)
-            {
-                int previousBuyTimes = session.player.PurchaseBuyTimes.TryGetValue(request.Id, out int savedBuyTimes)
-                    ? savedBuyTimes
-                    : ReadDynamicInt(purchaseInfo, "BuyTimes");
-                int nextBuyTimes = previousBuyTimes + count;
-                purchaseInfo["BuyTimes"] = nextBuyTimes;
-                session.player.PurchaseBuyTimes[request.Id] = nextBuyTimes;
-                purchaseInfo["LastBuyTime"] = (int)DateTimeOffset.UtcNow.ToUnixTimeSeconds();
-
-                ReplacePurchaseInfo(response.NewPurchaseInfoList, purchaseInfo);
-                response.PurchaseInfo = purchaseInfo;
-                response.RewardList = ReadPurchaseRewards(purchaseInfo, count);
-
-                ApplyPurchaseCost(session, purchaseInfo, count);
-                RewardApplicationResult rewards = ApplyPurchaseRewards(session, response.RewardList);
-                session.inventory.SaveChecked();
-                session.character.SaveChecked();
-                session.player.SaveChecked();
-                rewards.SendPushes(session);
+                try
+                {
+                    response.Code = ValidatePurchase(session, request, out Dictionary<dynamic, dynamic>? info, out List<RewardGoods> goods, out int cost);
+                    if (response.Code == 0)
+                    {
+                        PlayerPendingPurchase? pending = session.player.PendingPurchase;
+                        if (pending is null)
+                        {
+                            pending = new PlayerPendingPurchase
+                            {
+                                Id = request.Id, Count = request.Count,
+                                PreviousBuyTimes = session.player.PurchaseBuyTimes.GetValueOrDefault(request.Id),
+                                BuyTime = DateTimeOffset.UtcNow.ToUnixTimeSeconds(),
+                                ConsumeId = ReadDynamicInt(info!, "ConsumeId"), ConsumeCount = cost, Goods = goods
+                            };
+                            session.player.PendingPurchase = pending;
+                            try { session.player.SaveChecked(); }
+                            catch { session.player.PendingPurchase = null; throw; }
+                        }
+                        RewardApplicationResult result = ResumePendingPurchase(session)!;
+                        response.NewPurchaseInfoList = BuildPurchaseListResponse(request.UiTypeList, session.player).PurchaseInfoList;
+                        ApplyPurchaseState([info!], session.player);
+                        ReplacePurchaseInfo(response.NewPurchaseInfoList, info!);
+                        response.PurchaseInfo = info;
+                        response.RewardList = result.RewardGoods;
+                        result.SendPushes(session);
+                        if (TableReaderV2.Parse<WheelchairManualActivityTable>()
+                            .Any(activity => activity.ShowPackageIds.Contains((int)request.Id)))
+                            session.SendPush(WheelchairManualModule.BuildPayload(session, DateTimeOffset.UtcNow));
+                    }
+                }
+                catch (Exception exception)
+                {
+                    session.log.Error($"Purchase {request.Id} failed: {exception}");
+                    response.Code = 2; // ServerInternalError (CodeText)
+                }
+                session.SendResponse(response, packet.Id);
             }
-            else
-            {
-                session.log.Warn($"PurchaseRequest unknown Id={request.Id} raw={Convert.ToHexString(packet.Content)}");
-            }
-
-            session.SendResponse(response, packet.Id);
         }
+
+        public static RewardApplicationResult? ResumePendingPurchase(Session session)
+        {
+            PlayerPendingPurchase? pending = session.player.PendingPurchase;
+            if (pending is null) return null;
+            string key = $"purchase:{session.player.PlayerData.Id}:{pending.Id}:{pending.PreviousBuyTimes}";
+            List<RewardGoodsTable> rows = pending.Goods.Select(goods => new RewardGoodsTable
+            {
+                Id = goods.Id, TemplateId = goods.TemplateId, Count = goods.Count,
+                Params = goods.Level > 0 ? [goods.Level] : []
+            }).ToList();
+            RewardApplicationResult result = RewardHandler.ApplyRewardsOnceAndPersist(
+                [new RewardGrant(key, rows, pending.ConsumeCount > 0
+                    ? new Dictionary<int, int> { [pending.ConsumeId] = pending.ConsumeCount } : null)], session);
+            bool hadCount = session.player.PurchaseBuyTimes.TryGetValue(pending.Id, out int oldCount);
+            bool hadTime = session.player.PurchaseLastBuyTimes.TryGetValue(pending.Id, out long oldTime);
+            session.player.PurchaseBuyTimes[pending.Id] = checked(pending.PreviousBuyTimes + pending.Count);
+            session.player.PurchaseLastBuyTimes[pending.Id] = pending.BuyTime;
+            session.player.PendingPurchase = null;
+            try { session.player.SaveChecked(); }
+            catch
+            {
+                if (hadCount) session.player.PurchaseBuyTimes[pending.Id] = oldCount;
+                else session.player.PurchaseBuyTimes.Remove(pending.Id);
+                if (hadTime) session.player.PurchaseLastBuyTimes[pending.Id] = oldTime;
+                else session.player.PurchaseLastBuyTimes.Remove(pending.Id);
+                session.player.PendingPurchase = pending;
+                throw;
+            }
+            return result;
+        }
+
+        private static int ValidatePurchase(Session session, PurchaseRequest request,
+            out Dictionary<dynamic, dynamic>? info, out List<RewardGoods> goods, out int cost)
+        {
+            goods = []; cost = 0; info = null;
+            if (request.Count <= 0 || request.Id > int.MaxValue
+                || (request.Param is not null && (request.Param is not System.Collections.ICollection parameters || parameters.Count != 0)))
+                return 20053031;
+            if (request.DiscountId > 0) return 20053014;
+            if (!TryFindPurchaseInfo(request.Id, request.UiTypeList, out info)) return 20053001;
+            PlayerPendingPurchase? pending = session.player.PendingPurchase;
+            if (pending is not null)
+                return pending.Id == request.Id && pending.Count == request.Count ? 0 : 20053031;
+            int previous = session.player.PurchaseBuyTimes.GetValueOrDefault(request.Id);
+            int limit = ReadDynamicInt(info!, "BuyLimitTimes");
+            if (previous < 0 || (long)previous + request.Count > int.MaxValue
+                || (limit > 0 && (long)previous + request.Count > limit)) return 20053005;
+            if (request.Count > 1 && !ReadDynamicBool(info!, "CanMultiply")) return 20053031;
+            long now = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+            int start = ReadDynamicInt(info!, "TimeToShelve");
+            int end = ReadDynamicInt(info!, "TimeToUnShelve");
+            int invalid = ReadDynamicInt(info!, "TimeToInvalid");
+            if (start > now) return 20053002;
+            if (invalid > 0 && invalid <= now) return 20053003;
+            if (end > 0 && end <= now) return 20053004;
+            if (!AreConditionsSatisfied(session, ReadIds(info!, "Conditions"))) return 20053030;
+            int predecessor = ReadDynamicInt(info!, "PrePurchaseId");
+            if (predecessor > 0 && session.player.PurchaseBuyTimes.GetValueOrDefault((uint)predecessor) == 0) return 20053008;
+            if (ReadIds(info!, "MutexPurchaseIds").Any(id => session.player.PurchaseBuyTimes.GetValueOrDefault((uint)id) > 0))
+                return 20053101;
+            if (!info!.TryGetValue("ConsumeId", out dynamic? rawConsumeId) || rawConsumeId is null
+                || !info.TryGetValue("ConsumeCount", out dynamic? rawConsumeCount) || rawConsumeCount is null
+                || HasValue(info, "PayKey") || HasValue(info, "PayKeySuffix")
+                || HasValue(info, "SelectDataForClient") || HasValue(info, "DailyRewardGoodsList")
+                || HasValue(info, "ClientResetInfo") || HasValue(info, "FirstRewardGoods")
+                || HasValue(info, "ExtraRewardGoods") || HasValue(info, "NormalDiscounts")
+                || ReadDynamicInt(info, "SignInId") > 0)
+                return 20053031;
+            int consumeId = ReadDynamicInt(info, "ConsumeId"), unitCost = ReadDynamicInt(info, "ConsumeCount");
+            if (consumeId < 0 || unitCost < 0 || (unitCost > 0 && !Inventory.IsValidClientItemId(consumeId))
+                || (long)unitCost * request.Count > int.MaxValue) return 20053031;
+            cost = checked(unitCost * request.Count);
+            if (cost > (session.inventory.Items.FirstOrDefault(item => item.Id == consumeId)?.Count ?? 0)) return 20012004;
+            try { goods = ReadPurchaseRewards(info, request.Count); }
+            catch (OverflowException) { return 20053031; }
+            if (goods.Count == 0 || goods.Any(reward => reward.Count <= 0 || !Enum.IsDefined(typeof(RewardType), reward.RewardType)))
+                return 20053031;
+            return 0;
+        }
+        public static bool IsPurchaseUnlocked(Session session, int purchaseId)
+        {
+            if (purchaseId <= 0 || !TryFindPurchaseInfo((uint)purchaseId, null, out Dictionary<dynamic, dynamic>? info))
+                return false;
+            int predecessor = ReadDynamicInt(info!, "PrePurchaseId");
+            return (predecessor <= 0 || session.player.PurchaseBuyTimes.GetValueOrDefault((uint)predecessor) > 0)
+                && AreConditionsSatisfied(session, ReadIds(info!, "Conditions"));
+        }
+
+        internal static bool AreConditionsSatisfied(Session session, IEnumerable<int> conditionIds)
+        {
+            foreach (int id in conditionIds)
+            {
+                ConditionTable? condition = TableReaderV2.Parse<ConditionTable>().Find(row => row.Id == id);
+                if (condition is null || !LifeTreeModule.ConditionSatisfied(session, condition)) return false;
+            }
+            return true;
+        }
+
+
+        private static IEnumerable<int> ReadIds(Dictionary<dynamic, dynamic> data, string key) =>
+            data.TryGetValue(key, out dynamic? value) && value is IEnumerable<dynamic> values
+                ? values.Select(value => Convert.ToInt32((object)value)) : [];
+
+        private static bool HasValue(Dictionary<dynamic, dynamic> data, string key) =>
+            data.TryGetValue(key, out dynamic? value) && value is not null
+            && (value is not IEnumerable<dynamic> values || values.Any());
 
         private static bool TryFindPurchaseInfo(uint purchaseId, IEnumerable<int>? uiTypes, out Dictionary<dynamic, dynamic>? purchaseInfo)
         {
@@ -216,7 +330,7 @@ namespace AscNet.GameServer.Handlers
                 {
                     RewardType = ReadDynamicInt(reward, "RewardType"),
                     TemplateId = ReadDynamicInt(reward, "TemplateId"),
-                    Count = ReadDynamicInt(reward, "Count") * countMultiplier,
+                    Count = checked(ReadDynamicInt(reward, "Count") * countMultiplier),
                     Level = ReadDynamicInt(reward, "Level"),
                     Quality = ReadDynamicInt(reward, "Quality"),
                     Grade = ReadDynamicInt(reward, "Grade"),
@@ -232,38 +346,6 @@ namespace AscNet.GameServer.Handlers
             return rewardGoodsList;
         }
 
-        private static void ApplyPurchaseCost(Session session, Dictionary<dynamic, dynamic> purchaseInfo, int count)
-        {
-            int consumeId = ReadDynamicInt(purchaseInfo, "ConsumeId");
-            int consumeCount = ReadDynamicInt(purchaseInfo, "ConsumeCount");
-            if (consumeId <= 0 || consumeCount <= 0)
-                return;
-
-            long totalCost = (long)consumeCount * count;
-            NotifyItemDataList notifyItemDataList = new();
-            notifyItemDataList.ItemDataList.Add(session.inventory.Do(consumeId, -(int)Math.Min(totalCost, int.MaxValue)));
-            session.SendPush(notifyItemDataList);
-        }
-
-        private static RewardApplicationResult ApplyPurchaseRewards(Session session, IEnumerable<RewardGoods> rewardGoodsList)
-        {
-            List<Reward> rewards = [];
-            foreach (RewardGoods rewardGoods in rewardGoodsList)
-            {
-                if (!Enum.IsDefined(typeof(RewardType), rewardGoods.RewardType))
-                    continue;
-
-                rewards.Add(new Reward
-                {
-                    Type = (RewardType)rewardGoods.RewardType,
-                    Id = rewardGoods.TemplateId,
-                    Count = rewardGoods.Count,
-                    Level = rewardGoods.Level
-                });
-            }
-
-            return RewardHandler.ApplyRewards(rewards, session);
-        }
 
         private static int ReadDynamicInt(Dictionary<dynamic, dynamic> data, string name)
         {

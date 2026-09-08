@@ -287,6 +287,7 @@ namespace AscNet.GameServer.Handlers
             session.player.Save();
 
             HydrateBossStages(session, sendPushes: true);
+            WheelchairManualGuideManager.SendUpdate(session);
 
             session.SendResponse(new BossSingleSelectLevelTypeResponse
             {
@@ -318,6 +319,8 @@ namespace AscNet.GameServer.Handlers
             session.PendingBossSingleScore = null;
             SendRankPush(session);
             TaskModule.RecordStageClear(session, pending.StageId, 1, 0, isFirstClear);
+            if (pending.IsWin)
+                TaskModule.RecordStageParticipation(session, pending.StageId, pending.Characters);
             if (stageData is not null)
                 session.SendPush(new NotifyStageData { StageList = [stageData] });
             session.SendPush(BuildLoginData(session.player));
@@ -359,6 +362,7 @@ namespace AscNet.GameServer.Handlers
             {
                 StageId = request.StageId,
                 StageType = 1,
+                IsWin = true,
                 SectionId = sectionId,
                 Characters = history.Characters.ToList(),
                 Partners = history.Partners.ToList(),
@@ -378,6 +382,7 @@ namespace AscNet.GameServer.Handlers
 
             state.BossAutoFightCount++;
             TaskModule.RecordStageClear(session, request.StageId, 1, 0, isFirstClear);
+            TaskModule.RecordStageParticipation(session, pending.StageId, pending.Characters);
             SendRankPush(session);
             session.SendPush(BuildLoginData(session.player));
             if (stageData is not null)
@@ -649,6 +654,7 @@ namespace AscNet.GameServer.Handlers
             {
                 StageId = stageId,
                 StageType = stageType,
+                IsWin = settle.IsWin && !settle.IsForceExit,
                 SectionId = sectionId,
                 BuffGroup = buffGroup,
                 BuffChoices = pendingBuffChoices,
@@ -1250,7 +1256,10 @@ namespace AscNet.GameServer.Handlers
             if (Reconcile(session.player, null))
                 session.player.Save();
             if (previousActivity != 0 && previousActivity != session.player.SimulatedBattlefield!.BossActivityNo)
+            {
                 session.PendingBossSingleScore = null;
+                WheelchairManualGuideManager.SendUpdate(session);
+            }
         }
 
         private static void Normalize(SimulatedBattlefieldState state)

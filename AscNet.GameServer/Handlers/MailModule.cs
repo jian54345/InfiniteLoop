@@ -9,6 +9,7 @@ using AscNet.Table.V2.share.mail;
 using AscNet.Table.V2.share.character;
 using AscNet.Table.V2.share.equip;
 using AscNet.Table.V2.share.fashion;
+using AscNet.Table.V2.share.headportrait;
 using Newtonsoft.Json.Linq;
 
 namespace AscNet.GameServer.Handlers
@@ -185,7 +186,7 @@ namespace AscNet.GameServer.Handlers
                     }
                     goods.Add(table!);
                 }
-                grants.Add(new RewardGrant($"mail:{mail.Id}", goods));
+                grants.Add(new RewardGrant(mail.RewardClaimKey ?? $"mail:{mail.Id}", goods));
             }
             List<RewardGoodsTable> pendingGoods = grants
                 .Where(grant => !session.inventory.AppliedRewardClaims.Contains(grant.ClaimKey, StringComparer.Ordinal))
@@ -331,6 +332,8 @@ namespace AscNet.GameServer.Handlers
                     && TableReaderV2.Parse<FashionTable>().Any(row => row.Id == candidate.TemplateId),
                 RewardType.FashionColor => candidate.Count == 1
                     && TableReaderV2.Parse<FashionColorTable>().Any(row => row.Id == candidate.TemplateId),
+                RewardType.HeadPortrait => candidate.Count == 1
+                    && TableReaderV2.Parse<HeadPortraitTable>().Any(row => row.Id == candidate.TemplateId),
                 _ => false
             };
             if (!supported)

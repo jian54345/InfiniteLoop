@@ -3,7 +3,6 @@ using AscNet.Common.Database;
 using AscNet.Common.Util;
 using AscNet.GameServer.Game;
 using AscNet.Table.V2.share.newactivitycalendar;
-using AscNet.Table.V2.share.wheelchairmanual;
 
 namespace AscNet.GameServer.Handlers
 {
@@ -52,28 +51,6 @@ namespace AscNet.GameServer.Handlers
             return nextBoundary.ToUnixTimeSeconds();
         }
 
-        private static NotifyWheelchairManualActivity BuildWheelchairManualActivityPayload() =>
-            BuildWheelchairManualActivityPayload(DateTimeOffset.UtcNow);
-
-        internal static NotifyWheelchairManualActivity BuildWheelchairManualActivityPayload(DateTimeOffset now)
-        {
-            WheelchairManualActivityTable activity = TableReaderV2.Parse<WheelchairManualActivityTable>().Single();
-            HashSet<int> periodIds = TableReaderV2.Parse<WheelchairManualGuideActivityPeriodTable>()
-                .Select(period => period.Id)
-                .ToHashSet();
-            return new()
-            {
-                ActivityId = activity.Id,
-                PlanId = activity.PlanIds.Max(),
-                BpLevel = 1,
-                CurrentGuildBossEndTime = GetCurrentGuildBossEndTime(now),
-                OpenActivityIds = TableReaderV2.Parse<WheelchairManualGuideActivityTable>()
-                    .Where(entry => periodIds.Contains(entry.PeriodIds))
-                    .Select(entry => entry.Id)
-                    .OrderBy(id => id)
-                    .ToList()
-            };
-        }
 
         private static NotifyActivityDrawList BuildActivityDrawListPayload(Player player)
         {
@@ -95,7 +72,6 @@ namespace AscNet.GameServer.Handlers
             };
         }
 
-        private static NotifyWheelchairManualActivityUpdate BuildWheelchairManualActivityUpdatePayload() => new();
         private static Dictionary<string, object?> BuildAccumulateExpendPayload() => PayloadFromJson("""{"ActivityId":7}""");
         private static Dictionary<string, object?> BuildTurntablePayload() => PayloadFromJson("""{"TurntableData":{"ActivityId":4,"AccumulateDrawNum":0,"GainRewardInfos":[],"GainRecords":[],"GainAccumulateRewardIndexs":[]}}""");
         private static Dictionary<string, object?> BuildFestivalPayload() => PayloadFromJson("""{"FestivalInfos":[{"Id":24,"StageInfos":[{"Id":30130507,"ChallengeCount":0},{"Id":30130508,"ChallengeCount":0},{"Id":30130512,"ChallengeCount":0},{"Id":30130510,"ChallengeCount":0},{"Id":30130511,"ChallengeCount":0},{"Id":30130513,"ChallengeCount":0},{"Id":30130509,"ChallengeCount":0},{"Id":30130514,"ChallengeCount":0}],"FubenEventInfos":null},{"Id":29,"StageInfos":[{"Id":30131155,"ChallengeCount":0},{"Id":30131150,"ChallengeCount":0},{"Id":30131151,"ChallengeCount":0},{"Id":30131152,"ChallengeCount":0},{"Id":30131156,"ChallengeCount":0},{"Id":30131157,"ChallengeCount":0},{"Id":30131153,"ChallengeCount":0},{"Id":30131158,"ChallengeCount":0},{"Id":30131154,"ChallengeCount":0},{"Id":30131159,"ChallengeCount":0}],"FubenEventInfos":null},{"Id":23,"StageInfos":[{"Id":30131113,"ChallengeCount":0},{"Id":30131114,"ChallengeCount":0},{"Id":30131115,"ChallengeCount":0}],"FubenEventInfos":null},{"Id":25,"StageInfos":[{"Id":30131124,"ChallengeCount":0},{"Id":30131125,"ChallengeCount":0}],"FubenEventInfos":null},{"Id":30,"StageInfos":[{"Id":30130310,"ChallengeCount":0},{"Id":30130311,"ChallengeCount":0},{"Id":30130312,"ChallengeCount":0},{"Id":30130313,"ChallengeCount":0},{"Id":30130314,"ChallengeCount":0},{"Id":30130315,"ChallengeCount":0},{"Id":30130316,"ChallengeCount":0},{"Id":30130317,"ChallengeCount":0},{"Id":30130318,"ChallengeCount":0},{"Id":30130319,"ChallengeCount":0}],"FubenEventInfos":null},{"Id":27,"StageInfos":[{"Id":30130212,"ChallengeCount":0},{"Id":30130213,"ChallengeCount":0}],"FubenEventInfos":null}]}""");

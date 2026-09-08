@@ -215,6 +215,8 @@ namespace AscNet.GameServer.Handlers
                 SendTaskSync(session);
             }
             passportApplication?.SendPushes(session);
+            if (response.Code == 0)
+                WheelchairManualGuideManager.SendUpdate(session);
             session.SendResponse(response, packet.Id);
         }
 
@@ -281,6 +283,8 @@ namespace AscNet.GameServer.Handlers
             {
                 application.SendPushes(session);
             }
+            if (response.SuccessTaskIds.Count > 0)
+                WheelchairManualGuideManager.SendUpdate(session);
             session.SendResponse(response, packet.Id);
         }
 
@@ -595,6 +599,8 @@ namespace AscNet.GameServer.Handlers
             var request = packet.Deserialize<GetCourseRewardRequest>();
             GetCourseRewardResponse response = ClaimCourseReward(session, request.StageId);
             session.SendResponse(response, packet.Id);
+            if (response.Code is 0 or 20026014)
+                GuideModule.CompleteOpenedGuideOnCourseClaim(session, checked((uint)request.StageId));
         }
 
         private static GetCourseRewardResponse ClaimCourseReward(Session session, int stageId)
@@ -779,6 +785,16 @@ namespace AscNet.GameServer.Handlers
         {
             List<TaskTable> tasks = TransfiniteTasks(session);
             HashSet<int> changedConditions = [];
+            foreach (CurrentConditionTable condition in CurrentConditionsById.Value.Values
+                .Where(condition => condition.Type == 103002 && condition.Params.Count == 1))
+            {
+                int current = session.player.MissionProgress.ConditionCounters.GetValueOrDefault(condition.Id);
+                int value = Math.Max(current, Math.Min(winStreak, condition.Params[0]));
+                if (value == current)
+                    continue;
+                session.player.MissionProgress.ConditionCounters[condition.Id] = value;
+                changedConditions.Add(condition.Id);
+            }
             foreach (TaskTable task in tasks.Where(task => task.Type == 79))
             {
                 int target = task.Result ?? 1;
@@ -820,6 +836,7 @@ namespace AscNet.GameServer.Handlers
                 Tasks = new()
                 {
                     Tasks = BuildTransfiniteTaskProgress(session)
+                        .Concat(BuildCurrentTaskProgress(session, loginOnly: true, conditionTypes: new HashSet<int> { 103002 }))
                         .Where(task => changedConditions.Contains(task.ConditionId))
                         .Select(ToSyncTask)
                         .ToList()
@@ -1094,6 +1111,27 @@ namespace AscNet.GameServer.Handlers
             SendTaskSync(session);
         }
 
+        // Call only for a committed clear, with the server's accepted deployment (never settlement-uploaded DPS data).
+        internal static void RecordStageParticipation(Session session, int stageId, IReadOnlyCollection<int> characterIds, int count = 1)
+        {
+            if (count <= 0 || characterIds.Count == 0)
+                return;
+            bool Matches(int? type, IReadOnlyList<int> parameters) => type switch
+            {
+                15210 => parameters.Count == 3 && characterIds.Contains(parameters[1])
+                    && StageTypesById.Value.TryGetValue(stageId, out int stageType) && stageType == parameters[2],
+                // The available PPC row has unrestricted middle filters; never silently discard a nonzero filter.
+                25007 => parameters.Count == 5 && parameters[1] == 0 && parameters[2] == 0 && parameters[3] == 0
+                    && BossModule.IsStage((uint)stageId) && characterIds.Contains(parameters[4]),
+                _ => false
+            };
+            RecordConditionAmounts(session,
+                TableReaderV2.Parse<ConditionTable>().Where(condition => Matches(condition.Type, condition.Params))
+                    .ToDictionary(condition => condition.Id, _ => count),
+                CurrentConditionsById.Value.Values.Where(condition => Matches(condition.Type, condition.Params))
+                    .ToDictionary(condition => condition.Id, _ => count));
+        }
+
         private static bool MatchesStageClearCondition(int? type, IReadOnlyList<int> parameters, int stageId) => type switch
         {
             15101 or 15220 or 15225 => parameters.Contains(stageId),
@@ -1254,7 +1292,7 @@ namespace AscNet.GameServer.Handlers
                 }
             });
         }
-        internal static void RecordTableDrivenProgress(Session session, IEnumerable<(int ConditionType, int? Parameter, int Amount)> increments)
+        internal static void RecordTableDrivenProgress(Session session, IEnumerable<(int ConditionType, int? Parameter, int Amount)> increments, bool sendNotification = true)
         {
             Dictionary<(int ConditionType, int? Parameter), int> amounts = increments
                 .Where(increment => increment.Amount > 0)
@@ -1281,10 +1319,10 @@ namespace AscNet.GameServer.Handlers
                 .Select(condition => (condition.Id, Amount: Amount(condition.Type, condition.Params)))
                 .Where(condition => condition.Amount > 0)
                 .ToDictionary(condition => condition.Id, condition => condition.Amount);
-            RecordConditionAmounts(session, conditionAmounts, currentAmounts);
+            RecordConditionAmounts(session, conditionAmounts, currentAmounts, sendNotification);
         }
 
-        private static void RecordConditionAmounts(Session session, Dictionary<int, int> conditionAmounts, Dictionary<int, int> currentAmounts)
+        private static void RecordConditionAmounts(Session session, Dictionary<int, int> conditionAmounts, Dictionary<int, int> currentAmounts, bool sendNotification = true)
         {
             if (conditionAmounts.Count == 0 && currentAmounts.Count == 0)
                 return;
@@ -1302,13 +1340,29 @@ namespace AscNet.GameServer.Handlers
                 currentAmounts.Remove(conditionId);
             if (tasks.Count == 0 && currentAmounts.Count == 0) return;
 
-            foreach ((int conditionId, int amount) in conditionAmounts.Where(entry => tasks.Any(task => task.Condition == entry.Key)))
-                AddConditionProgress(session, conditionId, amount);
-            foreach ((int conditionId, int amount) in currentAmounts)
-                if (!tasks.Any(task => task.Condition == conditionId))
-                    AddConditionProgress(session, conditionId, amount);
-
-            session.player.Save();
+            HashSet<int> legacyConditions = tasks.Select(task => task.Condition).ToHashSet();
+            Dictionary<int, int> counters = session.player.MissionProgress.ConditionCounters;
+            Dictionary<int, int?> previous = legacyConditions.Concat(currentAmounts.Keys).Distinct()
+                .ToDictionary(id => id, id => counters.TryGetValue(id, out int value) ? (int?)value : null);
+            try
+            {
+                foreach (int conditionId in legacyConditions)
+                    AddConditionProgress(session, conditionId, conditionAmounts[conditionId]);
+                foreach ((int conditionId, int amount) in currentAmounts)
+                    if (!legacyConditions.Contains(conditionId))
+                        AddConditionProgress(session, conditionId, amount);
+                session.player.SaveChecked();
+            }
+            catch
+            {
+                foreach ((int conditionId, int? value) in previous)
+                    if (value.HasValue)
+                        counters[conditionId] = value.Value;
+                    else
+                        counters.Remove(conditionId);
+                throw;
+            }
+            if (!sendNotification) return;
             session.SendPush(new NotifyTask
             {
                 Tasks = new()
@@ -1904,12 +1958,11 @@ namespace AscNet.GameServer.Handlers
                 12211 when parameters.Count >= 3 => session.player.EquipGuideData.FinishedTargets.Any(targetId =>
                     parameters.Skip(2).Contains(targetId) && EquipGuideTargetsById.Value.TryGetValue(targetId, out EquipTargetTable? goal)
                         && goal.CharacterId == parameters[1]) ? 1 : 0,
-                // Task-condition extra filters have no executable rule in the supplied client sources.
-                13101 when parameters.Count > 5 => 0,
+                // Match the known requirement prefix, like 13102; trailing fields do not invalidate it.
                 13101 when parameters.Count >= 3 => CharacterMeets(session, parameters[0], character =>
                     character.Quality >= parameters[1] && character.Level >= parameters[2]
                     && (parameters.Count < 4 || character.Grade >= parameters[3])
-                    && (parameters.Count < 5 || character.Ability >= parameters[4])),
+                    && (parameters.Count < 5 || parameters[4] <= 0 || CharacterPower.Calculate(session, character) >= parameters[4])),
                 13102 => CountCharactersAtQuality(session, parameters),
                 13104 => CharacterMeets(session, parameters[0], character => character.TrustLv >= parameters[1]),
                 13105 => CountCharactersAtTrust(session, parameters),
@@ -1991,7 +2044,7 @@ namespace AscNet.GameServer.Handlers
             return session.character.Characters.Count(character =>
                 character.Quality >= requiredQuality && character.Level >= requiredLevel
                 && (parameters.Count < 4 || character.Grade >= parameters[3])
-                && (parameters.Count < 5 || character.Ability >= parameters[4]));
+                && (parameters.Count < 5 || parameters[4] <= 0 || CharacterPower.Calculate(session, character) >= parameters[4]));
         }
 
         private static int CountCharactersAtTrust(Session session, IReadOnlyList<int> parameters)

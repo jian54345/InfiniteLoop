@@ -3631,6 +3631,188 @@
       "source": [
         "share/fuben/bosssingle/BossSingleChallengeBuffGroup.json"
       ]
+    },
+    {
+      "columns": 8,
+      "contentSha256": "bf00d2cee5bdb032c534deba190c584e036b0a81e31e75ddaa044df5ae94339f",
+      "filter": "all; columns Id, RewardId, TaskIds",
+      "naturalKey": "Id",
+      "path": "share/wheelchairmanual/WheelchairManualBattlePassPlan.tsv",
+      "rows": 7,
+      "source": [
+        "en/bytes/share/wheelchairmanual/WheelchairManualBattlePassPlan.json"
+      ]
+    },
+    {
+      "columns": 4,
+      "contentSha256": "f67b2346be4ab65051ac3dd6f1cb0594ee19cf4c5d67e9ce432580cc73d0e880",
+      "filter": "all; imported authoritative columns",
+      "naturalKey": "Id",
+      "path": "share/wheelchairmanual/WheelchairManualBattlePassLevel.tsv",
+      "rows": 71,
+      "source": [
+        "en/bytes/share/wheelchairmanual/WheelchairManualBattlePassLevel.json"
+      ]
+    },
+    {
+      "columns": 7,
+      "contentSha256": "ebc0b75e83e27efb5727cf8585fbe4623aef0bcbdecc22b4e15824738e05fe33",
+      "filter": "all; imported authoritative columns",
+      "naturalKey": "Id",
+      "path": "share/wheelchairmanual/WheelchairManualBattlePassManual.tsv",
+      "rows": 2,
+      "source": [
+        "en/bytes/share/wheelchairmanual/WheelchairManualBattlePassManual.json"
+      ]
+    },
+    {
+      "columns": 3,
+      "contentSha256": "eed766e76c716b3e82e0c41e7af806780c61ea8324fca82c07833bd20be7665b",
+      "filter": "all; imported authoritative columns",
+      "naturalKey": "Id",
+      "path": "share/wheelchairmanual/WheelchairManualBattlePassReward.tsv",
+      "rows": 140,
+      "source": [
+        "en/bytes/share/wheelchairmanual/WheelchairManualBattlePassReward.json"
+      ]
+    },
+    {
+      "columns": 3,
+      "contentSha256": "d87efa3cdc3de9c1b8d77f10c065a86054c65baa40a79f29bb790825f8bab5d1",
+      "filter": "all; imported authoritative columns",
+      "naturalKey": "Key",
+      "path": "client/wheelchairmanual/WheelchairManualClientConfig.tsv",
+      "rows": 16,
+      "source": [
+        "en/bytes/client/wheelchairmanual/WheelchairManualClientConfig.json"
+      ]
+    },
+    {
+      "columns": 4,
+      "contentSha256": "5139c5c9866ec928a4f672c9e7b8fd3478d7e021d28c7b67d1c06d4aec4333b2",
+      "filter": "all; imported authoritative columns",
+      "naturalKey": "Id",
+      "path": "client/wheelchairmanual/WheelchairManualTabs.tsv",
+      "rows": 7,
+      "source": [
+        "en/bytes/client/wheelchairmanual/WheelchairManualTabs.json"
+      ]
+    },
+    {
+      "columns": 8,
+      "contentSha256": "5529c92c48082216d8b156136c76368588826047beb126d8b2322db7bbd31649",
+      "filter": "all; imported authoritative columns",
+      "naturalKey": "Id",
+      "path": "share/wheelchairmanual/WheelchairManualGuideWeekActivity.tsv",
+      "rows": 6,
+      "source": [
+        "en/bytes/share/wheelchairmanual/WheelchairManualGuideWeekActivity.json"
+      ]
+    },
+    {
+      "columns": 13,
+      "contentSha256": "38026e30b7cb6499d75a5cf0cd645ffaf9fd9e0b6ee917977506d87f53a3c16d",
+      "filter": "all; imported authoritative columns",
+      "naturalKey": "Id",
+      "path": "share/wheelchairmanual/WheelchairManualGuideWeekReward.tsv",
+      "rows": 15,
+      "source": [
+        "en/bytes/share/wheelchairmanual/WheelchairManualGuideWeekReward.json"
+      ]
+    },
+    {
+      "columns": 10,
+      "contentSha256": "47b6cd62416ec41b6a2f54020691366ef59901295463b5bb6dbdd5a41d13c3dd",
+      "filter": "all; imported authoritative columns",
+      "naturalKey": "Id",
+      "path": "share/wheelchairmanual/WheelchairManualGuideWeekRewardSpecialDeal.tsv",
+      "rows": 13,
+      "source": [
+        "en/bytes/share/wheelchairmanual/WheelchairManualGuideWeekRewardSpecialDeal.json"
+      ]
+    },
+    {
+      "columns": 7,
+      "contentSha256": "f06c58bcfc0ff82437fb2342f91bd902e1dcd3e5409890526ae3ab535f627514",
+      "filter": "all; imported authoritative columns",
+      "naturalKey": "Id",
+      "path": "share/guild/GuildCreate.tsv",
+      "rows": 1,
+      "source": [
+        "en/bytes/share/guild/GuildCreate.json"
+      ]
+    },
+    {
+      "columns": 7,
+      "contentSha256": "51bf0d5a843c1b50780f4e4f973d0bbff71b4978f5fec741007af4ccc65d417c",
+      "filter": "all; imported authoritative columns",
+      "naturalKey": "Level",
+      "path": "share/guild/GuildLevel.tsv",
+      "rows": 10,
+      "source": [
+        "en/bytes/share/guild/GuildLevel.json"
+      ]
+    },
+    {
+      "columns": 14,
+      "contentSha256": "c028ed69e95b16b18a10d11bf3e8417094dfb5773e2d9e6e129ac898d578f6d6",
+      "filter": "all; imported authoritative columns",
+      "naturalKey": "Id",
+      "path": "share/guild/GuildHeadPortrait.tsv",
+      "rows": 24,
+      "source": [
+        "en/bytes/share/guild/GuildHeadPortrait.json"
+      ]
+    },
+    {
+      "columns": 8,
+      "contentSha256": "fe1df2c9665daa9cd5c02c42f9a51298fc65d0d4e3e575418ea522d34f9b790f",
+      "filter": "all; imported authoritative columns",
+      "naturalKey": "Id",
+      "path": "share/guild/GuildPosition.tsv",
+      "rows": 4,
+      "source": [
+        "en/bytes/share/guild/GuildPosition.json"
+      ]
+    },
+    {
+      "columns": 4,
+      "contentSha256": "7f628a0fefcdbaa92094bd5d65d1378c93af74b688a64a9d27541acb5370105f",
+      "filter": "existing rows preserved; current ownable character/equipment dependency closure; numeric type3 decoded as signed mantissa * floor(2^32 / 10^exponent), zero omits exponent; raw Q32.32 hex",
+      "naturalKey": "Id",
+      "path": "share/fight/npc/Npc.tsv",
+      "rows": 2980,
+      "source": [
+        "EN live document/matrix/10f876113c0f55bcb371f831183d9216b05947e8.uab (sha256:2005db3f1805d56c4bb3f490a99fe2572bb56153d76470c541a6447b2dfe1c2c)",
+        "TextAsset Npc (sha256:06f05d11ebb93f70ae7891b16a93892ebc023868bf7f5d9cf2d8db1c2bd2268f)",
+        "tools/decode_binary_table.py plus integer-only fixed type3 decoding"
+      ]
+    },
+    {
+      "columns": 5,
+      "contentSha256": "7596d72a3c043b07d3913b7925d6e7b50c2b8ba9b66d2f1d5736ab2e985ee19a",
+      "filter": "existing rows preserved; current ownable character/equipment dependency closure; numeric type3 decoded as signed mantissa * floor(2^32 / 10^exponent), zero omits exponent; raw Q32.32 hex",
+      "naturalKey": "Id",
+      "path": "share/attrib/Attrib.tsv",
+      "rows": 12037,
+      "source": [
+        "EN live document/matrix/2e31098a98c5823e7f144e715f4dc2b6e24d04bb.uab (sha256:10112f507809f3b9c3db18c6c83ace3c3e78e692ab629ff92c75540ee498593c)",
+        "TextAsset Attrib (sha256:ed449699307708b68e47817f5f0469f9d4cc38802227b927fec5301d857f5f09)",
+        "tools/decode_binary_table.py plus integer-only fixed type3 decoding"
+      ]
+    },
+    {
+      "columns": 5,
+      "contentSha256": "abe3bf1367235d483be41fbf4fbdb1fd5d97e3927041ae6974676588d11e8267",
+      "filter": "existing rows preserved; current ownable character/equipment dependency closure; numeric type3 decoded as signed mantissa * floor(2^32 / 10^exponent), zero omits exponent; raw Q32.32 hex",
+      "naturalKey": "Id",
+      "path": "share/attrib/AttribPromoted.tsv",
+      "rows": 5171,
+      "source": [
+        "EN live document/matrix/2e31098a98c5823e7f144e715f4dc2b6e24d04bb.uab (sha256:10112f507809f3b9c3db18c6c83ace3c3e78e692ab629ff92c75540ee498593c)",
+        "TextAsset AttribPromoted (sha256:41937ac9425e7bf7f82e8be192f89e91adc4aaa2950d903be3c8c705bc9cbd03)",
+        "tools/decode_binary_table.py plus integer-only fixed type3 decoding"
+      ]
     }
   ],
   "validationNotes": [

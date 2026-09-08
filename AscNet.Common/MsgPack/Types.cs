@@ -5,6 +5,44 @@ using MongoDB.Bson.Serialization.Options;
 
 namespace AscNet.Common.MsgPack
 {
+    [MessagePackObject(true)]
+    public class StageBookmarkData
+    {
+        public int StageId { get; set; }
+        public string MovieId { get; set; } = string.Empty;
+        public int ActionId { get; set; }
+        [BsonDictionaryOptions(DictionaryRepresentation.ArrayOfDocuments)]
+        public Dictionary<int, int> OptionInfos { get; set; } = new();
+    }
+
+    [MessagePackObject(true)]
+    public class AddStageBookmarkRequest
+    {
+        public int StageId { get; set; }
+        public string MovieId { get; set; } = string.Empty;
+        public int ActionId { get; set; }
+        public Dictionary<int, int>? OptionInfos { get; set; }
+    }
+
+    [MessagePackObject(true)]
+    public class AddStageBookmarkResponse
+    {
+        public int Code { get; set; }
+    }
+
+    [MessagePackObject(true)]
+    public class GetStageBookmarkResponse
+    {
+        public int Code { get; set; }
+        public StageBookmarkData? StageBookmarkData { get; set; }
+    }
+
+    [MessagePackObject(true)]
+    public class DeleteStageBookmarkResponse
+    {
+        public int Code { get; set; }
+    }
+
     [global::MessagePack.MessagePackObject(true)]
     public class HandshakeRequest
     {
@@ -540,7 +578,7 @@ namespace AscNet.Common.MsgPack
         public List<Object> TimeLimitActivityInfos { get; set; } = new();
         public List<Object>? WeekActivityInfos { get; set; } = new();
         public List<Int32> BluePointSet { get; set; } = new();
-        public List<Int32> RedPointSet { get; set; } = new();
+        public List<Int64> RedPointSet { get; set; } = new();
     }
 
     [global::MessagePack.MessagePackObject(true)]
@@ -2413,6 +2451,10 @@ public sealed class NotifyBfrtProgressInfo
         public Boolean HasRecruit { get; set; }
         public UInt32 BossEndTime { get; set; }
         public Int32 FreeChangeGuildNameCount { get; set; }
+        public Int32 ShopCoin { get; set; }
+        public List<Int32> HeadPortraits { get; set; } = new();
+        public List<Int32> DormThemes { get; set; } = new();
+        public List<Int32> DormBgms { get; set; } = new();
     }
 
 

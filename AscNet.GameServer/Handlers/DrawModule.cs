@@ -13,6 +13,39 @@ namespace AscNet.GameServer.Handlers
     #region MsgPackScheme
 #pragma warning disable CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider declaring as nullable.
     [MessagePackObject(true)]
+    public sealed class LottoRequest
+    {
+        public int Id { get; set; }
+    }
+
+    [MessagePackObject(true)]
+    public sealed class LottoResponse
+    {
+        public int Code { get; set; }
+        public int LottoRewardId { get; set; }
+        public int ExtraRewardState { get; set; }
+        public List<RewardGoods> RewardList { get; set; } = [];
+        public List<RewardGoods> ExtraRewardList { get; set; } = [];
+        public List<LottoInfoResponse.LottoRecord> LottoRecords { get; set; } = [];
+    }
+
+    [MessagePackObject(true)]
+    public sealed class LottoBuyTicketRequest
+    {
+        public int LottoPrimaryId { get; set; }
+        public int TicketId { get; set; }
+        public int TicketKey { get; set; }
+    }
+
+    [MessagePackObject(true)]
+    public sealed class LottoBuyTicketResponse
+    {
+        public int Code { get; set; }
+        public int ItemId { get; set; }
+        public int ItemCount { get; set; }
+    }
+
+    [MessagePackObject(true)]
     public sealed class NotifyDrawCanLiverData
     {
         public DrawCanLiverData DrawCanLiverData { get; set; } = new();
@@ -454,18 +487,34 @@ namespace AscNet.GameServer.Handlers
             DrawManager.RecordDrawHistory(session.player, request.DrawId, rsp.RewardGoodsList);
 
             RewardApplicationResult result = RewardHandler.ApplyRewards(rewards, session);
-            session.inventory.Save();
-            session.character.Save();
-            session.player.Save();
+            session.inventory.SaveChecked();
+            session.character.SaveChecked();
+            session.player.SaveChecked();
+            TaskModule.RecordTableDrivenProgress(session, [(27000, initialDrawInfo.GroupId, drawCount)]);
             result.SendPushes(session);
             if (requiredCost > 0)
                 TaskModule.RecordTableDrivenProgress(session, [(11202, costItemId, (int)requiredCost)]);
             session.SendResponse(rsp, packet.Id);
         }
 
+        [RequestPacketHandler("LottoRequest")]
+        public static void LottoRequestHandler(Session session, Packet.Request packet)
+        {
+            LottoRequest request = packet.Deserialize<LottoRequest>();
+            session.SendResponse(LottoManager.Draw(session, request.Id), packet.Id);
+        }
+
+        [RequestPacketHandler("LottoBuyTicketRequest")]
+        public static void LottoBuyTicketRequestHandler(Session session, Packet.Request packet)
+        {
+            LottoBuyTicketRequest request = packet.Deserialize<LottoBuyTicketRequest>();
+            session.SendResponse(LottoManager.BuyTicket(session, request), packet.Id);
+        }
+
         [RequestPacketHandler("LottoInfoRequest")]
         public static void LottoInfoRequestHandler(Session session, Packet.Request packet)
         {
+            LottoManager.RecoverPending(session);
             LottoInfoResponse response = new();
             if (LottoManager.TryBuildInfo(session.player, out LottoInfoResponse.LottoInfo info))
             {

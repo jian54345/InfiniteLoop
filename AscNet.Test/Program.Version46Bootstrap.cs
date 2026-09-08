@@ -199,11 +199,16 @@ internal partial class Program
         AssertEqual(calendarBossEnd, (long)currentCalendar["CurrentGuildBossEndTime"]!, "4.6 calendar guild boss boundary payload");
 
         MethodInfo wheelchairBuilder = RequiredMethod(
-            RequiredAscNetGameServerType("AscNet.GameServer.Handlers.AccountModule"),
-            "BuildWheelchairManualActivityPayload",
-            BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public,
-            [typeof(DateTimeOffset)]);
-        NotifyWheelchairManualActivity wheelchair = (NotifyWheelchairManualActivity)wheelchairBuilder.Invoke(null, [current])!;
+            RequiredAscNetGameServerType("AscNet.GameServer.Handlers.WheelchairManualModule"),
+            "BuildPayload",
+            BindingFlags.Static | BindingFlags.Public,
+            [typeof(Session), typeof(DateTimeOffset)]);
+        using LoopbackSessionHarness wheelchairHarness = new(
+            CreateDrawCompatibilityCharacter(46_099), CreateDrawCompatibilityPlayer(46_099),
+            CreateDrawCompatibilityInventory(46_099, []), "manual-calendar");
+        wheelchairHarness.Session.stage = CreateLoginAccountCompatibilityStage(46_099);
+        NotifyWheelchairManualActivity wheelchair = (NotifyWheelchairManualActivity)wheelchairBuilder.Invoke(null,
+            [wheelchairHarness.Session, current])!;
         AssertEqual(calendarBossEnd, wheelchair.CurrentGuildBossEndTime, "4.6 calendar and wheelchair guild boss boundary");
 
         int[] beforeTrial = (int[])((Dictionary<string, object?>)timedCalendarBuilder.Invoke(null, [DateTimeOffset.FromUnixTimeSeconds(trial.StartTime - 1)])!)["OpenActivityIds"]!;

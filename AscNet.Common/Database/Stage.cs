@@ -104,6 +104,16 @@ namespace AscNet.Common.Database
             collection.ReplaceOne(Builders<Stage>.Filter.Eq(x => x.Id, Id), this);
         }
 
+        public void SaveChecked()
+        {
+            ReplaceOneResult result = collection.ReplaceOne(Builders<Stage>.Filter.Eq(x => x.Id, Id), this);
+            if (!result.IsAcknowledged || result.MatchedCount != 1)
+            {
+                string matchCount = result.IsAcknowledged ? result.MatchedCount.ToString() : "unacknowledged";
+                throw new MongoException($"Stage save for uid {Uid} matched {matchCount} documents.");
+            }
+        }
+
         [BsonId]
         public ObjectId Id { get; set; }
 
@@ -125,5 +135,8 @@ namespace AscNet.Common.Database
 
         [BsonElement("finished_tasks")]
         public List<int> FinishedTasks { get; set; } = new();
+
+        [BsonElement("stage_bookmark_data")]
+        public StageBookmarkData? StageBookmarkData { get; set; }
     }
 }
