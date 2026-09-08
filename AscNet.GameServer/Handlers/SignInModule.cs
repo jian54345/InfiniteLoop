@@ -57,13 +57,15 @@ namespace AscNet.GameServer.Handlers
                 return Reject(response);
 
             GetSignProgress(sign, session.player, signId, got: false, out int round, out int day);
-            string claimKey = $"signin:{signId}:{round}:{day}";
+            PlayerSignInState state = GetOrCreateSignInState(session.player, signId);
+            // Daily protocol rounds stay at 1; reward claims remain unique per cumulative cycle.
+            long cycle = sign.Type == 1 ? state.ClaimCount / TotalDays(sign) + 1 : round;
+            string claimKey = $"signin:{signId}:{cycle}:{day}";
             bool alreadyGranted = ClaimKeyAlreadyApplied(session, claimKey);
             RewardApplicationResult result = RewardHandler.ApplyRewardsOnceAndPersist(
                 [new RewardGrant(claimKey, goods)], session);
             result.SendPushes(session);
 
-            PlayerSignInState state = GetOrCreateSignInState(session.player, signId);
             if (!alreadyGranted)
                 state.ClaimCount++;
             state.LastSignInTime = now.ToUnixTimeSeconds();
@@ -145,7 +147,7 @@ namespace AscNet.GameServer.Handlers
             else
             {
                 long displayed = got && claims > 0 ? claims - 1 : claims;
-                round = (int)(displayed / roundDays) + 1;
+                round = 1;
                 day = (int)(displayed % roundDays) + 1;
             }
         }

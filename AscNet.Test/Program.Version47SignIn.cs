@@ -208,7 +208,8 @@ internal partial class Program
             }
         }
 
-        using MongoCollectionOverride mongo = MongoCollectionOverride.InstallForDailySignInCompatibility(out _, out _, out _);
+        using MongoCollectionOverride mongo = MongoCollectionOverride.InstallForDailySignInCompatibility(
+            out RecordingMongoCollectionProxy<Player> players, out _, out RecordingMongoCollectionProxy<Inventory> inventories);
         SignInTable daily = TableReaderV2.Parse<SignInTable>().Single(row => row.Type == 1);
         foreach (SignInTable sign in events)
         {
@@ -255,7 +256,7 @@ internal partial class Program
             AssertProgress(reloaded, finalDay, sign.Id, 1, totalDays, true, $"Id{sign.Id} claimed final day");
             DateTimeOffset resetTime = firstDay.AddDays(totalDays).AddHours(-1);
             AssertProgress(reloaded, resetTime, sign.Id, 1, totalDays, true, $"Id{sign.Id} completed next business day");
-            AssertProgress(reloaded, resetTime, daily.Id, 2, 1, false, "daily next round remains claimable");
+            AssertProgress(reloaded, resetTime, daily.Id, 1, 1, false, "daily next cycle remains claimable");
 
             string inventoryBefore = Convert.ToHexString(inventory.ToBson());
             string playerBefore = Convert.ToHexString(reloaded.ToBson());
@@ -268,6 +269,74 @@ internal partial class Program
                 AssertEqual(playerBefore, Convert.ToHexString(reloaded.ToBson()), $"Id{sign.Id} completed retry leaves progress unchanged");
             }
         }
+
+        // Keep a real first-cycle receipt, then complete the cycle and claim the same table day again.
+        Player dailyPlayer = CreateDrawCompatibilityPlayer(47_001);
+        Inventory dailyInventory = CreateDrawCompatibilityInventory(dailyPlayer.PlayerData.Id, []);
+        using LoopbackSessionHarness dailyHarness = new(
+            CreateDrawCompatibilityCharacter(dailyPlayer.PlayerData.Id), dailyPlayer, dailyInventory, "v47-sign-in-daily-cycle");
+        dailyHarness.Session.stage = CreateLoginAccountCompatibilityStage(dailyPlayer.PlayerData.Id);
+        int dailyDays = daily.RoundDays.Sum();
+        DateTimeOffset dailyStart = DateTimeOffset.Parse("2026-08-01T06:00:00Z");
+
+        void ClaimDaily(int day, long cumulativeClaims, DateTimeOffset now)
+        {
+            SignInRewardTable reward = TableReaderV2.Parse<SignInRewardTable>()
+                .Single(row => row.SignId == daily.Id && row.Round == 1 && row.Day == day);
+            RewardTable rewardTable = TableReaderV2.Parse<RewardTable>().Single(row => row.Id == reward.RewardId);
+            List<RewardGoodsTable> goods = rewardTable.SubIds.Select(id =>
+                TableReaderV2.Parse<RewardGoodsTable>().Single(row => row.Id == id)).ToList();
+            Dictionary<int, long> balances = goods.Select(row => row.TemplateId).Distinct().ToDictionary(
+                id => id, id => dailyInventory.Items.Where(item => item.Id == id).Sum(item => item.Count));
+            SignInResponse response = Claim(dailyHarness.Session, daily.Id, now);
+            AssertEqual(0, response.Code, $"daily cycle day {day} claim Code");
+            AssertEqual(goods.Count, response.RewardGoodsList.Count, $"daily cycle day {day} rewards");
+            for (int index = 0; index < goods.Count; index++)
+            {
+                AssertEqual(goods[index].TemplateId, response.RewardGoodsList[index].TemplateId, "daily cycle reward template");
+                AssertEqual(goods[index].Count, response.RewardGoodsList[index].Count, "daily cycle reward quantity");
+                AssertEqual((int)RewardType.Item, response.RewardGoodsList[index].RewardType, "daily cycle item reward");
+            }
+            foreach (var group in goods.GroupBy(row => row.TemplateId))
+                AssertEqual(balances[group.Key] + group.Sum(row => (long)row.Count),
+                    dailyInventory.Items.Where(item => item.Id == group.Key).Sum(item => item.Count),
+                    $"daily cycle day {day} inventory quantity");
+            AssertEqual(cumulativeClaims, dailyPlayer.SignInStates.Single(state => state.Id == daily.Id).ClaimCount,
+                "daily cumulative claims advance");
+
+            string inventoryBeforeReload = Convert.ToHexString(dailyInventory.ToBson());
+            dailyHarness.Session.player = dailyPlayer = BsonSerializer.Deserialize<Player>(
+                (players.LastReplacement ?? throw new InvalidDataException("Daily claim did not persist player.")).ToBson());
+            dailyHarness.Session.inventory = dailyInventory = BsonSerializer.Deserialize<Inventory>(
+                (inventories.LastReplacement ?? throw new InvalidDataException("Daily claim did not persist inventory.")).ToBson());
+            AssertEqual(inventoryBeforeReload, Convert.ToHexString(dailyInventory.ToBson()), "daily inventory survives persisted BSON reload");
+            PlayerSignInState state = dailyPlayer.SignInStates.Single(state => state.Id == daily.Id);
+            AssertEqual(cumulativeClaims, state.ClaimCount, "daily persisted cumulative claims");
+            AssertEqual(now.ToUnixTimeSeconds(), state.LastSignInTime, "daily persisted claim timestamp");
+            AssertProgress(dailyPlayer, now, daily.Id, 1, day, true, "daily claimed day after BSON reload");
+        }
+
+        ClaimDaily(1, 1, dailyStart);
+        DateTimeOffset dailyFinal = dailyStart.AddDays(dailyDays - 1);
+        PlayerSignInState dailyState = dailyPlayer.SignInStates.Single(state => state.Id == daily.Id);
+        dailyState.ClaimCount = dailyDays - 1;
+        dailyState.LastSignInTime = dailyFinal.AddDays(-1).ToUnixTimeSeconds();
+        ClaimDaily(dailyDays, dailyDays, dailyFinal);
+        DateTimeOffset dailyReset = dailyFinal.AddDays(1).AddHours(-1);
+        AssertProgress(dailyPlayer, dailyReset.AddSeconds(-1), daily.Id, 1, dailyDays, true, "daily before 05:00 rollover");
+        AssertProgress(dailyPlayer, dailyReset, daily.Id, 1, 1, false, "daily 05:00 rollover");
+        ClaimDaily(1, dailyDays + 1L, dailyReset);
+
+        string dailyInventoryBeforeRetry = Convert.ToHexString(dailyInventory.ToBson());
+        string dailyPlayerBeforeRetry = Convert.ToHexString(dailyPlayer.ToBson());
+        SignInResponse dailyRetry = Claim(dailyHarness.Session, daily.Id, dailyReset.AddHours(1));
+        AssertEqual(0, dailyRetry.Code, "daily next-cycle same-day retry Code");
+        AssertEmptyList(dailyRetry.RewardGoodsList, "daily next-cycle same-day retry rewards");
+        AssertEqual(dailyInventoryBeforeRetry, Convert.ToHexString(dailyInventory.ToBson()), "daily retry grants nothing after reload");
+        AssertEqual(dailyPlayerBeforeRetry, Convert.ToHexString(dailyPlayer.ToBson()), "daily retry preserves persisted progress");
+        AssertEqual(dailyInventoryBeforeRetry, Convert.ToHexString(inventories.LastReplacement!.ToBson()), "daily retry preserves durable inventory");
+        AssertEqual(dailyPlayerBeforeRetry, Convert.ToHexString(players.LastReplacement!.ToBson()), "daily retry preserves durable player");
+        AssertProgress(dailyPlayer, dailyReset.AddDays(1), daily.Id, 1, 2, false, "daily next business day advances");
     }
 
     private static void ValidateVersion47SignInPushes(
