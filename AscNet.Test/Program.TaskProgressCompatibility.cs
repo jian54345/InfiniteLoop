@@ -22,7 +22,7 @@ internal static partial class Program
         MethodInfo dispatch = typeof(Session).GetMethod("InvokeRequestHandler", BindingFlags.Instance | BindingFlags.NonPublic)
             ?? throw new MissingMethodException(typeof(Session).FullName, "InvokeRequestHandler");
         MethodInfo record = RequiredMethod(taskModule, "RecordTableDrivenProgress", BindingFlags.Static | BindingFlags.NonPublic,
-            [typeof(Session), typeof(IEnumerable<(int ConditionType, int? Parameter, int Amount)>)]);
+            [typeof(Session), typeof(IEnumerable<(int ConditionType, int? Parameter, int Amount)>), typeof(bool), RequiredAscNetGameServerType("AscNet.GameServer.Handlers.TheatreModule+Mutation")]);
         int packetId = 47_600;
         ValidateLoginDays();
 
@@ -34,7 +34,7 @@ internal static partial class Program
             Character roster = CreateDrawCompatibilityCharacter(uid);
             roster.Characters = Enumerable.Range(0, rosterIndex + 1).Select(index => new CharacterData
             {
-                Id = (uint)(1_021_001 + index), Level = 50, Quality = 2, Grade = 1, Ability = 2499,
+                Id = (uint)(1_021_001 + index * 10_000), Level = 50, Quality = 2, Grade = 1,
                 SkillList = [new CharacterSkill { Id = 1, Level = 10 }, new CharacterSkill { Id = 2, Level = 11 }],
                 EnhanceSkillList = [new CharacterSkill { Id = 3, Level = 20 }],
                 MagicList = [new CharacterSkill { Id = 4, Level = 20 }]
@@ -50,13 +50,11 @@ internal static partial class Program
             Check(initial, 50045, 0, 1);
             Check(initial, 7866, rosterIndex + 1, 1);
             Check(initial, 7403, 0, 1);
-            Check(initial, 7603, 0, 1);
 
             // Snapshot facts change without an event counter; the real dispatcher must publish them.
             player.PlayerData.Level = 10;
             roster.Characters[0].Quality = 3;
             roster.Characters[0].Grade = 6;
-            roster.Characters[0].Ability = 2500;
             roster.Characters[0].SkillList[0].Level = 11;
             foreach (int stageId in new[] { 30070105, 30070110 })
                 harness.Session.stage.AddStage(new StageDatum { StageId = stageId, Passed = true, PassTimesTotal = 1 });
@@ -72,29 +70,26 @@ internal static partial class Program
             CheckDelta(delta, 50045, 1, 3);
             CheckDelta(delta, 7866, rosterIndex + 2, 1);
             CheckDelta(delta, 7403, 1, 1);
-            CheckDelta(delta, 7603, 1, 3);
             AssertEqual(0, Dispatch<FightHeartbeatRequest, FightHeartbeatResponse>(harness, nameof(FightHeartbeatRequest), new()).Tasks.Count,
                 "Unchanged dispatch does not duplicate snapshot deltas");
             foreach (int conditionId in new[] { 50020, 50043, 50044, 50045, 7866, 7403, 7603 })
                 AssertEqual(false, player.MissionProgress.ConditionCounters.ContainsKey(conditionId), $"Snapshot {conditionId} has no cumulative counter");
 
-            // Grade and BP are independent filters, not merely quality/level checks.
+            // Grade is an independent filter, not merely a quality/level check.
             roster.Characters[0].Grade = 5;
-            roster.Characters[0].Ability = 2499;
             List<LoginTask> belowFilters = BuildTaskData(harness.Session);
             Check(belowFilters, 7403, 0, 1);
-            Check(belowFilters, 7603, 0, 1);
             player.MissionProgress.ConditionCounters[7866] = 999;
             Check(BuildTaskData(harness.Session), 7866, rosterIndex + 2, 1);
             player.MissionProgress.ConditionCounters.Remove(7866);
 
-            record.Invoke(null, [harness.Session, new (int, int?, int)[] { (11202, 4, 17) }]);
+            record.Invoke(null, [harness.Session, new (int, int?, int)[] { (11202, 4, 17) }, true, null]);
             CheckDelta(Drain(harness), 50046, 17, 1);
             AssertEqual(17, player.MissionProgress.ConditionCounters[50046], "Serum spending remains cumulative");
 
             LoginTask dispatchTask = BuildTaskData(harness.Session)
                 .Single(task => task.Schedule.Any(schedule => schedule.Id == 2022));
-            record.Invoke(null, [harness.Session, new (int, int?, int)[] { (29018, null, 1), (29004, null, 1) }]);
+            record.Invoke(null, [harness.Session, new (int, int?, int)[] { (29018, null, 1), (29004, null, 1) }, true, null]);
             List<SyncTask> dormDelta = Drain(harness);
             CheckDelta(dormDelta, (int)dispatchTask.Id, 1, 3);
             CheckDelta(dormDelta, 8019, 1, 3);
@@ -299,13 +294,12 @@ internal static partial class Program
                 Check(BuildTaskData(harness.Session), 8022, 1, 1);
             }
 
-            roster.Characters.Add(new CharacterData { Id = 1021005, Quality = 6, Level = 80, Grade = 10, Ability = 6000 });
             roster.Fashions = TableReaderV2.Parse<AscNet.Table.V2.share.character.CharacterTable>()
                 .Select(character => character.DefaultNpcFashtionId).Where(id => id > 0).Distinct().Take(21)
                 .Select(id => new FashionList { Id = id, IsLock = false }).ToList();
-            int[] unsupportedTasks = [8031, 3150, 3151, 3152, 3153];
+            int[] unsupportedTasks = [3150, 3151, 3152, 3153];
             foreach (int id in unsupportedTasks)
-                player.MissionProgress.ConditionCounters[id] = id == 8031 ? 1 : 20;
+                player.MissionProgress.ConditionCounters[id] = 20;
             List<LoginTask> unsupported = BuildTaskData(harness.Session);
             foreach (int id in unsupportedTasks)
             {
@@ -466,14 +460,24 @@ internal static partial class Program
         static List<SyncTask> Drain(LoopbackSessionHarness harness)
         {
             List<SyncTask> tasks = [];
-            while (harness.TryReadAvailablePacket("Task progress trailing push", out Packet? packet))
+            // A completed server write need not yet be visible to DataAvailable on the peer.
+            // Read through an ordered marker so no task push leaks into the next operation.
+            harness.Session.SendResponse(new FightHeartbeatResponse(), -1);
+            while (true)
             {
-                AssertEqual(Packet.ContentType.Push, packet!.Type, "Task progress trailing packet type");
+                Packet packet = harness.ReadPacket("Task progress trailing push");
+                if (packet.Type == Packet.ContentType.Response)
+                {
+                    Packet.Response marker = MessagePackSerializer.Deserialize<Packet.Response>(packet.Content);
+                    AssertEqual(-1, marker.Id, "Task progress drain marker id");
+                    AssertEqual(nameof(FightHeartbeatResponse), marker.Name, "Task progress drain marker name");
+                    return tasks;
+                }
+                AssertEqual(Packet.ContentType.Push, packet.Type, "Task progress trailing packet type");
                 Packet.Push push = MessagePackSerializer.Deserialize<Packet.Push>(packet.Content);
                 if (push.Name == nameof(NotifyTask))
                     tasks.AddRange(MessagePackSerializer.Deserialize<NotifyTask>(push.Content).Tasks.Tasks);
             }
-            return tasks;
         }
 
         (TResponse Response, List<SyncTask> Tasks) Dispatch<TRequest, TResponse>(LoopbackSessionHarness harness, string requestName, TRequest request)

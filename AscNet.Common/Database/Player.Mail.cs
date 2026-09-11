@@ -31,6 +31,7 @@ namespace AscNet.Common.Database
         [BsonElement("send_time")] public long SendTime { get; set; }
         [BsonElement("expire_time")] public long ExpireTime { get; set; }
         [BsonElement("reward_goods_list")] public List<PlayerMailRewardGoods>? RewardGoodsList { get; set; }
+        [BsonElement("reward_claim_key")] public string? RewardClaimKey { get; set; }
         [BsonElement("is_forbid_delete")] public bool IsForbidDelete { get; set; }
         [BsonElement("is_survey")] public bool IsSurvey { get; set; }
         [BsonElement("reserve_time")] public long ReserveTime { get; set; }

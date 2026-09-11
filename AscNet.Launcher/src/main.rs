@@ -1,5 +1,7 @@
 #![cfg_attr(windows, windows_subsystem = "windows")]
 
+#[cfg(windows)]
+mod animation;
 mod steam;
 #[cfg(windows)]
 mod ui;
@@ -21,18 +23,30 @@ struct DistributorConfig {
 }
 
 fn main() {
+    #[cfg(windows)]
+    {
+        let args: Vec<String> = env::args().skip(1).collect();
+        if args.first().is_some_and(|arg| arg == "--patch-worker") {
+            std::process::exit(install::patch_worker(&args));
+        }
+    }
     if let Err(error) = run() {
         #[cfg(windows)]
         if env::args_os().len() == 1 {
             ui::show_fatal(&format!("{error:#}"));
         }
-        eprintln!("{error:#}");
+        eprintln!("{}", local::logged_error(&format!("{error:#}")));
         std::process::exit(1);
     }
 }
 
 fn run() -> Result<()> {
-    let args: Vec<String> = env::args().skip(1).collect();
+    if ascnet_launcher::updater::startup()? {
+        return Ok(());
+    }
+    local::launcher_log("Launcher started")?;
+    let args: Vec<String> = env::args().skip(1)
+        .filter(|arg| arg != "--self-update-health" && arg != "--self-update-rolled-back").collect();
     if args.is_empty() {
         #[cfg(windows)]
         {
@@ -50,9 +64,7 @@ fn run() -> Result<()> {
             let config: DistributorConfig = serde_json::from_slice(
                 &fs::read(executable_dir()?.join("launcher.json")).context("launcher.json is missing")?,
             ).context("launcher.json is invalid")?;
-            let build = local::prepare(&config.repository_url, &config.branch, &mut |line| eprintln!("{line}"))?;
-            let package = package::load_package(&build.patch_directory)?;
-            install::install(&game, &package, &mut |line| eprintln!("{line}"))?;
+            let build = local::prepare(&config.repository_url, &config.branch, &game, &mut |line| eprintln!("{line}"))?;
             println!("{}", build.revision);
         }
         "--inspect" => {
@@ -64,12 +76,12 @@ fn run() -> Result<()> {
         "--install" => {
             require_len(&args, 2, "--install <game-directory>")?;
             let package = built_package()?;
-            let backup = install::install(Path::new(&args[1]), &package, &mut |line| eprintln!("{line}"))?;
+            let backup = install::install_with_consent(Path::new(&args[1]), &package, &mut |line| eprintln!("{line}"))?;
             println!("{}", backup.display());
         }
         "--restore" => {
             require_len(&args, 2, "--restore <game-directory>")?;
-            install::restore(Path::new(&args[1]), &mut |line| eprintln!("{line}"))?;
+            install::restore_with_consent(Path::new(&args[1]), &mut |line| eprintln!("{line}"))?;
         }
         "--check-server" => {
             require_len(&args, 2, "--check-server <origin>")?;

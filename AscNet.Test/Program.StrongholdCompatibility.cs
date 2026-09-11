@@ -20,42 +20,35 @@ internal partial class Program
         roster.Characters = [new CharacterData { Id = 1_021_001 }, new CharacterData { Id = 1_021_002 }, new CharacterData { Id = 1_021_003 }];
         Player player = CreateDrawCompatibilityPlayer(uid);
         player.PlayerData.Level = 80;
-        Player secondPlayer = CreateDrawCompatibilityPlayer(uid + 1);
-        secondPlayer.PlayerData.Level = 80;
         using MongoCollectionOverride stageMongo = MongoCollectionOverride.InstallForStudyProgressionCompatibility(out _);
         using MongoCollectionOverride mongo = MongoCollectionOverride.InstallForDailySignInCompatibility(out _, out _, out _);
         using LoopbackSessionHarness h = new(roster, player, CreateDrawCompatibilityInventory(uid, []), "stronghold-loopback");
         h.Session.stage = CreateLoginAccountCompatibilityStage(uid);
 
-        void Call<T>(string requestName, int id, object request, string responseName) where T : class
+        void Call<T>(string requestName, int id, object request) where T : class
         {
             InvokeRegisteredRequestHandler(requestName, h.Session, id, request);
-            _ = ReadResponsePayload<T>(h, id, responseName, requestName);
+            _ = ReadStrongholdResponse<T>(h, id, out _);
         }
 
         Type module = RequiredAscNetGameServerType("AscNet.GameServer.Handlers.StrongholdModule");
         player.Stronghold.ActivityId = 1;
         player.Stronghold.BeginTime = checked((uint)DateTimeOffset.UtcNow.ToUnixTimeSeconds());
-        secondPlayer.Stronghold.ActivityId = 1;
-        secondPlayer.Stronghold.BeginTime = 1;
-        AssertEqual(true, player.Stronghold.ActivityId > 0 && player.Stronghold.BeginTime > 0, "Stronghold test state is open");
-        AssertEqual(player.Stronghold.ActivityId, secondPlayer.Stronghold.ActivityId, "Players select the same authoritative activity");
-        AssertEqual(true, player.Stronghold.BeginTime != 0 && secondPlayer.Stronghold.BeginTime != 0, "Players activate independently");
 
-        Call<GetStrongholdMineralResponse>("GetStrongholdMineralRequest", 48_811, new GetStrongholdMineralRequest(), nameof(GetStrongholdMineralResponse));
-        Call<SetStrongholdElectricTeamResponse>("SetStrongholdElectricTeamRequest", 48_812, new SetStrongholdElectricTeamRequest { CharacterIds = [1_021_001] }, nameof(SetStrongholdElectricTeamResponse));
-        Call<ResetStrongholdGroupResponse>("ResetStrongholdGroupRequest", 48_813, new ResetStrongholdGroupRequest { Id = -1 }, nameof(ResetStrongholdGroupResponse));
-        Call<ResetStrongholdStageResponse>("ResetStrongholdStageRequest", 48_814, new ResetStrongholdStageRequest { GroupId = -1, StageId = -1 }, nameof(ResetStrongholdStageResponse));
-        Call<SetStrongholdTeamResponse>("SetStrongholdTeamRequest", 48_815, new SetStrongholdTeamRequest { Own = true, TeamInfos = [new StrongholdTeamInfo { Id = 1, CharacterInfos = [new StrongholdCharacterInfo { Id = 1_021_001, Pos = 1 }] }] }, nameof(SetStrongholdTeamResponse));
-        Call<SetStrongholdFightTeamResponse>("SetStrongholdFightTeamRequest", 48_816, new SetStrongholdFightTeamRequest { Id = -1 }, nameof(SetStrongholdFightTeamResponse));
-        Call<GetStrongholdAssistCharacterListResponse>("GetStrongholdAssistCharacterListRequest", 48_817, new GetStrongholdAssistCharacterListRequest(), nameof(GetStrongholdAssistCharacterListResponse));
-        Call<SetStrongholdAssistCharacterResponse>("SetStrongholdAssistCharacterRequest", 48_818, new SetStrongholdAssistCharacterRequest { CharacterId = 1_021_001 }, nameof(SetStrongholdAssistCharacterResponse));
-        Call<GetStrongholdLendDetailResponse>("GetStrongholdLendDetailRequest", 48_819, new GetStrongholdLendDetailRequest(), nameof(GetStrongholdLendDetailResponse));
+        Call<GetStrongholdMineralResponse>("GetStrongholdMineralRequest", 48_811, new GetStrongholdMineralRequest());
+        Call<SetStrongholdElectricTeamResponse>("SetStrongholdElectricTeamRequest", 48_812, new SetStrongholdElectricTeamRequest { CharacterIds = [1_021_001] });
+        Call<ResetStrongholdGroupResponse>("ResetStrongholdGroupRequest", 48_813, new ResetStrongholdGroupRequest { Id = -1 });
+        Call<ResetStrongholdStageResponse>("ResetStrongholdStageRequest", 48_814, new ResetStrongholdStageRequest { GroupId = -1, StageId = -1 });
+        Call<SetStrongholdTeamResponse>("SetStrongholdTeamRequest", 48_815, new SetStrongholdTeamRequest { Own = true, TeamInfos = [new StrongholdTeamInfo { Id = 1, CharacterInfos = [new StrongholdCharacterInfo { Id = 1_021_001, Pos = 1 }] }] });
+        Call<SetStrongholdFightTeamResponse>("SetStrongholdFightTeamRequest", 48_816, new SetStrongholdFightTeamRequest { Id = -1 });
+        Call<GetStrongholdAssistCharacterListResponse>("GetStrongholdAssistCharacterListRequest", 48_817, new GetStrongholdAssistCharacterListRequest());
+        Call<SetStrongholdAssistCharacterResponse>("SetStrongholdAssistCharacterRequest", 48_818, new SetStrongholdAssistCharacterRequest { CharacterId = 1_021_001 });
+        Call<GetStrongholdLendDetailResponse>("GetStrongholdLendDetailRequest", 48_819, new GetStrongholdLendDetailRequest());
         int levelId = TableReaderV2.Parse<AscNet.Table.V2.share.fuben.stronghold.StrongholdLevelTable>()
             .Where(row => player.PlayerData.Level >= row.MinLevel && player.PlayerData.Level <= row.MaxLevel)
             .Select(row => row.Id).First();
         Call<SelectStrongholdLevelResponse>("SelectStrongholdLevelRequest", 48_822,
-            new SelectStrongholdLevelRequest { LevelId = levelId }, nameof(SelectStrongholdLevelResponse));
+            new SelectStrongholdLevelRequest { LevelId = levelId });
         List<AscNet.Table.V2.share.fuben.stronghold.StrongholdGroupTable> groupRows =
             TableReaderV2.Parse<AscNet.Table.V2.share.fuben.stronghold.StrongholdGroupTable>();
         int groupId = player.Stronghold.GroupStageDatas
@@ -71,8 +64,8 @@ internal partial class Program
         byte[] beforeSweep = player.ToBson();
         InvokeRegisteredRequestHandler(nameof(SweepStrongholdStageRequest), h.Session, 48_823,
             new SweepStrongholdStageRequest { GroupId = groupId });
-        AssertEqual(true, ReadResponsePayload<SweepStrongholdStageResponse>(
-            h, 48_823, nameof(SweepStrongholdStageResponse), "Stronghold sweep before normal clear").Code != 0,
+        AssertEqual(true, ReadStrongholdResponse<SweepStrongholdStageResponse>(
+            h, 48_823, out _).Code != 0,
             "Stronghold sweep rejects an uncleared stage");
         AssertEqual(Convert.ToHexString(beforeSweep), Convert.ToHexString(player.ToBson()),
             "Stronghold sweep rejection does not mutate state");
@@ -86,12 +79,12 @@ internal partial class Program
                     Id = 1,
                     CharacterInfos = [new StrongholdCharacterInfo { Id = 1_021_001, Pos = 1 }]
                 }]
-            }, nameof(SetStrongholdFightTeamResponse));
+            });
         byte[] beforePrerequisite = player.ToBson();
         InvokeRegisteredRequestHandler(nameof(PreFightRequest), h.Session, 48_825,
             new PreFightRequest { PreFightData = new() { StageId = lockedStage, CardIds = [1_021_001], CaptainPos = 1, FirstFightPos = 1 } });
-        AssertEqual(true, ReadResponsePayload<PreFightResponse>(
-            h, 48_825, nameof(PreFightResponse), "Stronghold locked-group pre-fight").Code != 0,
+        AssertEqual(true, ReadStrongholdResponse<PreFightResponse>(
+            h, 48_825, out _).Code != 0,
             "Stronghold pre-fight rejects a group whose table predecessor is uncleared");
         AssertEqual(Convert.ToHexString(beforePrerequisite), Convert.ToHexString(player.ToBson()),
             "Stronghold prerequisite rejection does not mutate state");
@@ -106,11 +99,11 @@ internal partial class Program
                     Id = 1,
                     CharacterInfos = [new StrongholdCharacterInfo { Id = 1_021_001, Pos = 1 }]
                 }]
-            }, nameof(SetStrongholdFightTeamResponse));
+            });
         InvokeRegisteredRequestHandler(nameof(PreFightRequest), h.Session, 48_827,
             new PreFightRequest { PreFightData = new() { StageId = firstStage, CardIds = [1_021_001], CaptainPos = 1, FirstFightPos = 1 } });
-        PreFightResponse firstPreFight = ReadResponsePayload<PreFightResponse>(
-            h, 48_827, nameof(PreFightResponse), "Stronghold normal pre-fight");
+        PreFightResponse firstPreFight = ReadStrongholdResponse<PreFightResponse>(
+            h, 48_827, out _);
         AssertEqual(0, firstPreFight.Code, "Stronghold normal pre-fight code");
         InvokeRegisteredRequestHandler(nameof(FightSettleRequest), h.Session, 48_828,
             CreateMissingStageSettleRequest(firstStage, firstPreFight.FightData.FightId, uid));
@@ -151,8 +144,8 @@ internal partial class Program
         byte[] beforeDuplicateSweep = player.ToBson();
         InvokeRegisteredRequestHandler(nameof(SweepStrongholdStageRequest), h.Session, sweepPacketId++,
             new SweepStrongholdStageRequest { GroupId = groupId });
-        AssertEqual(true, ReadResponsePayload<SweepStrongholdStageResponse>(
-            h, sweepPacketId - 1, nameof(SweepStrongholdStageResponse), "Stronghold duplicate sweep").Code != 0,
+        AssertEqual(true, ReadStrongholdResponse<SweepStrongholdStageResponse>(
+            h, sweepPacketId - 1, out _).Code != 0,
             "Stronghold duplicate sweep rejects a completed group");
         AssertEqual(Convert.ToHexString(beforeDuplicateSweep), Convert.ToHexString(player.ToBson()),
             "Stronghold duplicate sweep does not mutate state");
@@ -203,8 +196,8 @@ internal partial class Program
         byte[] beforeStaleEnergy = player.ToBson();
         InvokeRegisteredRequestHandler(nameof(GetStrongholdRewardRequest), h.Session, rewardPacketId,
             new GetStrongholdRewardRequest { Ids = [exactEnergy.reward.Id] });
-        AssertEqual(20113018, ReadResponsePayload<GetStrongholdRewardResponse>(
-            h, rewardPacketId++, nameof(GetStrongholdRewardResponse), "Stronghold stale 12103 reward claim").Code,
+        AssertEqual(20113018, ReadStrongholdResponse<GetStrongholdRewardResponse>(
+            h, rewardPacketId++, out _).Code,
             "Stronghold 12103 rejects stale finish info without finished-group membership");
         AssertEqual(Convert.ToHexString(beforeStaleEnergy), Convert.ToHexString(player.ToBson()),
             "Stronghold stale 12103 rejection is atomic");
@@ -216,8 +209,8 @@ internal partial class Program
         byte[] beforeOverThreshold = player.ToBson();
         InvokeRegisteredRequestHandler(nameof(GetStrongholdRewardRequest), h.Session, rewardPacketId,
             new GetStrongholdRewardRequest { Ids = claimRows.Select(pair => pair.reward.Id).ToList() });
-        AssertEqual(20113018, ReadResponsePayload<GetStrongholdRewardResponse>(
-            h, rewardPacketId++, nameof(GetStrongholdRewardResponse), "Stronghold over-threshold reward batch").Code,
+        AssertEqual(20113018, ReadStrongholdResponse<GetStrongholdRewardResponse>(
+            h, rewardPacketId++, out _).Code,
             "Stronghold over-threshold 12103 rejects the whole reward batch");
         AssertEqual(Convert.ToHexString(beforeOverThreshold), Convert.ToHexString(player.ToBson()),
             "Stronghold over-threshold batch rejection is atomic");
@@ -252,8 +245,8 @@ internal partial class Program
         byte[] beforeDuplicateClaim = player.ToBson();
         InvokeRegisteredRequestHandler(nameof(GetStrongholdRewardRequest), h.Session, rewardPacketId,
             new GetStrongholdRewardRequest { Ids = [claimedRewardId] });
-        AssertEqual(20113018, ReadResponsePayload<GetStrongholdRewardResponse>(
-            h, rewardPacketId++, nameof(GetStrongholdRewardResponse), "Stronghold duplicate reward claim").Code,
+        AssertEqual(20113018, ReadStrongholdResponse<GetStrongholdRewardResponse>(
+            h, rewardPacketId++, out _).Code,
             "Stronghold duplicate reward claim uses retail rejection code");
         AssertEqual(claimCount, h.Session.inventory.AppliedRewardClaims.Count(key =>
             key == $"stronghold:{uid}:achievement:{claimedRewardId}"),
@@ -292,6 +285,8 @@ internal partial class Program
             [typeof(Session), typeof(bool)]);
         doLogin.Invoke(null, [loginHarness.Session, false]);
 
+        _ = ReadPushPayload<NotifyWheelchairManualActivity>(loginHarness, nameof(NotifyWheelchairManualActivity),
+            "challenge login manual cache before login-complete");
         _ = ReadPushPayload<NotifyLogin>(loginHarness, nameof(NotifyLogin), "challenge login NotifyLogin");
         string[] required = [
             nameof(NotifyArenaActivity),
@@ -461,8 +456,8 @@ internal partial class Program
         int claimedOnlyRetryPacketId = rewardPacketId++;
         InvokeRegisteredRequestHandler(nameof(GetStrongholdRewardRequest), h.Session, claimedOnlyRetryPacketId,
             new GetStrongholdRewardRequest { Ids = [claimedOnlyRewardId] });
-        AssertEqual(20113018, ReadResponsePayload<GetStrongholdRewardResponse>(
-            h, claimedOnlyRetryPacketId, nameof(GetStrongholdRewardResponse), "Stronghold claimed-only duplicate reward claim").Code,
+        AssertEqual(20113018, ReadStrongholdResponse<GetStrongholdRewardResponse>(
+            h, claimedOnlyRetryPacketId, out _).Code,
             "claimed-only legacy reward retry uses retail rejection code");
         AssertEqual(claimedOnlyClaimCount, h.Session.inventory.AppliedRewardClaims.Count(key =>
             key == $"stronghold:{uid}:achievement:{claimedOnlyRewardId}"),
@@ -574,7 +569,8 @@ internal partial class Program
                 player.Stronghold.Endurance = group.Endurance
                     ?? throw new InvalidDataException($"Stronghold fixture group {group.Id} has no endurance cost.");
             int remainingStages = allocation.StageIds.Count - progress.FinishStageIds.Count;
-            int beforeCount = player.Stronghold.LastResultRecord.FinishCount;
+            int beforeCount = player.Stronghold.CurrentResultRecord?.FinishCount
+                ?? throw new InvalidDataException("Stronghold current-cycle result was not initialized.");
             int rewardId = group.RewardId[player.Stronghold.LevelId - 1];
             var reward = TableReaderV2.Parse<AscNet.Table.V2.share.reward.RewardTable>().Single(row => row.Id == rewardId);
             var expected = TableReaderV2.Parse<AscNet.Table.V2.share.reward.RewardGoodsTable>()
@@ -591,7 +587,7 @@ internal partial class Program
             AssertEqual(true, expected.Select(row => (row.TemplateId, row.Count)).OrderBy(row => row.TemplateId)
                 .SequenceEqual(result.RewardGoodsList.Select(row => (row.TemplateId, row.Count)).OrderBy(row => row.TemplateId)),
                 "quick clear grants group reward once, not once per stage");
-            AssertEqual(beforeCount + remainingStages, player.Stronghold.LastResultRecord.FinishCount,
+            AssertEqual(beforeCount + remainingStages, player.Stronghold.CurrentResultRecord.FinishCount,
                 "quick clear counts only newly completed stages");
             AssertEqual(0, player.Stronghold.Endurance, "quick clear consumes only unpaid group endurance");
             AssertEqual(true, allocation.StageIds.All(id => progress.FinishStageIds.Contains((int)id)),

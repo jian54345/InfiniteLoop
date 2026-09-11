@@ -1,4 +1,6 @@
-﻿using AscNet.Common.MsgPack;
+﻿using AscNet.Common.Database;
+using AscNet.GameServer.Handlers.Drops;
+using AscNet.Common.MsgPack;
 using AscNet.Common.Util;
 using AscNet.Table.V2.share.item;
 using AscNet.Table.V2.share.reward;
@@ -22,6 +24,7 @@ namespace AscNet.GameServer.Handlers
         public int Id;
         public int RecycleTime;
         public int Count;
+        public List<int>? SelectRewardIds { get; set; }
     }
     
     [MessagePackObject(true)]
@@ -90,52 +93,91 @@ namespace AscNet.GameServer.Handlers
             }, packet.Id);
         }
         
-        // Fixed-reward gift packs, such as Cog Packs.
         [RequestPacketHandler("ItemUseRequest")]
         public static void ItemUseRequestHandler(Session session, Packet.Request packet)
         {
             ItemUseRequest request = packet.Deserialize<ItemUseRequest>();
-            int itemId = request.Id;
-            int count = request.Count;
-            if (itemId <= 0 || count <= 0)
+            if (request.Id <= 0 || request.Count <= 0 || request.RecycleTime < 0
+                || request.SelectRewardIds is { Count: > 0 })
             {
-                session.SendResponse(new ItemUseResponse() { Code = 1 }, packet.Id);
+                session.SendResponse(new ItemUseResponse { Code = 1 }, packet.Id);
                 return;
             }
 
-            ItemTable? itemTable = TableReaderV2.Parse<ItemTable>().FirstOrDefault(item => item.Id == itemId);
-            Item? inventoryItem = session.inventory.Items.FirstOrDefault(item => item.Id == itemId);
-            if (itemTable is null || inventoryItem is null || inventoryItem.Count < count)
+            ItemUsePendingOperation? pending = session.player.PendingItemUse;
+            if (pending is not null)
             {
-                session.SendResponse(new ItemUseResponse() { Code = 1 }, packet.Id);
-                return;
+                if (pending.ItemId != request.Id || pending.Count != request.Count
+                    || pending.RecycleTime != request.RecycleTime)
+                {
+                    session.SendResponse(new ItemUseResponse { Code = 1 }, packet.Id);
+                    return;
+                }
+            }
+            else
+            {
+                ItemTable? item = TableReaderV2.Parse<ItemTable>().Find(row => row.Id == request.Id);
+                List<Item> stacks = session.inventory.Items.Where(row => row.Id == request.Id).ToList();
+                if (item is null || stacks.Count != 1 || stacks[0].Count < request.Count
+                    || stacks[0].Count > Inventory.GetMaxCount(item)
+                    || !TryBuildItemUseRewards(item, request.Count, out List<RewardGoodsTable> goods)
+                    || !CanApplyItemUseGoods(session, request.Id, request.Count, goods))
+                {
+                    session.SendResponse(new ItemUseResponse { Code = 1 }, packet.Id);
+                    return;
+                }
+
+                pending = new ItemUsePendingOperation
+                {
+                    ClaimKey = $"item-use:{session.player.PlayerData.Id}:{Guid.NewGuid():N}",
+                    ItemId = request.Id,
+                    Count = request.Count,
+                    RecycleTime = request.RecycleTime,
+                    Goods = goods.Select(row => new ItemUsePendingReward
+                    {
+                        Id = row.Id, TemplateId = row.TemplateId, Count = row.Count,
+                        Params = row.Params.ToList()
+                    }).ToList()
+                };
+                session.player.PendingItemUse = pending;
+                try { session.player.SaveChecked(); }
+                catch
+                {
+                    session.player.PendingItemUse = null;
+                    throw;
+                }
             }
 
-            List<Reward> rewards = [];
-            ItemUseResponse response = new() { Code = 0 };
-            if (!TryBuildItemUseRewards(itemTable, count, response.RewardGoodsList, rewards))
-            {
-                session.SendResponse(new ItemUseResponse() { Code = 1 }, packet.Id);
-                return;
-            }
-
-            if (rewards.Count == 0)
-            {
-                session.SendResponse(new ItemUseResponse() { Code = 1 }, packet.Id);
-                return;
-            }
-
-            session.SendPush(new NotifyItemDataList
-            {
-                ItemDataList = { session.inventory.Do(itemId, -count) }
-            });
-            RewardApplicationResult result = RewardHandler.ApplyRewards(rewards, session);
-            session.inventory.Save();
-            session.character.Save();
-            if (result.DormFurnitureChanged || result.GatherRewardIds.Count > 0 || result.HeadPortraitData.Heads.Count > 0)
-                session.player.Save();
+            RewardApplicationResult result = CompletePendingItemUse(session);
             result.SendPushes(session);
-            session.SendResponse(response, packet.Id);
+            session.SendResponse(new ItemUseResponse { RewardGoodsList = result.RewardGoods }, packet.Id);
+        }
+
+        public static void ResumePendingItemUse(Session session)
+        {
+            if (session.player.PendingItemUse is not null)
+                CompletePendingItemUse(session);
+        }
+
+        private static RewardApplicationResult CompletePendingItemUse(Session session)
+        {
+            ItemUsePendingOperation pending = session.player.PendingItemUse
+                ?? throw new InvalidOperationException("No pending item use.");
+            List<RewardGoodsTable> goods = pending.Goods.Select(row => new RewardGoodsTable
+            {
+                Id = row.Id, TemplateId = row.TemplateId, Count = row.Count, Params = row.Params.ToList()
+            }).ToList();
+            RewardApplicationResult result = RewardHandler.ApplyRewardsOnceAndPersist(
+                [new RewardGrant(pending.ClaimKey, goods,
+                    new Dictionary<int, int> { [pending.ItemId] = pending.Count })], session);
+            session.player.PendingItemUse = null;
+            try { session.player.SaveChecked(); }
+            catch
+            {
+                session.player.PendingItemUse = pending;
+                throw;
+            }
+            return result;
         }
 
         [RequestPacketHandler("ItemSellRequest")]
@@ -399,90 +441,73 @@ namespace AscNet.GameServer.Handlers
             return true;
         }
 
-        private static int ResolveFixedGiftRewardId(ItemTable itemTable)
+        private static bool TryBuildItemUseRewards(ItemTable item, int count, out List<RewardGoodsTable> goods)
         {
-            if (itemTable.ItemType != (int)AscNet.Common.ItemType.Gift)
-                return 0;
-
-            return itemTable.SubTypeParams.Count >= 2 && itemTable.SubTypeParams[0] == 1
-                ? itemTable.SubTypeParams[1]
-                : 0;
-        }
-
-        private static bool TryBuildItemUseRewards(ItemTable itemTable, int count, List<RewardGoods> rewardGoodsList, List<Reward> rewards)
-        {
-            if (TryBuildRandomGiftRewards(itemTable, count, rewardGoodsList, rewards))
-                return true;
-
-            int fixedRewardId = ResolveFixedGiftRewardId(itemTable);
-            if (fixedRewardId > 0)
-                return TryAddRewardGoods(RewardHandler.GetRewardGoods(fixedRewardId), count, rewardGoodsList, rewards);
-
-            return false;
-        }
-
-        private static bool TryBuildRandomGiftRewards(ItemTable itemTable, int count, List<RewardGoods> rewardGoodsList, List<Reward> rewards)
-        {
-            if (itemTable.ItemType != (int)AscNet.Common.ItemType.Gift
-                || itemTable.SubTypeParams.Count < 2
-                || itemTable.SubTypeParams[0] != 2)
-            {
-                return false;
-            }
-
-            List<RewardGoodsTable> configuredRewards = RewardHandler.GetRewardGoods(itemTable.SubTypeParams[1])
-                .Where(rewardGoods => RewardHandler.GetRewardType(rewardGoods) is not null)
-                .ToList();
-            if (configuredRewards.Count == 0)
+            goods = [];
+            if (item.ItemType != (int)AscNet.Common.ItemType.Gift || item.SubTypeParams.Count < 2)
                 return false;
 
-            for (int i = 0; i < count; i++)
+            int sourceId = item.SubTypeParams[1];
+            switch (item.SubTypeParams[0])
             {
-                RewardGoodsTable selectedReward = configuredRewards[Random.Shared.Next(configuredRewards.Count)];
-                if (!TryAddSingleRewardGoods(selectedReward, 1, rewardGoodsList, rewards))
+                case 1:
+                case 5:
+                    List<RewardGoodsTable> fixedGoods = RewardHandler.GetRewardGoods(sourceId);
+                    RewardTable? source = TableReaderV2.Parse<RewardTable>().Find(row => row.Id == sourceId);
+                    if (source is null || fixedGoods.Count == 0
+                        || source.SubIds.Count != fixedGoods.Count)
+                        return false;
+                    foreach (RewardGoodsTable row in fixedGoods)
+                    {
+                        long total = (long)row.Count * count;
+                        if (total <= 0 || total > int.MaxValue || RewardHandler.GetRewardType(row) is null)
+                            return false;
+                        goods.Add(new RewardGoodsTable
+                        {
+                            Id = row.Id, TemplateId = row.TemplateId, Count = (int)total,
+                            Params = row.Params.ToList()
+                        });
+                    }
+                    return true;
+                case 2:
+                case 6:
+                    if (!EquipmentOverclockDropPolicy.TryResolve(sourceId,
+                            out IReadOnlyList<RewardGoodsTable> pool, out int countPerBox)
+                        || (long)count * countPerBox > int.MaxValue)
+                        return false;
+                    Dictionary<int, int> counts = new();
+                    for (int index = 0; index < count; index++)
+                    {
+                        int templateId = pool[Random.Shared.Next(pool.Count)].TemplateId;
+                        counts[templateId] = counts.GetValueOrDefault(templateId) + countPerBox;
+                    }
+                    goods.AddRange(counts.Select(entry => new RewardGoodsTable
+                    {
+                        TemplateId = entry.Key, Count = entry.Value, Params = []
+                    }));
+                    return true;
+                default:
                     return false;
             }
-
-            return true;
         }
 
-
-        private static bool TryAddRewardGoods(IEnumerable<RewardGoodsTable> configuredRewards, int count, List<RewardGoods> rewardGoodsList, List<Reward> rewards)
+        private static bool CanApplyItemUseGoods(Session session, int itemId, int count,
+            IReadOnlyList<RewardGoodsTable> goods)
         {
-            foreach (var rewardGoods in configuredRewards)
+            foreach (IGrouping<int, RewardGoodsTable> group in goods
+                         .Where(row => RewardHandler.GetRewardType(row) == RewardType.Item)
+                         .GroupBy(row => row.TemplateId))
             {
-                if (!TryAddSingleRewardGoods(rewardGoods, count, rewardGoodsList, rewards))
+                ItemTable? item = TableReaderV2.Parse<ItemTable>().Find(row => row.Id == group.Key);
+                List<Item> stacks = session.inventory.Items.Where(row => row.Id == group.Key).ToList();
+                if (item is null || stacks.Count > 1 || stacks.Any(row => row.Count < 0))
+                    return false;
+                long current = stacks.Count == 0 ? 0 : stacks[0].Count;
+                long award = group.Sum(row => (long)row.Count);
+                long cost = group.Key == itemId ? count : 0;
+                if (current > Inventory.GetMaxCount(item) - award + cost)
                     return false;
             }
-
-            return rewards.Count > 0;
-        }
-
-        private static bool TryAddSingleRewardGoods(RewardGoodsTable rewardGoods, int count, List<RewardGoods> rewardGoodsList, List<Reward> rewards)
-        {
-            RewardType? rewardType = RewardHandler.GetRewardType(rewardGoods);
-            if (rewardType is null)
-                return true;
-
-            long rewardCountLong = (long)rewardGoods.Count * count;
-            if (rewardCountLong > int.MaxValue)
-                return false;
-
-            int rewardCount = (int)rewardCountLong;
-            rewardGoodsList.Add(new RewardGoods
-            {
-                Id = rewardGoods.Id,
-                TemplateId = rewardGoods.TemplateId,
-                Count = rewardCount,
-                RewardType = (int)rewardType.Value
-            });
-            rewards.Add(new Reward
-            {
-                Id = rewardGoods.TemplateId,
-                Count = rewardCount,
-                Type = rewardType.Value
-            });
-
             return true;
         }
 

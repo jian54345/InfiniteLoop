@@ -81,6 +81,83 @@ namespace AscNet.Test
             try
             {
                 UseResourceWorkingDirectory();
+                if (args.Contains("--guild-compat-only"))
+                {
+                    ValidateGuildMembershipCompatibility();
+                    ValidateGuildIdentityCompatibility();
+                    ValidateGuildEconomyCompatibility();
+                    ValidateGuildBossCompatibility();
+                    ValidateGuildWarCompatibility();
+                    ValidateGuildDormCompatibility();
+                    return;
+                }
+                if (args.Contains("--guild-core-compat-only"))
+                {
+                    ValidateGuildMembershipCompatibility();
+                    ValidateGuildIdentityCompatibility();
+                    ValidateGuildEconomyCompatibility();
+                    return;
+                }
+                if (args.Contains("--guild-boss-compat-only"))
+                {
+                    ValidateGuildBossCompatibility();
+                    return;
+                }
+                if (args.Contains("--guild-war-compat-only"))
+                {
+                    ValidateGuildWarCompatibility();
+                    return;
+                }
+                if (args.Contains("--guild-dorm-compat-only"))
+                {
+                    ValidateGuildDormCompatibility();
+                    return;
+                }
+                if (args.Contains("--loading-option-compat-only"))
+                {
+                    ValidateLoadingOptionCompatibility();
+                    return;
+                }
+                if (args.Contains("--wheelchair-manual-compat-only"))
+                {
+                    ValidateWheelchairManualFullCompatibility();
+                    return;
+                }
+                if (args.Contains("--wheelchair-manual-purchases-only"))
+                {
+                    ValidateWheelchairManualPurchaseCompatibility();
+                    return;
+                }
+                if (args.Contains("--wheelchair-manual-tasks-only"))
+                {
+                    ValidateWheelchairManualNaturalTaskCompatibility();
+                    return;
+                }
+                if (args.Contains("--wheelchair-manual-power-only"))
+                {
+                    ValidateWheelchairManualPowerTaskCompatibility();
+                    return;
+                }
+                if (args.Contains("--wheelchair-manual-bp-only"))
+                {
+                    ValidateWheelchairManualBattlePassCompatibility();
+                    return;
+                }
+                if (args.Contains("--wheelchair-manual-lotto-only"))
+                {
+                    ValidateWheelchairManualLottoCompatibility();
+                    return;
+                }
+                if (args.Contains("--wheelchair-manual-guides-only"))
+                {
+                    ValidateWheelchairManualGuideCompatibility();
+                    return;
+                }
+                if (args.Contains("--wheelchair-manual-guild-only"))
+                {
+                    ValidateWheelchairManualGuildCompatibility();
+                    return;
+                }
                 if (args.Contains("--chat-report-compat-only"))
                 {
                     ValidateReportBanChatCompatibility();
@@ -192,6 +269,12 @@ namespace AscNet.Test
                 if (args.Contains("--stronghold-compat-only"))
                 {
                     ValidateStrongholdCompatibility();
+                    ValidateStrongholdRolloverCompatibility();
+                    return;
+                }
+                if (args.Contains("--stronghold-rollover-compat-only"))
+                {
+                    ValidateStrongholdRolloverCompatibility();
                     return;
                 }
                 if (args.Contains("--simulate-train-compat-only"))
@@ -299,6 +382,11 @@ namespace AscNet.Test
                     ValidateMissingFeatureCompatibility();
                     return;
                 }
+                if (args.Contains("--member-target-local-policy-only"))
+                {
+                    ValidateMemberTargetLocalPolicy();
+                    return;
+                }
                 if (args.Contains("--draw-compat-only"))
                 {
                     ValidateDrawCompatibility();
@@ -313,12 +401,6 @@ namespace AscNet.Test
                 if (args.Contains("--notify-login-compat-only"))
                 {
                     ValidateNotifyLoginCurrentClientCompatibilityShape();
-                    return;
-                }
-
-                if (args.Contains("--wheelchair-manual-compat-only"))
-                {
-                    ValidateWheelchairManualCompatibility();
                     return;
                 }
 
@@ -427,7 +509,7 @@ namespace AscNet.Test
 
                 if (args.Contains("--stage-bookmark-compat-only"))
                 {
-                    ValidateStageBookmarkCompatibilityShape();
+                    ValidateStageBookmarkCompatibility();
                     return;
                 }
 
@@ -654,6 +736,7 @@ namespace AscNet.Test
                 if (args.Contains("--item-use-compat-only"))
                 {
                     ValidateItemUseCompatibility();
+                    ValidateAutoUseGiftCompatibility();
                     return;
                 }
 
@@ -699,9 +782,9 @@ namespace AscNet.Test
                 }
 
 
-                if (args.Contains("--overclock-material-box-compat-only"))
+                if (args.Contains("--auto-use-gift-compat-only") || args.Contains("--overclock-material-box-compat-only"))
                 {
-                    ValidateOverclockMaterialBoxCompatibility();
+                    ValidateAutoUseGiftCompatibility();
                     return;
                 }
 
@@ -735,7 +818,7 @@ namespace AscNet.Test
                 }
                 if (args.Contains("--purchase-request-compat-only"))
                 {
-                    ValidatePurchaseRequestCompatibility();
+                    ValidateWheelchairManualPurchaseCompatibility();
                     return;
                 }
 
@@ -748,6 +831,18 @@ namespace AscNet.Test
                 if (args.Contains("--bianca-theatre-compat-only"))
                 {
                     ValidateBiancaTheatreCompatibility();
+                    return;
+                }
+
+                if (args.Contains("--theatre-compat-only"))
+                {
+                    ValidateTheatreCompatibility();
+                    return;
+                }
+
+                if (args.Contains("--theatre3-compat-only"))
+                {
+                    ValidateTheatre3Compatibility();
                     return;
                 }
 
@@ -781,7 +876,14 @@ namespace AscNet.Test
                     return;
                 }
 
+                if (args.Contains("--character-tower-compat-only"))
+                {
+                    ValidateCharacterTowerCompatibility();
+                    return;
+                }
+
                 ValidateUltimaAwakenCompatibility();
+                ValidateLoadingOptionCompatibility();
                 ValidateDormDispatchAllCompatibility();
                 ValidatePacketInputSafety();
                 ValidateReportBanChatCompatibility();
@@ -792,7 +894,7 @@ namespace AscNet.Test
                 ValidateNotifyLoginCurrentClientCompatibilityShape();
                 ValidateLoginAccountCompatibility();
                 ValidateSessionClientLoopFramingCompatibility();
-                ValidateStageBookmarkCompatibilityShape();
+                ValidateStageBookmarkCompatibility();
                 ValidateMainLine2UpdateExhibitionChapterCompatibility();
                 ValidateMainLine2LoginDataBsonCompatibility();
                 ValidateMainLine2ReceiveMainTreasureCompatibility();
@@ -810,12 +912,14 @@ namespace AscNet.Test
                 ValidateCourseCompatibility();
                 ValidateEquipGuideGoalCompatibility();
                 ValidateStrongholdSweepCompatibility();
+                ValidateStrongholdRolloverCompatibility();
                 ValidateBossSingleLoginCompatibilityShape();
                 ValidateBossActivityCompatibility();
                 ValidateBossSingleCompatibility();
                 ValidateBossSingleIntensiveStageHydration();
                 ValidateSimulatedBattlefieldCompatibility();
                 ValidateCurrentClientGuideTableCompatibility();
+                ValidateWheelchairManualFullCompatibility();
                 ValidatePlayerCostTimeUploadCompatibility();
                 ValidateRecordPlayerPointCompatibility();
                 ValidateBoardMutualClientPushCompatibility();
@@ -845,14 +949,18 @@ namespace AscNet.Test
                 ValidateEquipChipRecycleCompatibility();
                 ValidateDrawCompatibility();
                 ValidateItemUseCompatibility();
+                ValidateAutoUseGiftCompatibility();
                 ValidateItemSellCompatibility();
                 ValidateInventoryMaxCountCompatibility();
                 ValidateChatCompatibility();
                 ValidateCommandCompatibility();
                 ValidateSceneCommandCompatibility();
                 ValidateMissingFeatureCompatibility();
+                ValidateBiancaTheatreCompatibility();
+                ValidateTheatreCompatibility();
+                ValidateCharacterTowerCompatibility();
                 ValidateShopCompatibility();
-                ValidatePurchaseRequestCompatibility();
+                ValidateWheelchairManualPurchaseCompatibility();
                 ValidateCurrentClientNoticeFixtures();
                 ValidateCurrentClientNoticeEndpoints().GetAwaiter().GetResult();
                 ValidateLifeTreeFinishProcessRequestCompatibility();
@@ -867,6 +975,17 @@ namespace AscNet.Test
                 Console.Error.WriteLine(ex);
                 Environment.ExitCode = 1;
             }
+        }
+
+        private static void ValidateWheelchairManualFullCompatibility()
+        {
+            ValidateWheelchairManualCompatibility();
+            ValidateWheelchairManualPurchaseCompatibility();
+            ValidateWheelchairManualBattlePassCompatibility();
+            ValidateWheelchairManualLottoCompatibility();
+            ValidateWheelchairManualNaturalTaskCompatibility();
+            ValidateWheelchairManualGuideCompatibility();
+            ValidateWheelchairManualGuildCompatibility();
         }
 
         private static void ValidateWeaponOverrunCompatibility()
@@ -4846,6 +4965,7 @@ namespace AscNet.Test
 
             string[] retailCriticalStartupOrderThroughPassport =
             [
+                nameof(NotifyWheelchairManualActivity),
                 nameof(NotifyLogin),
                 nameof(NotifyPayInfo),
                 nameof(NotifyMails),
@@ -5033,15 +5153,34 @@ namespace AscNet.Test
                 startupPushesByName,
                 "NotifyWheelchairManualActivity",
                 "AccountModule.DoLogin NotifyWheelchairManualActivity startup payload");
-            AssertEqual(1L, RequiredValue<long>(manualPayload, "ActivityId", JTokenType.Integer, "AccountModule.DoLogin NotifyWheelchairManualActivity startup payload"), "AccountModule.DoLogin NotifyWheelchairManualActivity.ActivityId");
-            AssertEqual(1007L, RequiredValue<long>(manualPayload, "PlanId", JTokenType.Integer, "AccountModule.DoLogin NotifyWheelchairManualActivity startup payload"), "AccountModule.DoLogin NotifyWheelchairManualActivity.PlanId");
-            AssertEqual(1L, RequiredValue<long>(manualPayload, "BpLevel", JTokenType.Integer, "AccountModule.DoLogin NotifyWheelchairManualActivity startup payload"), "AccountModule.DoLogin NotifyWheelchairManualActivity.BpLevel fresh-account level");
-            AssertEqual(false, RequiredValue<bool>(manualPayload, "IsSeniorManualUnlock", JTokenType.Boolean, "AccountModule.DoLogin NotifyWheelchairManualActivity startup payload"), "AccountModule.DoLogin NotifyWheelchairManualActivity.IsSeniorManualUnlock fresh-account lock state");
-            AssertEmptyJsonArray(manualPayload, "GetRewardManualRewardIds", "AccountModule.DoLogin NotifyWheelchairManualActivity startup payload");
-            AssertEmptyJsonArray(manualPayload, "GetRewardPlanIds", "AccountModule.DoLogin NotifyWheelchairManualActivity startup payload");
-            AssertEmptyJsonArray(manualPayload, "FinishStageIds", "AccountModule.DoLogin NotifyWheelchairManualActivity startup payload");
-            AssertEmptyJsonArray(manualPayload, "TimeLimitActivityInfos", "AccountModule.DoLogin NotifyWheelchairManualActivity startup payload");
-            AssertEmptyJsonArray(manualPayload, "WeekActivityInfos", "AccountModule.DoLogin NotifyWheelchairManualActivity startup payload");
+            int manualPlanId = RequiredValue<int>(manualPayload, "PlanId", JTokenType.Integer,
+                "AccountModule.DoLogin manual phase");
+            AssertEqual(true, TableReaderV2.Parse<AscNet.Table.V2.share.wheelchairmanual.WheelchairManualBattlePassPlanTable>()
+                .Single(plan => plan.Id == manualPlanId).TaskIds.Contains(8010),
+                "AccountModule.DoLogin manual phase exposes guide task 8010");
+            int manualActivityId = RequiredValue<int>(manualPayload, "ActivityId", JTokenType.Integer,
+                "AccountModule.DoLogin manual activity before login-complete");
+            AssertEqual(true, TableReaderV2.Parse<AscNet.Table.V2.share.wheelchairmanual.WheelchairManualActivityTable>()
+                .Single(activity => activity.Id == manualActivityId).PlanIds.Contains(manualPlanId),
+                "AccountModule.DoLogin seeds an active manual phase before login-complete");
+            int earlyManualIndex = RequiredPushIndex(startupPushes, nameof(NotifyWheelchairManualActivity), 0,
+                "AccountModule.DoLogin manual cache seed");
+            int notifyLoginIndex = RequiredPushIndex(startupPushes, nameof(NotifyLogin), 0,
+                "AccountModule.DoLogin synchronous login-complete event");
+            AssertEqual(notifyLoginIndex - 1, earlyManualIndex,
+                "AccountModule.DoLogin seeds the manual immediately before login-complete");
+            int lateManualIndex = RequiredPushIndex(startupPushes, nameof(NotifyWheelchairManualActivity),
+                notifyLoginIndex + 1, "AccountModule.DoLogin post-cache manual refresh");
+            AssertPushSubsequence(startupPushes,
+                [nameof(NotifyLogin), nameof(NotifyPurchaseRecommendConfig), nameof(NotifyFunctionalEntranceData),
+                    nameof(NotifyWheelchairManualActivity), nameof(NotifyWheelchairManualActivityUpdate)],
+                "AccountModule.DoLogin refreshes manual dependent queries after login caches");
+            JObject lateManualPayload = JObject.Parse(MessagePackSerializer.ConvertToJson(startupPushPackets[lateManualIndex].Content));
+            foreach (string field in new[] { "ActivityId", "PlanId", "BpLevel", "IsSeniorManualUnlock",
+                "GetRewardPlanIds", "GetRewardManualRewardIds", "FinishStageIds", "OpenActivityIds" })
+                AssertEqual(true, manualPayload[field] is not null
+                    && JToken.DeepEquals(manualPayload[field], lateManualPayload[field]),
+                    $"AccountModule.DoLogin late manual refresh preserves seeded {field}");
             AssertEqual(
                 RequiredValue<long>(calendarPayload, "CurrentGuildBossEndTime", JTokenType.Integer, "AccountModule.DoLogin NotifyNewActivityCalendarData startup payload"),
                 RequiredValue<long>(manualPayload, "CurrentGuildBossEndTime", JTokenType.Integer, "AccountModule.DoLogin NotifyWheelchairManualActivity startup payload"),
@@ -5201,7 +5340,7 @@ namespace AscNet.Test
 
             AssertForbiddenStartupPushesAbsent(
                 startupPushes,
-                [nameof(NotifyItemDataList), nameof(NotifyStageData), nameof(NotifyCharacterDataList), "NotifyPassportAutoGetTaskReward", "NotifyGuildWarActivityData", "NotifyClientShieldFunction", "NotifyClientFunctionOpenConfig"],
+                [nameof(NotifyItemDataList), nameof(NotifyStageData), nameof(NotifyCharacterDataList), "NotifyPassportAutoGetTaskReward", "NotifyClientShieldFunction", "NotifyClientFunctionOpenConfig"],
                 "AccountModule.DoLogin retail startup pushes");
 
             int purchasePredecessorIndex = RequiredPushIndex(startupPushes, nameof(NotifyNewPlayerTaskStatus), 0, "AccountModule.DoLogin purchase predecessor");
@@ -6546,97 +6685,6 @@ namespace AscNet.Test
                 throw new InvalidDataException("MailDeleteResponse DelIdList: expected initialized list.");
         }
 
-        private static void ValidatePurchaseRequestCompatibility()
-        {
-            using MongoCollectionOverride mongoOverride = MongoCollectionOverride.InstallForShopCompatibility();
-            const string requestName = nameof(PurchaseRequest);
-            const string responseName = nameof(PurchaseResponse);
-            const uint purchaseId = 90_943;
-            const int purchaseCount = 1;
-            int[] capturedUiTypes = [5, 6, 7, 8, 9, 10, 11, 12, 14, 15, 16];
-
-            MethodInfo handlerMethod = GetRegisteredRequestHandlerMethod(requestName);
-            AssertEqual("PurchaseRequestHandler", handlerMethod.Name, $"{requestName} registered handler method");
-
-            PurchaseRequest request = new()
-            {
-                Count = purchaseCount,
-                Param = null,
-                Id = purchaseId,
-                DiscountId = 0,
-                UiTypeList = capturedUiTypes.ToList()
-            };
-            PurchaseRequest requestRoundTrip = MessagePackSerializer.Deserialize<PurchaseRequest>(
-                MessagePackSerializer.Serialize(request));
-            AssertEqual(purchaseCount, requestRoundTrip.Count, $"{requestName} Count MessagePack round-trip");
-            if (requestRoundTrip.Param is not null)
-                throw new InvalidDataException($"{requestName} Param MessagePack round-trip: expected captured nil Param.");
-            AssertEqual(purchaseId, requestRoundTrip.Id, $"{requestName} Id MessagePack round-trip");
-            AssertEqual(0, requestRoundTrip.DiscountId, $"{requestName} DiscountId MessagePack round-trip");
-            AssertIntegerList(
-                capturedUiTypes.Select(uiType => (long)uiType).ToArray(),
-                requestRoundTrip.UiTypeList.Select(uiType => (long)uiType).ToArray(),
-                $"{requestName} UiTypeList MessagePack round-trip");
-
-            const long playerId = 88_009;
-            AscNet.Common.Database.Player player = CreateDrawCompatibilityPlayer(playerId);
-            player.PurchaseBuyTimes.Remove(purchaseId);
-            AscNet.Common.Database.Inventory inventory = CreateDrawCompatibilityInventory(playerId, []);
-            using LoopbackSessionHarness harness = new(
-                CreateDrawCompatibilityCharacter(playerId),
-                player,
-                inventory,
-                "purchase-request-compat-test");
-
-            const int packetId = 13_013;
-            InvokeRegisteredRequestHandler(requestName, harness.Session, packetId, requestRoundTrip);
-
-            NotifyItemDataList rewardPush = ReadPushPayload<NotifyItemDataList>(
-                harness,
-                nameof(NotifyItemDataList),
-                $"{requestName} reward inventory push");
-            Item pushedReward = rewardPush.ItemDataList.Single(item => item.Id == 90_031);
-            AssertEqual(1L, pushedReward.Count, $"{requestName} NotifyItemDataList reward item count");
-
-            PurchaseResponse response = ReadResponsePayload<PurchaseResponse>(
-                harness,
-                packetId,
-                responseName,
-                $"{requestName} response");
-            AssertEqual(0, response.Code, $"{responseName} Code");
-            AssertEqual(1, response.RewardList.Count, $"{responseName} RewardList count");
-            RewardGoods reward = response.RewardList[0];
-            AssertEqual(90_031, reward.TemplateId, $"{responseName} RewardList[0].TemplateId");
-            AssertEqual(1, reward.Count, $"{responseName} RewardList[0].Count");
-
-            System.Collections.IDictionary purchaseInfo = RequiredDynamicMap(
-                response.PurchaseInfo,
-                $"{responseName} PurchaseInfo");
-            AssertEqual((int)purchaseId, RequiredDynamicInteger(purchaseInfo, "Id", $"{responseName} PurchaseInfo"), $"{responseName} PurchaseInfo.Id");
-            AssertEqual(1, RequiredDynamicInteger(purchaseInfo, "BuyTimes", $"{responseName} PurchaseInfo"), $"{responseName} PurchaseInfo.BuyTimes");
-
-            System.Collections.IDictionary newPurchaseInfo = RequiredPurchaseInfoById(
-                response.NewPurchaseInfoList,
-                purchaseId,
-                $"{responseName} NewPurchaseInfoList");
-            AssertEqual(1, RequiredDynamicInteger(newPurchaseInfo, "BuyTimes", $"{responseName} NewPurchaseInfoList[{purchaseId}]"), $"{responseName} NewPurchaseInfoList[{purchaseId}].BuyTimes");
-
-            if (!harness.Session.player.PurchaseBuyTimes.TryGetValue(purchaseId, out int persistedBuyTimes))
-                throw new InvalidDataException($"{requestName}: expected Player.PurchaseBuyTimes to contain purchase id {purchaseId}.");
-            AssertEqual(1, persistedBuyTimes, $"{requestName} persisted Player.PurchaseBuyTimes[{purchaseId}]");
-
-            static System.Collections.IDictionary RequiredPurchaseInfoById(IEnumerable<object?> purchaseInfoList, uint requiredPurchaseId, string name)
-            {
-                foreach (object? purchaseInfo in purchaseInfoList)
-                {
-                    System.Collections.IDictionary purchaseInfoMap = RequiredDynamicMap(purchaseInfo, $"{name} item");
-                    if (RequiredDynamicInteger(purchaseInfoMap, "Id", $"{name} item") == (int)requiredPurchaseId)
-                        return purchaseInfoMap;
-                }
-
-                throw new InvalidDataException($"{name}: missing purchase id {requiredPurchaseId}.");
-            }
-        }
 
 
 
@@ -6707,6 +6755,7 @@ namespace AscNet.Test
             using MongoCollectionOverride mongoOverride = MongoCollectionOverride.InstallForDrawCompatibility();
             AssertConstructShardTableCompatibility();
             AssertDataDrivenRotationCatalog();
+            ValidateMemberTargetLocalPolicy();
 
             const long playerId = 880001;
             const int unavailableCode = 1;
@@ -6751,7 +6800,7 @@ namespace AscNet.Test
             if (groups.DrawGroupInfoList.Count < 2)
                 throw new InvalidDataException($"DrawGetDrawGroupListResponse: expected at least two table-derived groups, got {groups.DrawGroupInfoList.Count}.");
             DrawAdjustActivityInfo adjustment = groups.DrawAdjustActivityInfoList.Single();
-            AssertEqual(1, adjustment.DrawGroupId, "DrawGetDrawGroupListResponse captured adjustment group");
+            AssertEqual(1, adjustment.DrawGroupId, "DrawGetDrawGroupListResponse local calibration group");
             long drawNow = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
             List<DrawPredictTable> activeRotations = TableReaderV2.Parse<DrawPredictTable>()
                 .Where(x => x.StartTime <= drawNow && drawNow < x.EndTime).ToList();
@@ -10457,79 +10506,6 @@ namespace AscNet.Test
                 harness, 11_109, nameof(AddVoteResponse), "AddVoteRequest unknown response").Code,
                 "AddVoteRequest unknown vote rejection");
 
-            const int guildDetailPacketId = 11_007;
-            InvokeRegisteredRequestHandler(
-                nameof(GuildListDetailRequest),
-                harness.Session,
-                guildDetailPacketId,
-                new GuildListDetailRequest { GuildId = 365 });
-            GuildListDetailResponse guildDetailResponse = ReadResponsePayload<GuildListDetailResponse>(
-                harness,
-                guildDetailPacketId,
-                nameof(GuildListDetailResponse),
-                "GuildListDetailRequest response");
-            AssertEqual(0, guildDetailResponse.Code, "GuildListDetailResponse Code");
-            AssertEqual(365U, guildDetailResponse.GuildId, "GuildListDetailResponse GuildId");
-            AssertEqual(player.PlayerData.Name, guildDetailResponse.GuildLeaderName, "GuildListDetailResponse GuildLeaderName");
-            if (guildDetailResponse.GiftLevelGot is null)
-                throw new InvalidDataException("GuildListDetailResponse GiftLevelGot: expected initialized list.");
-
-            const int guildMemberPacketId = 11_008;
-            InvokeRegisteredRequestHandler(
-                nameof(GuildMemberDetailRequest),
-                harness.Session,
-                guildMemberPacketId,
-                new GuildMemberDetailRequest { GuildId = 365 });
-            GuildMemberDetailResponse guildMemberResponse = ReadResponsePayload<GuildMemberDetailResponse>(
-                harness,
-                guildMemberPacketId,
-                nameof(GuildMemberDetailResponse),
-                "GuildMemberDetailRequest response");
-            AssertEqual(0, guildMemberResponse.Code, "GuildMemberDetailResponse Code");
-            AssertEqual(1, guildMemberResponse.MembersData.Count, "GuildMemberDetailResponse MembersData count");
-            GuildMemberDetailResponse.GuildMemberDetailResponseMembersData guildMember = guildMemberResponse.MembersData.Single();
-            AssertEqual((uint)playerId, guildMember.Id, "GuildMemberDetailResponse current member Id");
-            AssertEqual(player.PlayerData.Name, guildMember.Name, "GuildMemberDetailResponse current member Name");
-
-            const int guildChatPacketId = 11_009;
-            InvokeRegisteredRequestHandler(nameof(GuildListChatRequest), harness.Session, guildChatPacketId, new GuildListChatRequest());
-            GuildListChatResponse guildChatResponse = ReadResponsePayload<GuildListChatResponse>(
-                harness,
-                guildChatPacketId,
-                nameof(GuildListChatResponse),
-                "GuildListChatRequest response");
-            AssertEqual(0, guildChatResponse.Code, "GuildListChatResponse Code");
-            if (guildChatResponse.ChatList is null)
-                throw new InvalidDataException("GuildListChatResponse ChatList: expected initialized list.");
-            AssertEqual(1, guildChatResponse.ChatList.Count, "GuildListChatResponse ChatList count");
-            JObject guildChat = JObject.Parse(guildChatResponse.ChatList.Single());
-            AssertEqual(6, guildChat.Value<int>("ChannelType"), "GuildListChatResponse ChatList[0] ChannelType");
-            AssertEqual(1, guildChat.Value<int>("MsgType"), "GuildListChatResponse ChatList[0] MsgType");
-            AssertEqual("AscNet", guildChat.Value<string>("GuildName"), "GuildListChatResponse ChatList[0] GuildName");
-            if (string.IsNullOrWhiteSpace(guildChat.Value<string>("Content")))
-                throw new InvalidDataException("GuildListChatResponse ChatList[0] Content: expected visible text.");
-
-            const int guildSupportPacketId = 11_010;
-            InvokeRegisteredRequestHandler(
-                nameof(GuildWarOpenSupportPanelRequest),
-                harness.Session,
-                guildSupportPacketId,
-                new GuildWarOpenSupportPanelRequest());
-            GuildWarOpenSupportPanelResponse guildSupportResponse = ReadResponsePayload<GuildWarOpenSupportPanelResponse>(
-                harness,
-                guildSupportPacketId,
-                nameof(GuildWarOpenSupportPanelResponse),
-                "GuildWarOpenSupportPanelRequest response");
-            AssertEqual(0, guildSupportResponse.Code, "GuildWarOpenSupportPanelResponse Code");
-            if (guildSupportResponse.SupportDetail is null)
-                throw new InvalidDataException("GuildWarOpenSupportPanelResponse SupportDetail: expected initialized detail.");
-            AssertEqual(1021001, guildSupportResponse.SupportDetail.CharacterId, "GuildWarOpenSupportPanelResponse SupportDetail CharacterId");
-            if (guildSupportResponse.SupportDetail.ToAssistRecords is null
-                || guildSupportResponse.SupportDetail.MyLogs is null
-                || guildSupportResponse.SupportDetail.GetAssistRecords is null
-                || guildSupportResponse.SupportDetail.MyAssistRecords is null)
-                throw new InvalidDataException("GuildWarOpenSupportPanelResponse SupportDetail: expected initialized record lists.");
-
             const int fixedShopPacketId = 11_011;
             InvokeRegisteredRequestHandler(
                 nameof(GetFixedShopListRequest),
@@ -10667,787 +10643,8 @@ namespace AscNet.Test
                 "ChangeAssistCharIdRequest switch back assist response");
             AssertEqual(0, switchBackAssistResponse.Code, "ChangeAssistCharIdResponse switch back assist Code");
             AssertEqual(1021005, player.AssistCharacterId, "ChangeAssistCharIdRequest persisted switched-back assist");
-
-            BiancaTheatreSelectDifficultyRequest theatreDifficultyRoundTrip =
-                MessagePackSerializer.Deserialize<BiancaTheatreSelectDifficultyRequest>(
-                    MessagePackSerializer.Serialize(new BiancaTheatreSelectDifficultyRequest { Difficulty = 1 }));
-            AssertEqual(1, theatreDifficultyRoundTrip.Difficulty, "BiancaTheatreSelectDifficultyRequest Difficulty MessagePack round-trip");
-
-            const int theatreDifficultyPacketId = 11_019;
-            InvokeRegisteredRequestHandler(
-                nameof(BiancaTheatreSelectDifficultyRequest),
-                harness.Session,
-                theatreDifficultyPacketId,
-                theatreDifficultyRoundTrip);
-            BiancaTheatreSelectDifficultyResponse theatreDifficultyResponse =
-                ReadResponsePayload<BiancaTheatreSelectDifficultyResponse>(
-                    harness,
-                    theatreDifficultyPacketId,
-                    nameof(BiancaTheatreSelectDifficultyResponse),
-                    "BiancaTheatreSelectDifficultyRequest response");
-            AssertEqual(0, theatreDifficultyResponse.Code, "BiancaTheatreSelectDifficultyResponse Code");
-            AssertEqual(1, theatreDifficultyResponse.ChapterId, "BiancaTheatreSelectDifficultyResponse ChapterId captured response");
-
-            BiancaTheatreSelectTeamRequest theatreTeamRoundTrip =
-                MessagePackSerializer.Deserialize<BiancaTheatreSelectTeamRequest>(
-                    MessagePackSerializer.Serialize(new BiancaTheatreSelectTeamRequest { TeamId = 3 }));
-            AssertEqual(3, theatreTeamRoundTrip.TeamId, "BiancaTheatreSelectTeamRequest TeamId MessagePack round-trip");
-
-            const int theatreTeamPacketId = 11_020;
-            InvokeRegisteredRequestHandler(
-                nameof(BiancaTheatreSelectTeamRequest),
-                harness.Session,
-                theatreTeamPacketId,
-                theatreTeamRoundTrip);
-            JObject theatreInitialStepPush = ReadPushMapPayload(
-                harness,
-                "NotifyBiancaTheatreAddStep",
-                "BiancaTheatreSelectTeamRequest initial reward step push");
-            AssertEqual(1L, RequiredValue<long>(theatreInitialStepPush, "ChapterId", JTokenType.Integer, "BiancaTheatreSelectTeamRequest initial reward step push"), "BiancaTheatreSelectTeamRequest initial reward step ChapterId");
-            JObject initialRewardStep = RequiredObject(theatreInitialStepPush, "Step", "BiancaTheatreSelectTeamRequest initial reward step push");
-            AssertEqual(340L, RequiredValue<long>(initialRewardStep, "Uid", JTokenType.Integer, "BiancaTheatreSelectTeamRequest initial reward step"), "BiancaTheatreSelectTeamRequest initial reward step Uid");
-            AssertEqual(1L, RequiredValue<long>(initialRewardStep, "StepType", JTokenType.Integer, "BiancaTheatreSelectTeamRequest initial reward step"), "BiancaTheatreSelectTeamRequest initial reward step StepType");
-            JArray initialItemChoices = (JArray)RequiredToken(initialRewardStep, "ItemIds", JTokenType.Array, "BiancaTheatreSelectTeamRequest initial reward step");
-            AssertEqual(3, initialItemChoices.Count, "BiancaTheatreSelectTeamRequest initial reward ItemIds count");
-            AssertEqual(26L, initialItemChoices[0]!.Value<long>(), "BiancaTheatreSelectTeamRequest initial reward first item id");
-
-            NotifyItemDataList initialCurrencyPush = ReadPushPayload<NotifyItemDataList>(
-                harness,
-                nameof(NotifyItemDataList),
-                "BiancaTheatreSelectTeamRequest initial currency push");
-            AssertEqual(3L, initialCurrencyPush.ItemDataList.Single(item => item.Id == 96119).Count, "BiancaTheatreSelectTeamRequest item 96119 initial count");
-            AssertEqual(1L, initialCurrencyPush.ItemDataList.Single(item => item.Id == 96120).Count, "BiancaTheatreSelectTeamRequest item 96120 initial count");
-            NotifyItemDataList currencyAUpgradePush = ReadPushPayload<NotifyItemDataList>(
-                harness,
-                nameof(NotifyItemDataList),
-                "BiancaTheatreSelectTeamRequest item 96119 update push");
-            AssertEqual(8L, currencyAUpgradePush.ItemDataList.Single(item => item.Id == 96119).Count, "BiancaTheatreSelectTeamRequest item 96119 updated count");
-            NotifyItemDataList currencyBUpgradePush = ReadPushPayload<NotifyItemDataList>(
-                harness,
-                nameof(NotifyItemDataList),
-                "BiancaTheatreSelectTeamRequest item 96120 update push");
-            AssertEqual(4L, currencyBUpgradePush.ItemDataList.Single(item => item.Id == 96120).Count, "BiancaTheatreSelectTeamRequest item 96120 updated count");
-
-            BiancaTheatreSelectTeamResponse theatreTeamResponse =
-                ReadResponsePayload<BiancaTheatreSelectTeamResponse>(
-                    harness,
-                    theatreTeamPacketId,
-                    nameof(BiancaTheatreSelectTeamResponse),
-                    "BiancaTheatreSelectTeamRequest response");
-            AssertEqual(0, theatreTeamResponse.Code, "BiancaTheatreSelectTeamResponse Code");
-
-            const int theatreItemRewardPacketId = 11_021;
-            InvokeRegisteredRequestHandler(
-                nameof(BiancaTheatreSelectItemRewardRequest),
-                harness.Session,
-                theatreItemRewardPacketId,
-                new BiancaTheatreSelectItemRewardRequest { InnerItemId = 26 });
-            JObject addItemPush = ReadPushMapPayload(
-                harness,
-                "NotifyBiancaTheatreAddItem",
-                "BiancaTheatreSelectItemRewardRequest add item push");
-            JArray addedItems = (JArray)RequiredToken(addItemPush, "BiancaTheatreItems", JTokenType.Array, "BiancaTheatreSelectItemRewardRequest add item push");
-            AssertEqual(1, addedItems.Count, "BiancaTheatreSelectItemRewardRequest added item count");
-            JObject addedItem = (JObject)addedItems[0]!;
-            AssertEqual(75L, RequiredValue<long>(addedItem, "Uid", JTokenType.Integer, "BiancaTheatreSelectItemRewardRequest added item"), "BiancaTheatreSelectItemRewardRequest added item Uid");
-            AssertEqual(26L, RequiredValue<long>(addedItem, "ItemId", JTokenType.Integer, "BiancaTheatreSelectItemRewardRequest added item"), "BiancaTheatreSelectItemRewardRequest added ItemId");
-            JObject recruitChoiceStepPush = ReadPushMapPayload(
-                harness,
-                "NotifyBiancaTheatreAddStep",
-                "BiancaTheatreSelectItemRewardRequest recruit choice step push");
-            JObject recruitChoiceStep = RequiredObject(recruitChoiceStepPush, "Step", "BiancaTheatreSelectItemRewardRequest recruit choice step push");
-            AssertEqual(341L, RequiredValue<long>(recruitChoiceStep, "Uid", JTokenType.Integer, "BiancaTheatreSelectItemRewardRequest recruit choice step"), "BiancaTheatreSelectItemRewardRequest recruit choice step Uid");
-            AssertEqual(3L, RequiredValue<long>(recruitChoiceStep, "StepType", JTokenType.Integer, "BiancaTheatreSelectItemRewardRequest recruit choice step"), "BiancaTheatreSelectItemRewardRequest recruit choice step StepType");
-            JObject itemRewardResponse = ReadResponseMapPayload(
-                harness,
-                theatreItemRewardPacketId,
-                "BiancaTheatreSelectItemRewardResponse",
-                "BiancaTheatreSelectItemRewardRequest response");
-            AssertEqual(0L, RequiredValue<long>(itemRewardResponse, "Code", JTokenType.Integer, "BiancaTheatreSelectItemRewardRequest response"), "BiancaTheatreSelectItemRewardResponse Code");
-            AssertEqual(26L, RequiredValue<long>(itemRewardResponse, "InnerItemId", JTokenType.Integer, "BiancaTheatreSelectItemRewardRequest response"), "BiancaTheatreSelectItemRewardResponse InnerItemId");
-
-            const int theatreRecruitTickPacketId = 11_022;
-            InvokeRegisteredRequestHandler(
-                nameof(BiancaTheatreSelectRecruitTickRequest),
-                harness.Session,
-                theatreRecruitTickPacketId,
-                new BiancaTheatreSelectRecruitTickRequest { TickId = 1002 });
-            JObject recruitTickResponse = ReadResponseMapPayload(
-                harness,
-                theatreRecruitTickPacketId,
-                "BiancaTheatreSelectRecruitTickResponse",
-                "BiancaTheatreSelectRecruitTickRequest response");
-            JObject recruitTickStep = RequiredObject(recruitTickResponse, "Step", "BiancaTheatreSelectRecruitTickRequest response");
-            AssertEqual(342L, RequiredValue<long>(recruitTickStep, "Uid", JTokenType.Integer, "BiancaTheatreSelectRecruitTickRequest Step"), "BiancaTheatreSelectRecruitTickResponse Step Uid");
-            AssertEqual(1002L, RequiredValue<long>(recruitTickStep, "TickId", JTokenType.Integer, "BiancaTheatreSelectRecruitTickRequest Step"), "BiancaTheatreSelectRecruitTickResponse Step TickId");
-            AssertEqual(0L, RequiredValue<long>(recruitTickResponse, "Code", JTokenType.Integer, "BiancaTheatreSelectRecruitTickRequest response"), "BiancaTheatreSelectRecruitTickResponse Code");
-
-            const int theatreEndRecruitPacketId = 11_023;
-            InvokeRegisteredRequestHandler(
-                "BiancaTheatreEndRecruitRequest",
-                harness.Session,
-                theatreEndRecruitPacketId,
-                null);
-            JObject recruitCompleteStepPush = ReadPushMapPayload(
-                harness,
-                "NotifyBiancaTheatreAddStep",
-                "BiancaTheatreEndRecruitRequest complete recruit step push");
-            JObject recruitCompleteStep = RequiredObject(recruitCompleteStepPush, "Step", "BiancaTheatreEndRecruitRequest complete recruit step push");
-            AssertEqual(343L, RequiredValue<long>(recruitCompleteStep, "Uid", JTokenType.Integer, "BiancaTheatreEndRecruitRequest complete recruit step"), "BiancaTheatreEndRecruitRequest complete recruit step Uid");
-            AssertEqual(5L, RequiredValue<long>(recruitCompleteStep, "StepType", JTokenType.Integer, "BiancaTheatreEndRecruitRequest complete recruit step"), "BiancaTheatreEndRecruitRequest complete recruit step StepType");
-            JObject endRecruitResponse = ReadResponseMapPayload(
-                harness,
-                theatreEndRecruitPacketId,
-                "BiancaTheatreEndRecruitResponse",
-                "BiancaTheatreEndRecruitRequest response");
-            AssertEqual(0L, RequiredValue<long>(endRecruitResponse, "Code", JTokenType.Integer, "BiancaTheatreEndRecruitRequest response"), "BiancaTheatreEndRecruitResponse Code");
-
-            const int theatreRecvRewardPacketId = 11_024;
-            InvokeRegisteredRequestHandler(
-                nameof(BiancaTheatreRecvFightRewardRequest),
-                harness.Session,
-                theatreRecvRewardPacketId,
-                new BiancaTheatreRecvFightRewardRequest { Uid = 2 });
-            NotifyItemDataList fightRewardItemPush = ReadPushPayload<NotifyItemDataList>(
-                harness,
-                nameof(NotifyItemDataList),
-                "BiancaTheatreRecvFightRewardRequest item push");
-            AssertEqual(12L, fightRewardItemPush.ItemDataList.Single(item => item.Id == 96119).Count, "BiancaTheatreRecvFightRewardRequest item 96119 count");
-            JObject recvRewardResponse = ReadResponseMapPayload(
-                harness,
-                theatreRecvRewardPacketId,
-                "BiancaTheatreRecvFightRewardResponse",
-                "BiancaTheatreRecvFightRewardRequest response");
-            JArray rewardGoodsList = (JArray)RequiredToken(recvRewardResponse, "RewardGoodsList", JTokenType.Array, "BiancaTheatreRecvFightRewardRequest response");
-            AssertEqual(1, rewardGoodsList.Count, "BiancaTheatreRecvFightRewardResponse RewardGoodsList count");
-            AssertEqual(0L, RequiredValue<long>(recvRewardResponse, "Code", JTokenType.Integer, "BiancaTheatreRecvFightRewardRequest response"), "BiancaTheatreRecvFightRewardResponse Code");
-
-            const int theatreSettlePacketId = 11_025;
-            InvokeRegisteredRequestHandler(
-                "BiancaTheatreSettleAdventureRequest",
-                harness.Session,
-                theatreSettlePacketId,
-                null);
-            JObject totalExpPush = ReadPushMapPayload(
-                harness,
-                "NotifyBiancaTheatreTotalExp",
-                "BiancaTheatreSettleAdventureRequest total exp push");
-            AssertEqual(5576L, RequiredValue<long>(totalExpPush, "TotalExp", JTokenType.Integer, "BiancaTheatreSettleAdventureRequest total exp push"), "NotifyBiancaTheatreTotalExp TotalExp");
-            JObject settleAdventureResponse = ReadResponseMapPayload(
-                harness,
-                theatreSettlePacketId,
-                "BiancaTheatreSettleAdventureResponse",
-                "BiancaTheatreSettleAdventureRequest response");
-            JObject settleData = RequiredObject(settleAdventureResponse, "SettleData", "BiancaTheatreSettleAdventureRequest response");
-            AssertEqual(0L, RequiredValue<long>(settleAdventureResponse, "Code", JTokenType.Integer, "BiancaTheatreSettleAdventureRequest response"), "BiancaTheatreSettleAdventureResponse Code");
-            AssertEqual(3L, RequiredValue<long>(settleData, "TeamId", JTokenType.Integer, "BiancaTheatreSettleAdventureResponse SettleData"), "BiancaTheatreSettleAdventureResponse SettleData TeamId");
         }
 
-        private static void ValidateBiancaTheatreCompatibility()
-        {
-            const long playerId = 99_021;
-            const int lightningRecruitTickId = 4_001;
-            const int invitedLightningCharacterId = 1_041_003;
-            const int lotusCharacterId = 1_021_001;
-            const int inverseCrownCharacterId = 1_021_007;
-            const int theatreRobotId = 126_003;
-            const uint theatreFightStageId = 30_062_615;
-            long[] capturedFireRecruitCharacterIds = [1_051_003, 1_011_002, 1_031_004];
-
-            using LoopbackSessionHarness harness = new(
-                CreateDrawCompatibilityCharacter(playerId),
-                CreateDrawCompatibilityPlayer(playerId),
-                CreateDrawCompatibilityInventory(playerId, []),
-                "bianca-theatre-compat-test");
-            harness.Session.stage = CreateLoginAccountCompatibilityStage(playerId);
-            long[] initialAccountRosterIds = OrderedAccountRosterIds(harness);
-
-            const int selectTeamPacketId = 61_001;
-            InvokeRegisteredRequestHandler(
-                nameof(BiancaTheatreSelectTeamRequest),
-                harness.Session,
-                selectTeamPacketId,
-                new BiancaTheatreSelectTeamRequest { TeamId = 3 });
-            JObject initialStepPush = ReadPushMapPayload(
-                harness,
-                "NotifyBiancaTheatreAddStep",
-                "BiancaTheatreSelectTeamRequest initial step push");
-            JObject initialStep = RequiredObject(initialStepPush, "Step", "BiancaTheatreSelectTeamRequest initial step push");
-            AssertEqual(340L, RequiredValue<long>(initialStep, "Uid", JTokenType.Integer, "BiancaTheatreSelectTeamRequest initial step"), "BiancaTheatreSelectTeamRequest initial step Uid");
-            AssertEqual(1L, RequiredValue<long>(initialStep, "StepType", JTokenType.Integer, "BiancaTheatreSelectTeamRequest initial step"), "BiancaTheatreSelectTeamRequest initial step StepType");
-            NotifyItemDataList initialCurrencyPush = ReadPushPayload<NotifyItemDataList>(
-                harness,
-                nameof(NotifyItemDataList),
-                "BiancaTheatreSelectTeamRequest first currency push");
-            AssertEqual(3L, initialCurrencyPush.ItemDataList.Single(item => item.Id == 96119).Count, "BiancaTheatreSelectTeamRequest first currency item count");
-            _ = ReadPushPayload<NotifyItemDataList>(harness, nameof(NotifyItemDataList), "BiancaTheatreSelectTeamRequest second currency push");
-            _ = ReadPushPayload<NotifyItemDataList>(harness, nameof(NotifyItemDataList), "BiancaTheatreSelectTeamRequest third currency push");
-            BiancaTheatreSelectTeamResponse selectTeamResponse = ReadResponsePayload<BiancaTheatreSelectTeamResponse>(
-                harness,
-                selectTeamPacketId,
-                nameof(BiancaTheatreSelectTeamResponse),
-                "BiancaTheatreSelectTeamRequest response");
-            AssertEqual(0, selectTeamResponse.Code, "BiancaTheatreSelectTeamResponse Code");
-
-            const int selectItemPacketId = 61_002;
-            InvokeRegisteredRequestHandler(
-                nameof(BiancaTheatreSelectItemRewardRequest),
-                harness.Session,
-                selectItemPacketId,
-                new BiancaTheatreSelectItemRewardRequest { InnerItemId = 26 });
-            JObject addItemPush = ReadPushMapPayload(
-                harness,
-                "NotifyBiancaTheatreAddItem",
-                "BiancaTheatreSelectItemRewardRequest add item push");
-            JArray addedItems = (JArray)RequiredToken(addItemPush, "BiancaTheatreItems", JTokenType.Array, "BiancaTheatreSelectItemRewardRequest add item push");
-            AssertEqual(1, addedItems.Count, "BiancaTheatreSelectItemRewardRequest add item count");
-            JObject addedItem = (JObject)addedItems[0]!;
-            AssertEqual(26L, RequiredValue<long>(addedItem, "ItemId", JTokenType.Integer, "BiancaTheatreSelectItemRewardRequest add item"), "BiancaTheatreSelectItemRewardRequest added ItemId");
-            JObject recruitChoicePush = ReadPushMapPayload(
-                harness,
-                "NotifyBiancaTheatreAddStep",
-                "BiancaTheatreSelectItemRewardRequest recruit choice push");
-            JObject recruitChoiceStep = RequiredObject(recruitChoicePush, "Step", "BiancaTheatreSelectItemRewardRequest recruit choice push");
-            AssertEqual(341L, RequiredValue<long>(recruitChoiceStep, "Uid", JTokenType.Integer, "BiancaTheatreSelectItemRewardRequest recruit choice step"), "BiancaTheatreSelectItemRewardRequest recruit choice step Uid");
-            JObject selectItemResponse = ReadResponseMapPayload(
-                harness,
-                selectItemPacketId,
-                "BiancaTheatreSelectItemRewardResponse",
-                "BiancaTheatreSelectItemRewardRequest response");
-            AssertEqual(26L, RequiredValue<long>(selectItemResponse, "InnerItemId", JTokenType.Integer, "BiancaTheatreSelectItemRewardRequest response"), "BiancaTheatreSelectItemRewardResponse InnerItemId");
-
-            const int recruitTickPacketId = 61_003;
-            InvokeRegisteredRequestHandler(
-                nameof(BiancaTheatreSelectRecruitTickRequest),
-                harness.Session,
-                recruitTickPacketId,
-                new BiancaTheatreSelectRecruitTickRequest { TickId = lightningRecruitTickId });
-            JObject recruitTickResponse = ReadResponseMapPayload(
-                harness,
-                recruitTickPacketId,
-                "BiancaTheatreSelectRecruitTickResponse",
-                "BiancaTheatreSelectRecruitTickRequest response");
-            JObject recruitTickStep = RequiredObject(recruitTickResponse, "Step", "BiancaTheatreSelectRecruitTickRequest response");
-            AssertEqual(342L, RequiredValue<long>(recruitTickStep, "Uid", JTokenType.Integer, "BiancaTheatreSelectRecruitTickResponse Step"), "BiancaTheatreSelectRecruitTickResponse Step Uid");
-            AssertEqual((long)lightningRecruitTickId, RequiredValue<long>(recruitTickStep, "TickId", JTokenType.Integer, "BiancaTheatreSelectRecruitTickResponse Step"), "BiancaTheatreSelectRecruitTickResponse Step TickId");
-            JArray refreshCharacterIds = (JArray)RequiredToken(recruitTickStep, "RefreshCharacterIds", JTokenType.Array, "BiancaTheatreSelectRecruitTickResponse Step");
-            long[] refreshedCharacterIds = refreshCharacterIds.Select(characterId => characterId!.Value<long>()).ToArray();
-            if (!refreshedCharacterIds.Contains(invitedLightningCharacterId))
-                throw new InvalidDataException($"BiancaTheatreSelectRecruitTickResponse lightning invitation: expected RefreshCharacterIds to include Bianca: Veritas {invitedLightningCharacterId}, got [{string.Join(", ", refreshedCharacterIds)}].");
-            AssertEqual(
-                false,
-                refreshedCharacterIds.SequenceEqual(capturedFireRecruitCharacterIds),
-                "BiancaTheatreSelectRecruitTickResponse lightning invitation must not replay captured fire RefreshCharacterIds");
-
-            const int recruitCharacterPacketId = 61_004;
-            InvokeRegisteredRequestHandler(
-                nameof(BiancaTheatreRecruitCharacterRequest),
-                harness.Session,
-                recruitCharacterPacketId,
-                new BiancaTheatreRecruitCharacterRequest { CharacterId = lotusCharacterId });
-            JObject recruitCharacterResponse = ReadResponseMapPayload(
-                harness,
-                recruitCharacterPacketId,
-                "BiancaTheatreRecruitCharacterResponse",
-                "BiancaTheatreRecruitCharacterRequest response");
-            AssertEqual(0L, RequiredValue<long>(recruitCharacterResponse, "Code", JTokenType.Integer, "BiancaTheatreRecruitCharacterRequest response"), "BiancaTheatreRecruitCharacterResponse Code");
-            AssertAccountRosterUnchanged(harness, initialAccountRosterIds, "BiancaTheatreRecruitCharacterRequest stores mode-local Lucia: Lotus without changing the account roster");
-
-            const int endRecruitPacketId = 61_005;
-            InvokeRegisteredRequestHandler("BiancaTheatreEndRecruitRequest", harness.Session, endRecruitPacketId, null);
-            JObject completeRecruitPush = ReadPushMapPayload(
-                harness,
-                "NotifyBiancaTheatreAddStep",
-                "BiancaTheatreEndRecruitRequest complete step push");
-            JObject completeRecruitStep = RequiredObject(completeRecruitPush, "Step", "BiancaTheatreEndRecruitRequest complete step push");
-            AssertEqual(343L, RequiredValue<long>(completeRecruitStep, "Uid", JTokenType.Integer, "BiancaTheatreEndRecruitRequest complete step"), "BiancaTheatreEndRecruitRequest complete step Uid");
-            JObject endRecruitResponse = ReadResponseMapPayload(
-                harness,
-                endRecruitPacketId,
-                "BiancaTheatreEndRecruitResponse",
-                "BiancaTheatreEndRecruitRequest response");
-            AssertEqual(0L, RequiredValue<long>(endRecruitResponse, "Code", JTokenType.Integer, "BiancaTheatreEndRecruitRequest response"), "BiancaTheatreEndRecruitResponse Code");
-            const int selectNodePacketId = 61_050;
-            InvokeRegisteredRequestHandler(
-                nameof(BiancaTheatreSelectNodeRequest),
-                harness.Session,
-                selectNodePacketId,
-                new BiancaTheatreSelectNodeRequest { NodeId = 1, SlotId = 1 });
-            JObject selectNodeResponse = ReadResponseMapPayload(
-                harness,
-                selectNodePacketId,
-                "BiancaTheatreSelectNodeResponse",
-                "Bianca Theatre NodeId 1 SlotId 1 selection response");
-            AssertEqual(0L, RequiredValue<long>(selectNodeResponse, "Code", JTokenType.Integer, "Bianca Theatre NodeId 1 SlotId 1 selection response"), "BiancaTheatreSelectNodeResponse Code");
-
-            const int setSingleTeamPacketId = 61_006;
-            BiancaTheatreSetSingleTeamRequest setSingleTeamRequest = new()
-            {
-                TeamData = new Dictionary<string, object?>
-                {
-                    ["CaptainPos"] = 1,
-                    ["FirstFightPos"] = 1,
-                    ["SettleCgIndex"] = 0,
-                    ["EnterCgIndex"] = 0,
-                    ["TeamIndex"] = 0,
-                    ["CardIds"] = new[] { 0, 0, 0 },
-                    ["RobotIds"] = new[] { theatreRobotId, 0, 0 }
-                }
-            };
-            BiancaTheatreSetSingleTeamRequest setSingleTeamRoundTrip = MessagePackSerializer.Deserialize<BiancaTheatreSetSingleTeamRequest>(
-                MessagePackSerializer.Serialize(setSingleTeamRequest));
-            AssertTeamDataIntegerList(
-                (object?)setSingleTeamRoundTrip.TeamData,
-                "CardIds",
-                new long[] { 0, 0, 0 },
-                "BiancaTheatreSetSingleTeamRequest TeamData.CardIds MessagePack round-trip");
-            AssertTeamDataIntegerList(
-                (object?)setSingleTeamRoundTrip.TeamData,
-                "RobotIds",
-                new long[] { theatreRobotId, 0, 0 },
-                "BiancaTheatreSetSingleTeamRequest TeamData.RobotIds MessagePack round-trip");
-            InvokeRegisteredRequestHandler(
-                nameof(BiancaTheatreSetSingleTeamRequest),
-                harness.Session,
-                setSingleTeamPacketId,
-                setSingleTeamRoundTrip);
-            JObject setSingleTeamResponse = ReadResponseMapPayload(
-                harness,
-                setSingleTeamPacketId,
-                "BiancaTheatreSetSingleTeamResponse",
-                "BiancaTheatreSetSingleTeamRequest response");
-            AssertEqual(0L, RequiredValue<long>(setSingleTeamResponse, "Code", JTokenType.Integer, "BiancaTheatreSetSingleTeamRequest response"), "BiancaTheatreSetSingleTeamResponse Code");
-            AssertAccountRosterUnchanged(harness, initialAccountRosterIds, "BiancaTheatreSetSingleTeamRequest robot team keeps Lucia: Lotus out of the account roster");
-
-            const int preFightPacketId = 61_007;
-            PreFightRequest preFightRequest = new()
-            {
-                PreFightData = new()
-                {
-                    ChallengeCount = 1,
-                    StageId = theatreFightStageId,
-                    CardIds = [0, 0, 0],
-                    RobotIds = [theatreRobotId, 0, 0],
-                    FirstFightPos = 1,
-                    CaptainPos = 1
-                }
-            };
-            PreFightRequest preFightRoundTrip = MessagePackSerializer.Deserialize<PreFightRequest>(
-                MessagePackSerializer.Serialize(preFightRequest));
-            AssertEqual(theatreFightStageId, preFightRoundTrip.PreFightData.StageId, "Bianca Theatre PreFightRequest theatre fight StageId MessagePack round-trip");
-            AssertIntegerList([0, 0, 0], preFightRoundTrip.PreFightData.CardIds!.Select(cardId => (long)cardId).ToArray(), "Bianca Theatre PreFightRequest CardIds MessagePack round-trip");
-            AssertIntegerList([theatreRobotId, 0, 0], preFightRoundTrip.PreFightData.RobotIds!.Select(robotId => (long)robotId).ToArray(), "Bianca Theatre PreFightRequest RobotIds MessagePack round-trip");
-            InvokeRegisteredRequestHandler(nameof(PreFightRequest), harness.Session, preFightPacketId, preFightRoundTrip);
-            PreFightResponse preFightResponse = ReadResponsePayload<PreFightResponse>(
-                harness,
-                preFightPacketId,
-                nameof(PreFightResponse),
-                "Bianca Theatre PreFightRequest Lucia: Lotus robot response");
-            AssertEqual(0, preFightResponse.Code, "Bianca Theatre PreFightResponse Code");
-            if (preFightResponse.FightData is null)
-                throw new InvalidDataException("Bianca Theatre PreFightResponse: expected FightData for accepted theatre fight.");
-            AssertEqual(theatreFightStageId, preFightResponse.FightData.StageId, "Bianca Theatre PreFightResponse FightData.StageId");
-            AssertPreFightDeployedCharacterIds(
-                preFightResponse,
-                playerId,
-                [lotusCharacterId],
-                "Bianca Theatre PreFightResponse selected Lucia: Lotus robot");
-            AssertPreFightDoesNotDeployCharacter(
-                preFightResponse,
-                playerId,
-                inverseCrownCharacterId,
-                "Bianca Theatre PreFightResponse must not deploy Lucia: Inverse Crown");
-            AssertBiancaTheatreRobotNpcSlot(
-                preFightResponse,
-                playerId,
-                expectedSlot: 0,
-                expectedCharacterId: lotusCharacterId,
-                expectedRobotId: theatreRobotId,
-                "Bianca Theatre PreFightResponse player NpcData[0]");
-            AssertPopulatedDynamicPayload(preFightResponse.FightData.NpcGroupList, "Bianca Theatre PreFightResponse FightData.NpcGroupList enemies");
-            AssertPopulatedDynamicPayload(preFightResponse.FightData.StageParams, "Bianca Theatre PreFightResponse FightData.StageParams");
-            AssertAccountRosterUnchanged(harness, initialAccountRosterIds, "Bianca Theatre PreFight deploy keeps Lucia: Lotus out of the account roster");
-
-            const int fightSettlePacketId = 61_008;
-            FightSettleRequest fightSettleRequest = CreateMissingStageSettleRequest(
-                theatreFightStageId,
-                preFightResponse.FightData.FightId,
-                playerId);
-            fightSettleRequest.Result.IsWin = false;
-            fightSettleRequest.Result.IsForceExit = true;
-            FightSettleRequest fightSettleRoundTrip = MessagePackSerializer.Deserialize<FightSettleRequest>(
-                MessagePackSerializer.Serialize(fightSettleRequest));
-            AssertEqual(false, fightSettleRoundTrip.Result.IsWin, "Bianca Theatre force-exit FightSettleRequest Result.IsWin MessagePack round-trip");
-            AssertEqual(true, fightSettleRoundTrip.Result.IsForceExit, "Bianca Theatre force-exit FightSettleRequest Result.IsForceExit MessagePack round-trip");
-            InvokeRegisteredRequestHandler(
-                nameof(FightSettleRequest),
-                harness.Session,
-                fightSettlePacketId,
-                fightSettleRoundTrip);
-            (JObject adventureSettlePush, FightSettleResponse fightSettleResponse) = ReadBiancaTheatreForceExitSettleResult(
-                harness,
-                fightSettlePacketId,
-                "Bianca Theatre force-exit FightSettleRequest");
-            JObject adventureSettleData = RequiredObject(adventureSettlePush, "SettleData", "NotifyBiancaTheatreAdventureSettle");
-            AssertEqual(3L, RequiredValue<long>(adventureSettleData, "TeamId", JTokenType.Integer, "NotifyBiancaTheatreAdventureSettle SettleData"), "NotifyBiancaTheatreAdventureSettle SettleData.TeamId");
-            JArray adventureSettleCharacters = (JArray)RequiredToken(adventureSettleData, "Characters", JTokenType.Array, "NotifyBiancaTheatreAdventureSettle SettleData");
-            long[] adventureSettleCharacterIds = adventureSettleCharacters
-                .Select(character => RequiredValue<long>((JObject)character!, "CharacterId", JTokenType.Integer, "NotifyBiancaTheatreAdventureSettle SettleData Characters"))
-                .ToArray();
-            if (!adventureSettleCharacterIds.Contains(lotusCharacterId))
-                throw new InvalidDataException($"NotifyBiancaTheatreAdventureSettle SettleData.Characters: expected recruited character {lotusCharacterId}, got [{string.Join(", ", adventureSettleCharacterIds)}].");
-            AssertEqual(0, fightSettleResponse.Code, "Bianca Theatre force-exit FightSettleResponse Code");
-            if (fightSettleResponse.Settle is null)
-                throw new InvalidDataException("Bianca Theatre force-exit FightSettleResponse: expected Settle payload.");
-            AssertEqual(false, fightSettleResponse.Settle.IsWin, "Bianca Theatre force-exit FightSettleResponse Settle.IsWin");
-            AssertEqual(theatreFightStageId, (uint)fightSettleResponse.Settle.StageId, "Bianca Theatre force-exit FightSettleResponse Settle.StageId");
-            if (harness.Session.fight is not null)
-                throw new InvalidDataException("Bianca Theatre force-exit FightSettleRequest: expected session fight state to be cleared.");
-            AssertAccountRosterUnchanged(harness, initialAccountRosterIds, "Bianca Theatre force-exit settle keeps Lucia: Lotus out of the account roster");
-            const int successfulPreFightPacketId = 61_051;
-            InvokeRegisteredRequestHandler(
-                nameof(PreFightRequest),
-                harness.Session,
-                successfulPreFightPacketId,
-                preFightRoundTrip);
-            PreFightResponse successfulPreFightResponse = ReadResponsePayload<PreFightResponse>(
-                harness,
-                successfulPreFightPacketId,
-                nameof(PreFightResponse),
-                "Bianca Theatre successful first fight PreFightRequest response");
-            AssertEqual(0, successfulPreFightResponse.Code, "Bianca Theatre successful first fight PreFightResponse Code");
-            if (successfulPreFightResponse.FightData is null)
-                throw new InvalidDataException("Bianca Theatre successful first fight PreFightResponse: expected FightData.");
-            AssertEqual(theatreFightStageId, successfulPreFightResponse.FightData.StageId, "Bianca Theatre successful first fight PreFightResponse FightData.StageId");
-            AssertBiancaTheatreRobotNpcSlot(
-                successfulPreFightResponse,
-                playerId,
-                expectedSlot: 0,
-                expectedCharacterId: lotusCharacterId,
-                expectedRobotId: theatreRobotId,
-                "Bianca Theatre successful first fight PreFightResponse player NpcData[0]");
-
-            const int successfulFightSettlePacketId = 61_052;
-            FightSettleRequest successfulFightSettleRequest = CreateMissingStageSettleRequest(
-                theatreFightStageId,
-                successfulPreFightResponse.FightData.FightId,
-                playerId);
-            successfulFightSettleRequest.Result.IsWin = true;
-            successfulFightSettleRequest.Result.IsForceExit = false;
-            InvokeRegisteredRequestHandler(
-                nameof(FightSettleRequest),
-                harness.Session,
-                successfulFightSettlePacketId,
-                successfulFightSettleRequest);
-            (JObject successfulStagePush, JObject fightNodeCountPush, JObject fightRewardStepPush, JObject archiveMonsterRecordPush, FightSettleResponse successfulFightSettleResponse) =
-                ReadBiancaTheatreSuccessfulSettleResult(
-                    harness,
-                    successfulFightSettlePacketId,
-                    "Bianca Theatre successful first FightSettleRequest");
-            AssertPopulatedDynamicPayload(successfulStagePush, "Bianca Theatre successful first FightSettleRequest NotifyStageData");
-            AssertEqual(1L, RequiredValue<long>(fightNodeCountPush, "FightNodeCount", JTokenType.Integer, "Bianca Theatre successful first FightSettleRequest NotifyBiancaTheatreFightNodeCountChange"), "Bianca Theatre successful first FightSettleRequest FightNodeCount");
-            JObject fightRewardStep = RequiredObject(fightRewardStepPush, "Step", "Bianca Theatre successful first FightSettleRequest NotifyBiancaTheatreAddStep");
-            AssertEqual(1L, RequiredValue<long>(fightRewardStepPush, "ChapterId", JTokenType.Integer, "Bianca Theatre successful first FightSettleRequest NotifyBiancaTheatreAddStep"), "Bianca Theatre successful first FightSettleRequest reward step ChapterId");
-            AssertEqual(344L, RequiredValue<long>(fightRewardStep, "Uid", JTokenType.Integer, "Bianca Theatre successful first FightSettleRequest reward step"), "Bianca Theatre successful first FightSettleRequest reward step Uid");
-            AssertEqual(6L, RequiredValue<long>(fightRewardStep, "StepType", JTokenType.Integer, "Bianca Theatre successful first FightSettleRequest reward step"), "Bianca Theatre successful first FightSettleRequest reward step StepType");
-            AssertEqual(343L, RequiredValue<long>(fightRewardStep, "RootUid", JTokenType.Integer, "Bianca Theatre successful first FightSettleRequest reward step"), "Bianca Theatre successful first FightSettleRequest reward step RootUid");
-            JArray fightRewards = (JArray)RequiredToken(fightRewardStep, "FightRewards", JTokenType.Array, "Bianca Theatre successful first FightSettleRequest reward step");
-            JObject characterFightReward = fightRewards
-                .OfType<JObject>()
-                .Single(reward => RequiredValue<long>(reward, "Uid", JTokenType.Integer, "Bianca Theatre successful first FightSettleRequest FightRewards") == 1);
-            AssertEqual(2L, RequiredValue<long>(characterFightReward, "RewardType", JTokenType.Integer, "Bianca Theatre successful first FightSettleRequest FightRewards Uid 1"), "Bianca Theatre successful first FightSettleRequest FightRewards Uid 1 RewardType");
-            AssertEqual(2003L, RequiredValue<long>(characterFightReward, "ConfigId", JTokenType.Integer, "Bianca Theatre successful first FightSettleRequest FightRewards Uid 1"), "Bianca Theatre successful first FightSettleRequest FightRewards Uid 1 ConfigId");
-            JObject itemFightReward = fightRewards
-                .OfType<JObject>()
-                .Single(reward => RequiredValue<long>(reward, "Uid", JTokenType.Integer, "Bianca Theatre successful first FightSettleRequest FightRewards") == 2);
-            AssertEqual(3L, RequiredValue<long>(itemFightReward, "RewardType", JTokenType.Integer, "Bianca Theatre successful first FightSettleRequest FightRewards Uid 2"), "Bianca Theatre successful first FightSettleRequest FightRewards Uid 2 RewardType");
-            AssertEqual(16L, RequiredValue<long>(itemFightReward, "ConfigId", JTokenType.Integer, "Bianca Theatre successful first FightSettleRequest FightRewards Uid 2"), "Bianca Theatre successful first FightSettleRequest FightRewards Uid 2 ConfigId");
-            AssertEqual(4L, RequiredValue<long>(itemFightReward, "Count", JTokenType.Integer, "Bianca Theatre successful first FightSettleRequest FightRewards Uid 2"), "Bianca Theatre successful first FightSettleRequest FightRewards Uid 2 Count");
-            AssertPopulatedDynamicPayload(archiveMonsterRecordPush, "Bianca Theatre successful first FightSettleRequest NotifyArchiveMonsterRecord");
-            AssertEqual(0, successfulFightSettleResponse.Code, "Bianca Theatre successful first FightSettleResponse Code");
-            if (successfulFightSettleResponse.Settle is null)
-                throw new InvalidDataException("Bianca Theatre successful first FightSettleResponse: expected Settle payload.");
-            AssertEqual(true, successfulFightSettleResponse.Settle.IsWin, "Bianca Theatre successful first FightSettleResponse Settle.IsWin");
-            AssertAccountRosterUnchanged(harness, initialAccountRosterIds, "Bianca Theatre successful first settle keeps Lucia: Lotus out of the account roster");
-
-            const int receiveItemFightRewardPacketId = 61_053;
-            InvokeRegisteredRequestHandler(
-                nameof(BiancaTheatreRecvFightRewardRequest),
-                harness.Session,
-                receiveItemFightRewardPacketId,
-                new BiancaTheatreRecvFightRewardRequest { Uid = 2 });
-            NotifyItemDataList itemFightRewardPush = ReadPushPayload<NotifyItemDataList>(
-                harness,
-                nameof(NotifyItemDataList),
-                "Bianca Theatre Uid 2 fight reward item push");
-            AssertEqual(12L, itemFightRewardPush.ItemDataList.Single(item => item.Id == 96119).Count, "Bianca Theatre Uid 2 fight reward item 96119 count");
-            JObject receiveItemFightRewardResponse = ReadResponseMapPayload(
-                harness,
-                receiveItemFightRewardPacketId,
-                "BiancaTheatreRecvFightRewardResponse",
-                "Bianca Theatre Uid 2 fight reward response");
-            AssertEqual(0L, RequiredValue<long>(receiveItemFightRewardResponse, "Code", JTokenType.Integer, "Bianca Theatre Uid 2 fight reward response"), "Bianca Theatre Uid 2 fight reward Code");
-
-            const int receiveCharacterFightRewardPacketId = 61_054;
-            InvokeRegisteredRequestHandler(
-                nameof(BiancaTheatreRecvFightRewardRequest),
-                harness.Session,
-                receiveCharacterFightRewardPacketId,
-                new BiancaTheatreRecvFightRewardRequest { Uid = 1 });
-            JObject postFightRecruitStepPush = ReadPushMapPayload(
-                harness,
-                "NotifyBiancaTheatreAddStep",
-                "Bianca Theatre Uid 1 fight reward post-fight recruit step push");
-            JObject postFightRecruitStep = RequiredObject(postFightRecruitStepPush, "Step", "Bianca Theatre Uid 1 fight reward post-fight recruit step push");
-            AssertEqual(345L, RequiredValue<long>(postFightRecruitStep, "Uid", JTokenType.Integer, "Bianca Theatre Uid 1 fight reward post-fight recruit step"), "Bianca Theatre Uid 1 fight reward post-fight recruit step Uid");
-            AssertEqual(4L, RequiredValue<long>(postFightRecruitStep, "StepType", JTokenType.Integer, "Bianca Theatre Uid 1 fight reward post-fight recruit step"), "Bianca Theatre Uid 1 fight reward post-fight recruit step StepType");
-            AssertEqual(344L, RequiredValue<long>(postFightRecruitStep, "RootUid", JTokenType.Integer, "Bianca Theatre Uid 1 fight reward post-fight recruit step"), "Bianca Theatre Uid 1 fight reward post-fight recruit step RootUid");
-            JObject receiveCharacterFightRewardResponse = ReadResponseMapPayload(
-                harness,
-                receiveCharacterFightRewardPacketId,
-                "BiancaTheatreRecvFightRewardResponse",
-                "Bianca Theatre Uid 1 fight reward response");
-            AssertEqual(0L, RequiredValue<long>(receiveCharacterFightRewardResponse, "Code", JTokenType.Integer, "Bianca Theatre Uid 1 fight reward response"), "Bianca Theatre Uid 1 fight reward Code");
-
-            const int postFightRecruitCharacterPacketId = 61_055;
-            InvokeRegisteredRequestHandler(
-                nameof(BiancaTheatreRecruitCharacterRequest),
-                harness.Session,
-                postFightRecruitCharacterPacketId,
-                new BiancaTheatreRecruitCharacterRequest { CharacterId = 1_211_002 });
-            JObject postFightRecruitCharacterResponse = ReadResponseMapPayload(
-                harness,
-                postFightRecruitCharacterPacketId,
-                "BiancaTheatreRecruitCharacterResponse",
-                "Bianca Theatre post-fight recruit response");
-            AssertEqual(0L, RequiredValue<long>(postFightRecruitCharacterResponse, "Code", JTokenType.Integer, "Bianca Theatre post-fight recruit response"), "Bianca Theatre post-fight recruit Code");
-            AssertAccountRosterUnchanged(harness, initialAccountRosterIds, "Bianca Theatre post-fight recruit keeps mode-local character out of the account roster");
-
-            const int postFightEndRecruitPacketId = 61_056;
-            InvokeRegisteredRequestHandler(
-                "BiancaTheatreEndRecruitRequest",
-                harness.Session,
-                postFightEndRecruitPacketId,
-                null);
-            JObject postFightEndRecruitResponse = ReadResponseMapPayload(
-                harness,
-                postFightEndRecruitPacketId,
-                "BiancaTheatreEndRecruitResponse",
-                "Bianca Theatre post-fight EndRecruit must not emit stale Uid 343 NodeId 1 step");
-            AssertEqual(0L, RequiredValue<long>(postFightEndRecruitResponse, "Code", JTokenType.Integer, "Bianca Theatre post-fight EndRecruit response"), "Bianca Theatre post-fight EndRecruit Code");
-            if (harness.TryReadAvailablePacket("Bianca Theatre post-fight EndRecruit unexpected packet", out Packet postFightEndRecruitUnexpectedPacket))
-                throw new InvalidDataException($"Bianca Theatre post-fight EndRecruit: expected response-only, got unexpected {postFightEndRecruitUnexpectedPacket.Type} packet.");
-
-            const int endReceiveFightRewardPacketId = 61_057;
-            InvokeRegisteredRequestHandler(
-                "BiancaTheatreEndRecvFightRewardRequest",
-                harness.Session,
-                endReceiveFightRewardPacketId,
-                null);
-            JObject endReceiveFightRewardStepPush = ReadPushMapPayload(
-                harness,
-                "NotifyBiancaTheatreAddStep",
-                "Bianca Theatre EndRecv fight reward NodeId 2 step push");
-            JObject endReceiveFightRewardStep = RequiredObject(endReceiveFightRewardStepPush, "Step", "Bianca Theatre EndRecv fight reward NodeId 2 step push");
-            AssertEqual(346L, RequiredValue<long>(endReceiveFightRewardStep, "Uid", JTokenType.Integer, "Bianca Theatre EndRecv fight reward NodeId 2 step"), "Bianca Theatre EndRecv fight reward step Uid");
-            AssertEqual(5L, RequiredValue<long>(endReceiveFightRewardStep, "StepType", JTokenType.Integer, "Bianca Theatre EndRecv fight reward NodeId 2 step"), "Bianca Theatre EndRecv fight reward step StepType");
-            JObject endReceiveFightRewardNodeData = RequiredObject(endReceiveFightRewardStep, "NodeData", "Bianca Theatre EndRecv fight reward NodeId 2 step");
-            AssertEqual(2L, RequiredValue<long>(endReceiveFightRewardNodeData, "NodeId", JTokenType.Integer, "Bianca Theatre EndRecv fight reward NodeId 2 step NodeData"), "Bianca Theatre EndRecv fight reward NodeId");
-            JArray endReceiveFightRewardSlots = (JArray)RequiredToken(endReceiveFightRewardNodeData, "Slots", JTokenType.Array, "Bianca Theatre EndRecv fight reward NodeId 2 step NodeData");
-            AssertEqual(2, endReceiveFightRewardSlots.Count, "Bianca Theatre EndRecv fight reward NodeId 2 slot count");
-            JObject endReceiveFightRewardSlot1 = endReceiveFightRewardSlots
-                .OfType<JObject>()
-                .Single(slot => RequiredValue<long>(slot, "SlotId", JTokenType.Integer, "Bianca Theatre EndRecv fight reward NodeId 2 slots") == 1);
-            AssertEqual(10011L, RequiredValue<long>(endReceiveFightRewardSlot1, "FightId", JTokenType.Integer, "Bianca Theatre EndRecv fight reward NodeId 2 SlotId 1"), "Bianca Theatre EndRecv fight reward NodeId 2 SlotId 1 FightId");
-            AssertEqual(11111L, RequiredValue<long>(endReceiveFightRewardSlot1, "FightTemplateId", JTokenType.Integer, "Bianca Theatre EndRecv fight reward NodeId 2 SlotId 1"), "Bianca Theatre EndRecv fight reward NodeId 2 SlotId 1 FightTemplateId");
-            JObject endReceiveFightRewardSlot2 = endReceiveFightRewardSlots
-                .OfType<JObject>()
-                .Single(slot => RequiredValue<long>(slot, "SlotId", JTokenType.Integer, "Bianca Theatre EndRecv fight reward NodeId 2 slots") == 2);
-            AssertEqual(10012L, RequiredValue<long>(endReceiveFightRewardSlot2, "FightId", JTokenType.Integer, "Bianca Theatre EndRecv fight reward NodeId 2 SlotId 2"), "Bianca Theatre EndRecv fight reward NodeId 2 SlotId 2 FightId");
-            AssertEqual(11123L, RequiredValue<long>(endReceiveFightRewardSlot2, "FightTemplateId", JTokenType.Integer, "Bianca Theatre EndRecv fight reward NodeId 2 SlotId 2"), "Bianca Theatre EndRecv fight reward NodeId 2 SlotId 2 FightTemplateId");
-            JObject endReceiveFightRewardResponse = ReadResponseMapPayload(
-                harness,
-                endReceiveFightRewardPacketId,
-                "BiancaTheatreEndRecvFightRewardResponse",
-                "Bianca Theatre EndRecv fight reward response");
-            AssertEqual(0L, RequiredValue<long>(endReceiveFightRewardResponse, "Code", JTokenType.Integer, "Bianca Theatre EndRecv fight reward response"), "Bianca Theatre EndRecv fight reward Code");
-            AssertAccountRosterUnchanged(harness, initialAccountRosterIds, "Bianca Theatre EndRecv fight reward keeps mode-local characters out of the account roster");
-
-            const int settlePacketId = 61_009;
-            InvokeRegisteredRequestHandler("BiancaTheatreSettleAdventureRequest", harness.Session, settlePacketId, null);
-            JObject totalExpPush = ReadPushMapPayload(
-                harness,
-                "NotifyBiancaTheatreTotalExp",
-                "BiancaTheatreSettleAdventureRequest total exp push");
-            AssertEqual(5576L, RequiredValue<long>(totalExpPush, "TotalExp", JTokenType.Integer, "BiancaTheatreSettleAdventureRequest total exp push"), "NotifyBiancaTheatreTotalExp TotalExp");
-            JObject settleResponse = ReadResponseMapPayload(
-                harness,
-                settlePacketId,
-                "BiancaTheatreSettleAdventureResponse",
-                "BiancaTheatreSettleAdventureRequest response");
-            AssertEqual(0L, RequiredValue<long>(settleResponse, "Code", JTokenType.Integer, "BiancaTheatreSettleAdventureRequest response"), "BiancaTheatreSettleAdventureResponse Code");
-            JObject settleData = RequiredObject(settleResponse, "SettleData", "BiancaTheatreSettleAdventureRequest response");
-            JArray settleCharacters = (JArray)RequiredToken(settleData, "Characters", JTokenType.Array, "BiancaTheatreSettleAdventureResponse SettleData");
-            long[] settledCharacterIds = settleCharacters
-                .Select(character => RequiredValue<long>((JObject)character!, "CharacterId", JTokenType.Integer, "BiancaTheatreSettleAdventureResponse SettleData Characters"))
-                .ToArray();
-            if (!settledCharacterIds.Contains(lotusCharacterId))
-                throw new InvalidDataException($"BiancaTheatreSettleAdventureResponse SettleData.Characters: expected recruited character {lotusCharacterId}, got [{string.Join(", ", settledCharacterIds)}].");
-
-            const int strengthenPacketId = 61_010;
-            InvokeRegisteredRequestHandler(
-                nameof(BiancaTheatreStrengthenRequest),
-                harness.Session,
-                strengthenPacketId,
-                new BiancaTheatreStrengthenRequest { Id = 10 });
-            JObject strengthenResponse = ReadResponseMapPayload(
-                harness,
-                strengthenPacketId,
-                "BiancaTheatreStrengthenResponse",
-                "BiancaTheatreStrengthenRequest response");
-            AssertEqual(20176035L, RequiredValue<long>(strengthenResponse, "Code", JTokenType.Integer, "BiancaTheatreStrengthenRequest response"), "BiancaTheatreStrengthenResponse captured rejection Code");
-
-            static long[] OrderedAccountRosterIds(LoopbackSessionHarness harness)
-            {
-                return harness.Session.character.Characters
-                    .Select(character => (long)character.Id)
-                    .Order()
-                    .ToArray();
-            }
-
-            static void AssertAccountRosterUnchanged(LoopbackSessionHarness harness, IReadOnlyList<long> expectedRosterIds, string name)
-            {
-                AssertIntegerList(expectedRosterIds, OrderedAccountRosterIds(harness), name);
-            }
-
-            static void AssertTeamDataIntegerList(object? teamData, string fieldName, IReadOnlyList<long> expected, string name)
-            {
-                System.Collections.IDictionary teamDataMap = RequiredDynamicMap(teamData, "BiancaTheatreSetSingleTeamRequest TeamData MessagePack round-trip");
-                IReadOnlyList<long> actual = ReadIntegerList(RequiredDynamicValue(teamDataMap, fieldName, name), name);
-                AssertIntegerList(expected, actual, name);
-            }
-
-            static void AssertPreFightDoesNotDeployCharacter(
-                PreFightResponse preFightResponse,
-                long playerId,
-                int forbiddenCharacterId,
-                string name)
-            {
-                PreFightResponse.PreFightResponseFightData.PreFightResponseFightDataRoleData playerRole = RequiredPlayerRole(preFightResponse, playerId, name);
-                long[] deployedCharacterIds = playerRole.NpcData
-                    .OrderBy(npc => npc.Key)
-                    .Select(npc => (long)RequiredNpcCharacterId(npc, name))
-                    .ToArray();
-                if (deployedCharacterIds.Contains(forbiddenCharacterId))
-                    throw new InvalidDataException($"{name}: forbidden character {forbiddenCharacterId} was deployed in [{string.Join(", ", deployedCharacterIds)}].");
-            }
-
-            static void AssertBiancaTheatreRobotNpcSlot(
-                PreFightResponse preFightResponse,
-                long playerId,
-                int expectedSlot,
-                int expectedCharacterId,
-                int expectedRobotId,
-                string name)
-            {
-                PreFightResponse.PreFightResponseFightData.PreFightResponseFightDataRoleData playerRole = RequiredPlayerRole(preFightResponse, playerId, name);
-                if (!playerRole.NpcData.TryGetValue(expectedSlot, out dynamic? npcValue))
-                    throw new InvalidDataException($"{name}: expected NpcData slot {expectedSlot}.");
-                System.Collections.IDictionary npcData = RequiredDynamicMap((object?)npcValue, name);
-                System.Collections.IDictionary character = RequiredDynamicMap(
-                    RequiredDynamicValue(npcData, "Character", name),
-                    $"{name}.Character");
-                AssertEqual(expectedCharacterId, RequiredDynamicInteger(character, "Id", $"{name}.Character"), $"{name}.Character.Id");
-                AssertEqual(true, RequiredDynamicBoolean(npcData, "IsRobot", name), $"{name}.IsRobot");
-                AssertEqual(expectedRobotId, RequiredDynamicInteger(npcData, "RobotId", name), $"{name}.RobotId");
-            }
-
-            static PreFightResponse.PreFightResponseFightData.PreFightResponseFightDataRoleData RequiredPlayerRole(
-                PreFightResponse preFightResponse,
-                long playerId,
-                string name)
-            {
-                if (preFightResponse.FightData is null)
-                    throw new InvalidDataException($"{name}: expected FightData.");
-                return preFightResponse.FightData.RoleData.SingleOrDefault(role => role.Id == (uint)playerId)
-                    ?? throw new InvalidDataException($"{name}: expected player RoleData.");
-            }
-
-            static void AssertPopulatedDynamicPayload(object? value, string name)
-            {
-                if (value is null)
-                    throw new InvalidDataException($"{name}: expected populated payload, got nil.");
-                if (value is System.Collections.IDictionary map)
-                {
-                    if (map.Count == 0)
-                        throw new InvalidDataException($"{name}: expected populated map.");
-                    return;
-                }
-                if (value is System.Collections.IEnumerable values && value is not string)
-                {
-                    foreach (object? item in values)
-                    {
-                        if (item is not null)
-                            return;
-                    }
-
-                    throw new InvalidDataException($"{name}: expected at least one non-nil entry.");
-                }
-                if (value is string text && text.Length == 0)
-                    throw new InvalidDataException($"{name}: expected non-empty text.");
-            }
-
-            static (JObject StagePush, JObject FightNodeCountPush, JObject FightRewardStepPush, JObject ArchiveMonsterRecordPush, FightSettleResponse Response) ReadBiancaTheatreSuccessfulSettleResult(
-                LoopbackSessionHarness harness,
-                int expectedPacketId,
-                string name)
-            {
-                JObject stagePush = ReadPushMapPayload(
-                    harness,
-                    nameof(NotifyStageData),
-                    $"{name} NotifyStageData push");
-                JObject fightNodeCountPush = ReadPushMapPayload(
-                    harness,
-                    "NotifyBiancaTheatreFightNodeCountChange",
-                    $"{name} NotifyBiancaTheatreFightNodeCountChange push");
-                JObject fightRewardStepPush = ReadPushMapPayload(
-                    harness,
-                    "NotifyBiancaTheatreAddStep",
-                    $"{name} NotifyBiancaTheatreAddStep push");
-                JObject archiveMonsterRecordPush = ReadPushMapPayload(
-                    harness,
-                    "NotifyArchiveMonsterRecord",
-                    $"{name} NotifyArchiveMonsterRecord push");
-                Packet responsePacket = harness.ReadPacket($"{name} response");
-                AssertEqual(Packet.ContentType.Response, responsePacket.Type, $"{name} response packet type");
-                Packet.Response response = MessagePackSerializer.Deserialize<Packet.Response>(responsePacket.Content);
-                AssertEqual(expectedPacketId, response.Id, $"{name} response packet id");
-                AssertEqual(nameof(FightSettleResponse), response.Name, $"{name} response packet name");
-                return (
-                    stagePush,
-                    fightNodeCountPush,
-                    fightRewardStepPush,
-                    archiveMonsterRecordPush,
-                    MessagePackSerializer.Deserialize<FightSettleResponse>(response.Content));
-            }
-
-            static (JObject AdventureSettlePush, FightSettleResponse Response) ReadBiancaTheatreForceExitSettleResult(
-                LoopbackSessionHarness harness,
-                int expectedPacketId,
-                string name)
-            {
-                JObject adventureSettlePush = ReadPushMapPayload(
-                    harness,
-                    "NotifyBiancaTheatreAdventureSettle",
-                    $"{name} adventure-settle push");
-                Packet responsePacket = harness.ReadPacket($"{name} response");
-                AssertEqual(Packet.ContentType.Response, responsePacket.Type, $"{name} response packet type");
-                Packet.Response response = MessagePackSerializer.Deserialize<Packet.Response>(responsePacket.Content);
-                AssertEqual(expectedPacketId, response.Id, $"{name} response packet id");
-                AssertEqual(nameof(FightSettleResponse), response.Name, $"{name} response packet name");
-                return (adventureSettlePush, MessagePackSerializer.Deserialize<FightSettleResponse>(response.Content));
-            }
-        }
 
         private static void ValidateBigWorldEnterCompatibility()
         {
@@ -14500,7 +13697,10 @@ namespace AscNet.Test
 
         private static void ValidateItemUseCompatibility()
         {
-            using MongoCollectionOverride mongoOverride = MongoCollectionOverride.InstallForShopCompatibility();
+            using MongoCollectionOverride mongoOverride = MongoCollectionOverride.InstallForDailySignInCompatibility(
+                out RecordingMongoCollectionProxy<AscNet.Common.Database.Player> players,
+                out _,
+                out RecordingMongoCollectionProxy<AscNet.Common.Database.Inventory> inventories);
 
             const long playerId = 99_201;
             const int cogPackSmallId = 90_011;
@@ -14525,18 +13725,13 @@ namespace AscNet.Test
             };
             InvokeRegisteredRequestHandler(nameof(AscNet.GameServer.Handlers.ItemUseRequest), harness.Session, packetId, request);
 
-            NotifyItemDataList consumePush = ReadPushPayload<NotifyItemDataList>(
+            NotifyItemDataList itemPush = ReadPushPayload<NotifyItemDataList>(
                 harness,
                 nameof(NotifyItemDataList),
-                "ItemUseRequest consumed pack push");
-            Item consumedPack = consumePush.ItemDataList.Single(item => item.Id == cogPackSmallId);
+                "ItemUseRequest combined consumption and reward push");
+            Item consumedPack = itemPush.ItemDataList.Single(item => item.Id == cogPackSmallId);
             AssertEqual(1L, consumedPack.Count, "ItemUseRequest consumed Cog Pack count");
-
-            NotifyItemDataList rewardPush = ReadPushPayload<NotifyItemDataList>(
-                harness,
-                nameof(NotifyItemDataList),
-                "ItemUseRequest reward push");
-            Item rewardedCogs = rewardPush.ItemDataList.Single(item => item.Id == AscNet.Common.Database.Inventory.Coin);
+            Item rewardedCogs = itemPush.ItemDataList.Single(item => item.Id == AscNet.Common.Database.Inventory.Coin);
             AssertEqual(20_100L, rewardedCogs.Count, "ItemUseRequest rewarded Cog count");
 
             AscNet.GameServer.Handlers.ItemUseResponse response = ReadResponsePayload<AscNet.GameServer.Handlers.ItemUseResponse>(
@@ -14549,6 +13744,17 @@ namespace AscNet.Test
             AssertEqual(1, rewardGoods.RewardType, "ItemUseResponse RewardGoodsList[0] RewardType");
             AssertEqual(AscNet.Common.Database.Inventory.Coin, rewardGoods.TemplateId, "ItemUseResponse RewardGoodsList[0] TemplateId");
             AssertEqual(20_000, rewardGoods.Count, "ItemUseResponse RewardGoodsList[0] Count");
+            AscNet.Common.Database.Inventory reloaded = MongoDB.Bson.Serialization.BsonSerializer.Deserialize<AscNet.Common.Database.Inventory>(
+                inventories.LastSuccessfulReplacementBson
+                ?? throw new InvalidDataException("Cog Pack inventory was not durably saved."));
+            AssertEqual(1L, reloaded.Items.Single(item => item.Id == cogPackSmallId).Count, "Cog Pack consumption survives reload");
+            AssertEqual(20_100L, reloaded.Items.Single(item => item.Id == AscNet.Common.Database.Inventory.Coin).Count, "Cog Pack reward survives reload");
+            AssertEqual(true, MongoDB.Bson.Serialization.BsonSerializer.Deserialize<AscNet.Common.Database.Player>(
+                players.LastSuccessfulReplacementBson
+                ?? throw new InvalidDataException("Cog Pack player was not durably saved.")).PendingItemUse is null,
+                "Cog Pack pending operation is durably cleared");
+            if (harness.TryReadAvailablePacket("Cog Pack unexpected packet", out _))
+                throw new InvalidDataException("Cog Pack use emitted more than one combined item push and its response.");
         }
 
         private static void ValidateTeamPrefabCompatibility()
@@ -17442,96 +16648,6 @@ namespace AscNet.Test
             AssertEqual(2, inventoryCollection.ReplaceOneCalls, "ItemSellRequest multi-item persisted inventory saves");
         }
 
-        private static void ValidateOverclockMaterialBoxCompatibility()
-        {
-            using MongoCollectionOverride mongoOverride = MongoCollectionOverride.InstallForShopCompatibility();
-            AssertOverclockMaterialBoxUse(
-                itemId: 60_001,
-                expectedRewardPool: [40_100, 40_101, 40_102, 40_103, 40_104],
-                packetId: 14_101,
-                playerId: 99_301,
-                name: "ItemUseRequest low-grade Overclock Material box");
-            AssertOverclockMaterialBoxUse(
-                itemId: 60_002,
-                expectedRewardPool: [40_110, 40_111, 40_112, 40_113, 40_114],
-                packetId: 14_102,
-                playerId: 99_302,
-                name: "ItemUseRequest high-grade Overclock Material box");
-
-            AssertOverclockMaterialBoxUse(
-                itemId: 90_101,
-                expectedRewardPool: [40_100, 40_101, 40_102, 40_103, 40_104],
-                packetId: 14_103,
-                playerId: 99_303,
-                name: "ItemUseRequest activity low-grade Overclock Material box");
-
-            AssertOverclockMaterialBoxUse(
-                itemId: 90_110,
-                expectedRewardPool: [40_110, 40_111, 40_112, 40_113, 40_114],
-                packetId: 14_104,
-                playerId: 99_304,
-                name: "ItemUseRequest activity high-grade Overclock Material box");
-
-        }
-
-        private static void AssertOverclockMaterialBoxUse(int itemId, int[] expectedRewardPool, int packetId, long playerId, string name)
-        {
-            const int useCount = 1;
-            int[] unopenedBoxItemIds = [60_001, 60_002, 90_101, 90_110];
-            Dictionary<int, ItemTable> itemRowsById = TableReaderV2.Parse<ItemTable>().ToDictionary(item => item.Id);
-            ItemTable boxItem = itemRowsById.TryGetValue(itemId, out ItemTable? itemRow)
-                ? itemRow
-                : throw new InvalidDataException($"{name}: expected Item.tsv row {itemId}.");
-            if (boxItem.SubTypeParams.Count == 0)
-                throw new InvalidDataException($"{name} Item.tsv row {boxItem.Id} {boxItem.Name}: expected SubTypeParams[0] to mark random gift box behavior.");
-            AssertEqual(2, boxItem.SubTypeParams[0], $"{name} Item.tsv row {boxItem.Id} {boxItem.Name} SubTypeParams[0] random gift box behavior");
-            AscNet.Common.Database.Inventory inventory = CreateDrawCompatibilityInventory(
-                playerId,
-                [new Item { Id = itemId, Count = 1 }]);
-            using LoopbackSessionHarness harness = new(
-                CreateDrawCompatibilityCharacter(playerId),
-                CreateDrawCompatibilityPlayer(playerId),
-                inventory,
-                $"{name}-compat-test");
-
-            AscNet.GameServer.Handlers.ItemUseRequest request = new()
-            {
-                Id = itemId,
-                Count = useCount
-            };
-            InvokeRegisteredRequestHandler(nameof(AscNet.GameServer.Handlers.ItemUseRequest), harness.Session, packetId, request);
-
-            NotifyItemDataList consumePush = ReadPushPayload<NotifyItemDataList>(
-                harness,
-                nameof(NotifyItemDataList),
-                $"{name} consumed box push");
-            Item consumedBox = consumePush.ItemDataList.Single(item => item.Id == itemId);
-            AssertEqual(0L, consumedBox.Count, $"{name} consumed box count");
-
-            NotifyItemDataList rewardPush = ReadPushPayload<NotifyItemDataList>(
-                harness,
-                nameof(NotifyItemDataList),
-                $"{name} reward push");
-            AssertEqual(1, rewardPush.ItemDataList.Count(item => expectedRewardPool.Contains(item.Id)), $"{name} reward push contains exactly one expected-pool material");
-            AssertEqual(false, rewardPush.ItemDataList.Any(item => unopenedBoxItemIds.Contains(item.Id)), $"{name} reward push does not award unopened Overclock Material box ids");
-            Item awardedMaterial = rewardPush.ItemDataList.Single(item => expectedRewardPool.Contains(item.Id));
-            AssertEqual(1L, awardedMaterial.Count, $"{name} NotifyItemDataList awarded material count");
-
-            AscNet.GameServer.Handlers.ItemUseResponse response = ReadResponsePayload<AscNet.GameServer.Handlers.ItemUseResponse>(
-                harness,
-                packetId,
-                nameof(AscNet.GameServer.Handlers.ItemUseResponse),
-                $"{name} response");
-            AssertEqual(0, response.Code, $"{name} ItemUseResponse Code");
-            RewardGoods rewardGoods = response.RewardGoodsList.Single();
-            AssertEqual((int)RewardType.Item, rewardGoods.RewardType, $"{name} RewardGoodsList[0] RewardType");
-            AssertEqual(true, expectedRewardPool.Contains(rewardGoods.TemplateId), $"{name} RewardGoodsList[0] TemplateId expected pool membership");
-            AssertEqual(false, unopenedBoxItemIds.Contains(rewardGoods.TemplateId), $"{name} RewardGoodsList[0] TemplateId is not an unopened Overclock Material box");
-            AssertEqual(1, rewardGoods.Count, $"{name} RewardGoodsList[0] Count");
-            AssertEqual(awardedMaterial.Id, rewardGoods.TemplateId, $"{name} response/push awarded material TemplateId match");
-            AssertEqual((int)awardedMaterial.Count, rewardGoods.Count, $"{name} response/push awarded material Count match");
-        }
-
         private static void ValidateChatCompatibility()
         {
             using MongoCollectionOverride mongoOverride = MongoCollectionOverride.InstallForDrawCompatibility();
@@ -18480,6 +17596,25 @@ namespace AscNet.Test
                 ]);
             }
 
+            public static MongoCollectionOverride InstallForBiancaCompatibility(
+                out RecordingMongoCollectionProxy<AscNet.Common.Database.Player> playerCollection,
+                out RecordingMongoCollectionProxy<AscNet.Common.Database.Character> characterCollection,
+                out RecordingMongoCollectionProxy<AscNet.Common.Database.Inventory> inventoryCollection,
+                out RecordingMongoCollectionProxy<AscNet.Common.Database.Stage> stageCollection)
+            {
+                IMongoCollection<AscNet.Common.Database.Player> players = CreateRecordingMongoCollection(out playerCollection);
+                IMongoCollection<AscNet.Common.Database.Character> characters = CreateRecordingMongoCollection(out characterCollection);
+                IMongoCollection<AscNet.Common.Database.Inventory> inventories = CreateRecordingMongoCollection(out inventoryCollection);
+                IMongoCollection<AscNet.Common.Database.Stage> stages = CreateRecordingMongoCollection(out stageCollection);
+                return new MongoCollectionOverride(
+                [
+                    (RequiredCollectionField(typeof(AscNet.Common.Database.Player)), players),
+                    (RequiredCollectionField(typeof(AscNet.Common.Database.Character)), characters),
+                    (RequiredCollectionField(typeof(AscNet.Common.Database.Inventory)), inventories),
+                    (RequiredCollectionField(typeof(AscNet.Common.Database.Stage)), stages)
+                ]);
+            }
+
             public static MongoCollectionOverride InstallForItemSellCompatibility(
                 out RecordingMongoCollectionProxy<AscNet.Common.Database.Inventory> inventoryCollection)
             {
@@ -18640,6 +17775,8 @@ namespace AscNet.Test
             public int ReplaceOneCalls { get; private set; }
             public TDocument? LastReplacement { get; private set; }
             public bool ThrowOnReplaceOne { get; set; }
+            public Action<TDocument>? BeforeReplaceOne { get; set; }
+            public byte[]? LastSuccessfulReplacementBson { get; private set; }
             public Queue<long> CountDocumentsResults { get; } = new();
             public IReadOnlyList<TDocument>? FindResults { get; set; }
             public int? LastFindLimit { get; private set; }
@@ -18683,10 +17820,13 @@ namespace AscNet.Test
                     {
                         ReplaceOneCalls++;
                         LastReplacement = document;
+                        BeforeReplaceOne?.Invoke(document);
                     }
 
                     if (ThrowOnReplaceOne)
                         throw new MongoException($"Injected {typeof(TDocument).Name} ReplaceOne failure.");
+                    if (replacement is TDocument successful)
+                        LastSuccessfulReplacementBson = successful.ToBson();
                     return new ReplaceOneResult.Acknowledged(1, 1, null);
                 }
 
@@ -18773,16 +17913,17 @@ namespace AscNet.Test
                     || foodExp <= 0
                     || foodTemplate is null
                     || !AscNet.Common.Database.Inventory.IsValidClientItemId(foodTemplate.Id)
-                    || !decimal.TryParse(
-                        decomposeRow.ExpToOneCoin,
-                        System.Globalization.NumberStyles.Float,
-                        System.Globalization.CultureInfo.InvariantCulture,
-                        out decimal expToOneCoin)
-                    || expToOneCoin <= 0
+                    || !double.IsFinite(decomposeRow.ExpToOneCoin)
+                    || decomposeRow.ExpToOneCoin <= 0
                     || returnRateConfig.Value <= 0)
                 {
                     continue;
                 }
+                decimal expToOneCoin;
+                try { expToOneCoin = (decimal)decomposeRow.ExpToOneCoin; }
+                catch (OverflowException) { continue; }
+                if (expToOneCoin <= 0)
+                    continue;
 
                 int candidateSourceExp = Math.Max(0, levelUpTemplate.Exp);
                 decimal totalExp = (decimal)candidateSourceExp + levelUpTemplate.AllExp + sourceBreakthrough.Exp;
@@ -19096,7 +18237,7 @@ namespace AscNet.Test
             NotifyItemDataList itemPush = ReadPushPayload<NotifyItemDataList>(
                 harness,
                 nameof(NotifyItemDataList),
-                "EquipDecomposeRequest item push");
+                "EquipDecomposeRequest item push", maxPacketsToRead: 2);
             NotifyEquipDataList equipPush = ReadPushPayload<NotifyEquipDataList>(
                 harness,
                 nameof(NotifyEquipDataList),
@@ -19244,7 +18385,7 @@ namespace AscNet.Test
                 14_302,
                 new EquipDecomposeRequest { EquipIds = batchIds.Select(id => (int)id).ToList() });
             _ = ReadPushPayload<NotifyItemDataList>(batchHarness, nameof(NotifyItemDataList),
-                "EquipDecompose 101-source item push");
+                "EquipDecompose 101-source item push", maxPacketsToRead: 2);
             NotifyEquipDataList batchEquipPush = ReadPushPayload<NotifyEquipDataList>(
                 batchHarness, nameof(NotifyEquipDataList), "EquipDecompose 101-source equipment push");
             EquipDecomposeResponse batchResponse = ReadResponsePayload<EquipDecomposeResponse>(
@@ -20220,16 +19361,6 @@ namespace AscNet.Test
             CheckState(clearedReload.EquipGuideData, [], "guide cleared BSON reload");
         }
 
-        private static void ValidateStageBookmarkCompatibilityShape()
-        {
-            GetStageBookmarkResponse response = new();
-            GetStageBookmarkResponse roundTrip = MessagePackSerializer.Deserialize<GetStageBookmarkResponse>(MessagePackSerializer.Serialize(response));
-
-            AssertEqual(0, roundTrip.Code, "GetStageBookmarkResponse Code");
-            AssertEmptyList(roundTrip.StageBookmarkList, "GetStageBookmarkResponse StageBookmarkList");
-            AssertEmptyList(roundTrip.BookmarkList, "GetStageBookmarkResponse BookmarkList");
-            ValidateRequestHandlerRegistration("GetStageBookmarkRequest");
-        }
 
         private static void ValidateMainLine2UpdateExhibitionChapterCompatibility()
         {
@@ -22020,6 +21151,8 @@ namespace AscNet.Test
             FashionList persistedFashion = character.Fashions.Single(fashion => fashion.Id == expectedFashionId);
             AssertEqual(false, persistedFashion.IsLock, $"{name} persisted fashion unlocked");
 
+            _ = ReadPushPayload<NotifyWheelchairManualActivity>(harness, nameof(NotifyWheelchairManualActivity),
+                $"{name} manual cache before login-complete");
             NotifyLogin startupLogin = ReadPushPayload<NotifyLogin>(
                 harness,
                 nameof(NotifyLogin),
@@ -26935,11 +26068,9 @@ namespace AscNet.Test
                 harness.Session,
                 repeatSweepPacketId,
                 new SweepRequest { StageId = 30_090_802, Count = 2 });
-            _ = harness.ReadPacket("Simulated Battlefield auto-clear reward push");
-            _ = harness.ReadPacket("Simulated Battlefield auto-clear EXP push");
             SweepResponse repeatSweep = ReadResponsePayload<SweepResponse>(
-                harness.ReadPacket("Simulated Battlefield auto-clear response"),
-                nameof(SweepResponse));
+                harness, repeatSweepPacketId, nameof(SweepResponse),
+                "Simulated Battlefield auto-clear response", maxPacketsToRead: 32);
             AssertEqual(0, repeatSweep.Code, "Simulated Battlefield auto-clear code");
             AssertEqual(2, repeatSweep.SweepRewards.Count, "Simulated Battlefield auto-clear reward batches");
             AssertEqual(1, repeatSweep.SweepRewards[0].RewardGoods.Count,
@@ -27108,7 +26239,7 @@ namespace AscNet.Test
                 IsWin = true, IsForceExit = false, StageId = checked((uint)selectedStageId), FightId = repeatedArenaPreFight.FightData.FightId,
                 StartFrame = 1, SettleFrame = 3825, PauseFrame = 1423, ExSkillPauseFrame = 1298,
                 LeftTime = 179, DeathTotalEnemy = 58, TotalDamage = 112_965_896,
-                StringToIntRecord = new Dictionary<object, object> { ["NpcGroup"] = 30 },
+                StringToIntRecord = new Dictionary<string, int> { ["NpcGroup"] = 30 },
                 NpcHpInfo = new()
                 {
                     [1] = new NpcHp { Type = 1, AttrTable = new() { [1] = new Dictionary<object, object> { ["Value"] = 100, ["MaxValue"] = 100 } }, BuffIds = [] },
@@ -27296,7 +26427,7 @@ namespace AscNet.Test
             AssertEqual(expectedPoint.ToString(), retryStageParams.Value<string>("DistributeMaxScore"),
                 "War Zone retry PreFight persisted distribution maximum");
             arenaSettle.LeftTime = 0; arenaSettle.DeathTotalEnemy = 0; arenaSettle.TotalDamage = 0;
-            arenaSettle.StringToIntRecord = new Dictionary<object, object> { ["NpcGroup"] = 0 };
+            arenaSettle.StringToIntRecord = new Dictionary<string, int> { ["NpcGroup"] = 0 };
             _ = recordArenaFight.Invoke(null, [harness.Session, arenaSettle]);
             AssertEqual(expectedPoint, player.SimulatedBattlefield.ArenaPoint, "War Zone lower retry preserves best");
             harness.Session.fight!.PreFight.PreFightData.SelectAreaId = 0;
@@ -27841,7 +26972,7 @@ namespace AscNet.Test
                 FightId = arenaDeathPreFight.FightData.FightId,
                 StartFrame = 10, SettleFrame = 110, PauseFrame = 20, LeftTime = 0,
                 DeathTotalEnemy = 0, TotalDamage = 0,
-                StringToIntRecord = new Dictionary<object, object> { ["NpcGroup"] = 0 },
+                StringToIntRecord = new Dictionary<string, int> { ["NpcGroup"] = 0 },
                 NpcHpInfo = new()
                 {
                     [1] = new NpcHp { Type = 1, AttrTable = new() { [1] = new Dictionary<object, object> { ["Value"] = 0, ["MaxValue"] = 100 } }, BuffIds = [] },
@@ -28698,8 +27829,10 @@ namespace AscNet.Test
                 "Pain Cage selected level persistence");
             if (!player.SimulatedBattlefield.BossList.SequenceEqual(selectedSections))
                 throw new InvalidDataException("Pain Cage selected boss list differs from the offered table-derived option.");
-            AssertEqual(0, selectPushes.Count,
+            AssertEqual(0, selectPushes.Count(name => name == nameof(NotifyStageData)),
                 "Pain Cage selection does not duplicate login stage pushes");
+            AssertEqual(true, selectPushes.Contains(nameof(NotifyWheelchairManualActivityUpdate)),
+                "Pain Cage selection refreshes the manual guide subtype");
             foreach (int stageId in selectedSections
                          .SelectMany(sectionId => sections.Single(row => row.SectionId == sectionId && row.AfreshId == 1).StageId))
             {
@@ -28744,8 +27877,7 @@ namespace AscNet.Test
                     $"Pain Cage {(bestiary ? "bestiary" : "trial")} remaining time");
                 BossSingleScoreRuleTable scoreRule = scoreRules.Single(row => row.Id == stageId);
                 int coefficientIndex = (stageType == 4 ? 8 : 4) - 1;
-                double timeCoefficient = double.Parse(
-                    scoreRule.LeftTimeScore[coefficientIndex], CultureInfo.InvariantCulture);
+                double timeCoefficient = scoreRule.LeftTimeScore[coefficientIndex];
                 int expectedTimeScore = Math.Min(stage.LeftTimeScore, checked((int)Math.Floor(
                     (stage.PassTimeLimit - fightSeconds) * timeCoefficient * stage.PassTimeLimit)));
                 AssertEqual(expectedTimeScore, result.TimeScore,
@@ -29191,16 +28323,12 @@ namespace AscNet.Test
             int expectedBossScore = Math.Min(
                 normalStage.BossLoseHpScore,
                 checked((int)Math.Floor(
-                    1d / double.Parse(normalRule.BossLoseHp[coefficientIndex], CultureInfo.InvariantCulture)
+                    1d / normalRule.BossLoseHp[coefficientIndex]
                     * normalRule.BossLoseHpScore[coefficientIndex])));
-            double timeCoefficient = double.Parse(
-                normalRule.LeftTimeScore[coefficientIndex],
-                CultureInfo.InvariantCulture);
+            double timeCoefficient = normalRule.LeftTimeScore[coefficientIndex];
             int expectedTimeScore = Math.Min(normalStage.LeftTimeScore,
                 checked((int)Math.Floor((normalStage.PassTimeLimit - normalFightSeconds) * timeCoefficient * normalStage.PassTimeLimit)));
-            double hpCoefficient = double.Parse(
-                normalRule.CharLeftHpSocre[coefficientIndex],
-                CultureInfo.InvariantCulture);
+            double hpCoefficient = normalRule.CharLeftHpSocre[coefficientIndex];
             int expectedHpScore = normalRule.BaseScore
                 + Math.Min(normalStage.LeftHpScore, checked((int)Math.Floor(100 * hpCoefficient)));
             int expectedTotalScore = Math.Min(
@@ -29618,8 +28746,7 @@ namespace AscNet.Test
                     && row.LeftTimeScore == 180000));
             BossSingleStageTable ultimateStage = stages.Single(row => row.StageId == ultimateStageId);
             BossSingleScoreRuleTable ultimateRule = scoreRules.Single(row => row.Id == ultimateStage.StageId);
-            double ultimateTimeCoefficient = double.Parse(
-                ultimateRule.LeftTimeScore[8 - 1], CultureInfo.InvariantCulture);
+            double ultimateTimeCoefficient = ultimateRule.LeftTimeScore[8 - 1];
             AssertEqual(2d, ultimateTimeCoefficient,
                 "Pain Cage Ultimate Zone table time coefficient");
             const int ultimateFightSeconds = 19;
@@ -29902,24 +29029,27 @@ namespace AscNet.Test
             AssertNoAvailablePacket(guideCompleteHarness, "GuideComplete invalid request");
             Dictionary<int, GuideCompleteTable> completionRows = TableReaderV2.Parse<GuideCompleteTable>()
                 .ToDictionary(completion => completion.Id);
-            List<(GuideGroupTable Guide, GuideCompleteTable Completion)> serverCompletedGuides = guideGroups
+            List<(GuideGroupTable Guide, GuideCompleteTable Completion)> stageAndCourseGuides = guideGroups
                 .Where(guide => guide.RewardId == 0 && completionRows.ContainsKey(guide.CompleteId))
                 .Select(guide => (Guide: guide, Completion: completionRows[guide.CompleteId]))
                 .Where(entry => entry.Completion.Param.Count >= 2
                     && entry.Completion.Param[0] is 2 or 12)
                 .ToList();
-            if (serverCompletedGuides.Count < 2)
-                throw new InvalidDataException("Guide login reconciliation requires two server-completed guides.");
-
-            (GuideGroupTable Guide, GuideCompleteTable Completion) reconciledGuide = serverCompletedGuides[0];
+            (GuideGroupTable Guide, GuideCompleteTable Completion) reconciledGuide =
+                stageAndCourseGuides.Single(entry => entry.Completion.Param[0] == 2);
             (GuideGroupTable Guide, GuideCompleteTable Completion) unreconciledGuide =
-                serverCompletedGuides.First(entry => entry.Guide.Id != reconciledGuide.Guide.Id);
+                stageAndCourseGuides.Single(entry => entry.Completion.Param[0] == 12);
             const long reconcilePlayerId = 88_150;
             AscNet.Common.Database.Player reconcilePlayer = CreateDrawCompatibilityPlayer(reconcilePlayerId);
             AscNet.Common.Database.Stage reconcileStage = CreateLoginAccountCompatibilityStage(reconcilePlayerId);
             reconcileStage.AddStage(new StageDatum
             {
                 StageId = reconciledGuide.Completion.Param[1],
+                Passed = true
+            });
+            reconcileStage.AddStage(new StageDatum
+            {
+                StageId = unreconciledGuide.Completion.Param[1],
                 Passed = true
             });
             MethodInfo reconcileStageCompletedGuides = RequiredMethod(
@@ -29937,13 +29067,27 @@ namespace AscNet.Test
                 AssertEqual(true, reconcilePlayer.PlayerData.GuideData.Contains(reconciledGuide.Guide.Id),
                     "Guide login reconciliation records passed-stage guide");
                 AssertEqual(false, reconcilePlayer.PlayerData.GuideData.Contains(unreconciledGuide.Guide.Id),
-                    "Guide login reconciliation leaves unmatched guide incomplete");
+                    "Guide login reconciliation leaves passed but unclaimed course guide incomplete");
                 AssertEqual(1, reconcilePlayerSaves.ReplaceOneCalls,
                     "Guide login reconciliation persists once");
 
                 reconcileStageCompletedGuides.Invoke(null, [reconcilePlayer, reconcileStage]);
                 AssertEqual(1, reconcilePlayerSaves.ReplaceOneCalls,
                     "Guide login reconciliation is idempotent");
+
+                reconcileStage.Course.Add(checked((uint)unreconciledGuide.Completion.Param[1]));
+                reconcileStage = MongoDB.Bson.Serialization.BsonSerializer.Deserialize<AscNet.Common.Database.Stage>(
+                    reconcileStage.ToBson());
+                reconcilePlayer = MongoDB.Bson.Serialization.BsonSerializer.Deserialize<AscNet.Common.Database.Player>(
+                    reconcilePlayer.ToBson());
+                reconcileStageCompletedGuides.Invoke(null, [reconcilePlayer, reconcileStage]);
+                AssertEqual(true, reconcilePlayer.PlayerData.GuideData.Contains(unreconciledGuide.Guide.Id),
+                    "Guide relog completes a persisted claimed course");
+                reconcileStageCompletedGuides.Invoke(null, [reconcilePlayer, reconcileStage]);
+                AssertEqual(1, reconcilePlayer.PlayerData.GuideData.Count(id => id == unreconciledGuide.Guide.Id),
+                    "Guide course reconciliation retry does not duplicate completion");
+                AssertEqual(2, reconcilePlayerSaves.ReplaceOneCalls,
+                    "Guide claimed course reconciliation persists once");
             }
 
             ValidateMainLineLastPassStageProgression();
@@ -29960,7 +29104,7 @@ namespace AscNet.Test
                 throw new InvalidDataException("Mainline last-pass progression requires two configured chapters.");
             Dictionary<int, GuideCompleteTable> guideCompletions = TableReaderV2.Parse<GuideCompleteTable>()
                 .ToDictionary(completion => completion.Id);
-            List<(GuideGroupTable Guide, GuideCompleteTable Completion)> stageCompletedGuides =
+            List<(GuideGroupTable Guide, GuideCompleteTable Completion)> stageAndCourseGuides =
                 TableReaderV2.Parse<GuideGroupTable>()
                     .Where(guide => guide.RewardId == 0 && guideCompletions.ContainsKey(guide.CompleteId))
                     .Select(guide => (Guide: guide, Completion: guideCompletions[guide.CompleteId]))
@@ -29968,20 +29112,20 @@ namespace AscNet.Test
                         && entry.Completion.Param[0] is 2 or 12
                         && entry.Completion.Param[1] > 0)
                     .ToList();
-            if (stageCompletedGuides.Count < 2)
-                throw new InvalidDataException("Guide stage completion requires two configured completion modes.");
+            if (stageAndCourseGuides.Count < 2)
+                throw new InvalidDataException("Guide completion requires configured stage and course conditions.");
 
             uint matchingGuideStageId = checked((uint)chapters[0].StageId.First(stageId => stageId > 0));
             (GuideGroupTable Guide, GuideCompleteTable Completion) matchingGuide =
-                stageCompletedGuides.First(entry => entry.Completion.Param[1] == matchingGuideStageId);
+                stageAndCourseGuides.Single(entry => entry.Completion.Param[0] == 2
+                    && entry.Completion.Param[1] == matchingGuideStageId);
             (GuideGroupTable Guide, GuideCompleteTable Completion) nonmatchingGuide =
-                stageCompletedGuides.First(entry => entry.Guide.Id != matchingGuide.Guide.Id
-                    && entry.Completion.Param[1] != chapters[1].StageId.First(stageId => stageId > 0));
+                stageAndCourseGuides.Single(entry => entry.Completion.Param[0] == 12);
 
 
             const long uid = 88_200;
             using MongoCollectionOverride mongo =
-                MongoCollectionOverride.InstallForBossCompatibility(out _, out _);
+                MongoCollectionOverride.InstallForBossCompatibility(out var guidePlayerSaves, out _);
             AscNet.Common.Database.Player player = CreateDrawCompatibilityPlayer(uid);
             using LoopbackSessionHarness harness = new(
                 CreateDrawCompatibilityCharacter(uid),
@@ -30050,8 +29194,71 @@ namespace AscNet.Test
                 }
             }
 
+            uint courseStageId = checked((uint)nonmatchingGuide.Completion.Param[1]);
+            harness.Session.fight = new AscNet.GameServer.Game.Fight(
+                new PreFightRequest { PreFightData = new() { StageId = courseStageId } }, 88_220);
+            InvokeRegisteredRequestHandler(nameof(FightSettleRequest), harness.Session, 88_221,
+                CreateMissingStageSettleRequest(courseStageId, 88_220, uid));
+            AssertEqual(0, ((FightSettleResponse)ReadResponsePayload(
+                harness, 88_221, nameof(FightSettleResponse), "Course stage settle",
+                typeof(FightSettleResponse), maxPacketsToRead: 20)).Code, "Course stage settle Code");
+            AssertEqual(false, player.PlayerData.GuideData.Contains(nonmatchingGuide.Guide.Id),
+                "Matching course stage settlement cannot replace the reward claim");
+            AssertEqual(nonmatchingGuide.Guide.Id, harness.Session.OpenedGuideGroupId,
+                "Unclaimed course guide remains pending");
+
+            InvokeRegisteredRequestHandler(nameof(GetCourseRewardRequest), harness.Session, 88_222,
+                new GetCourseRewardRequest { StageId = checked((int)courseStageId) });
+            AssertEqual(0, ((GetCourseRewardResponse)ReadResponsePayload(
+                harness, 88_222, nameof(GetCourseRewardResponse), "Course guide reward claim",
+                typeof(GetCourseRewardResponse), maxPacketsToRead: 20)).Code, "Course guide claim Code");
+            AssertEqual(nonmatchingGuide.Guide.Id, ReadPushPayload<NotifyGuide>(
+                harness, nameof(NotifyGuide), "Course guide claim notification").GuideGroupId,
+                "Course guide notification follows the claim response");
+            AssertEqual(true, player.PlayerData.GuideData.Contains(nonmatchingGuide.Guide.Id),
+                "Course reward claim completes the pending course guide");
+            AssertEqual(null, harness.Session.OpenedGuideGroupId,
+                "Course reward claim clears the pending guide");
+            AssertEqual(true, harness.Session.stage.Course.Contains(courseStageId),
+                "Course reward claim records claimed state");
+            InvokeRegisteredRequestHandler(nameof(GetCourseRewardRequest), harness.Session, 88_223,
+                new GetCourseRewardRequest { StageId = checked((int)courseStageId) });
+            AssertEqual(20026014, ReadResponsePayload<GetCourseRewardResponse>(
+                harness, 88_223, nameof(GetCourseRewardResponse), "Course guide claim retry").Code,
+                "Course reward duplicate claim retains its error contract");
+            AssertEqual(1, player.PlayerData.GuideData.Count(id => id == nonmatchingGuide.Guide.Id),
+                "Course reward retry cannot duplicate guide completion");
+            AssertNoAvailablePacket(harness, "Course guide claim retry");
+
+            // A durable course claim can outlive a failed guide save.
+            player.PlayerData.GuideData.Remove(nonmatchingGuide.Guide.Id);
+            harness.Session.OpenedGuideGroupId = nonmatchingGuide.Guide.Id;
+            guidePlayerSaves.ThrowOnReplaceOne = true;
+            InvokeRegisteredRequestHandler(nameof(GetCourseRewardRequest), harness.Session, 88_224,
+                new GetCourseRewardRequest { StageId = checked((int)courseStageId) });
+            guidePlayerSaves.ThrowOnReplaceOne = false;
+            AssertEqual(20026014, ReadResponsePayload<GetCourseRewardResponse>(
+                harness, 88_224, nameof(GetCourseRewardResponse), "Course guide save failure").Code,
+                "Course guide save failure retains already-claimed response");
+            AssertEqual(false, player.PlayerData.GuideData.Contains(nonmatchingGuide.Guide.Id),
+                "Failed course guide save rolls back completion");
+            AssertNoAvailablePacket(harness, "Failed course guide save sends no completion");
+            InvokeRegisteredRequestHandler(nameof(GetCourseRewardRequest), harness.Session, 88_225,
+                new GetCourseRewardRequest { StageId = checked((int)courseStageId) });
+            AssertEqual(20026014, ReadResponsePayload<GetCourseRewardResponse>(
+                harness, 88_225, nameof(GetCourseRewardResponse), "Course guide recovered claim").Code,
+                "Recovered guide does not regrant the course reward");
+            AssertEqual(nonmatchingGuide.Guide.Id, ReadPushPayload<NotifyGuide>(
+                harness, nameof(NotifyGuide), "Course guide recovered claim notification").GuideGroupId,
+                "Persisted course claim retry notifies the waiting guide after response");
+            AssertNoAvailablePacket(harness, "Recovered course guide claim");
+
+            expectedLastPassStages[chapters[0].ChapterId] = courseStageId;
+
             AscNet.Common.Database.Player reload =
                 MongoDB.Bson.Serialization.BsonSerializer.Deserialize<AscNet.Common.Database.Player>(player.ToBson());
+            AssertEqual(true, reload.PlayerData.GuideData.Contains(nonmatchingGuide.Guide.Id),
+                "Claimed course guide survives player reload");
             foreach ((int chapterId, long stageId) in expectedLastPassStages)
             {
                 AssertEqual(stageId,
@@ -30815,7 +30022,8 @@ namespace AscNet.Test
                 AscNet.Common.Database.Character character,
                 AscNet.Common.Database.Player? player = null,
                 AscNet.Common.Database.Inventory? inventory = null,
-                string sessionId = "equip-put-on-test")
+                string sessionId = "equip-put-on-test",
+                bool startClientLoop = true)
             {
                 listener = new TcpListener(IPAddress.Loopback, port: 0);
                 listener.Start();
@@ -30835,7 +30043,8 @@ namespace AscNet.Test
                     player = player ?? CreateDrawCompatibilityPlayer(character.Uid),
                     inventory = inventory ?? CreateDrawCompatibilityInventory(character.Uid, [])
                 };
-                Session.Start();
+                if (startClientLoop)
+                    Session.Start();
             }
 
             public static byte[] SerializeClientRequestFrame(string requestName, int packetId, object? request)

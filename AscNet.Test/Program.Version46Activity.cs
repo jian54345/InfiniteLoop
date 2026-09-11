@@ -1844,49 +1844,190 @@ internal static partial class Program
     private static void ValidateWheelchairManualCompatibility()
     {
         WheelchairManualActivityTable activity = TableReaderV2.Parse<WheelchairManualActivityTable>().Single();
-        ConditionTable manualOpenCondition = TableReaderV2.Parse<ConditionTable>()
-            .Single(condition => condition.Id == 770304);
-        ConditionTable transferCondition = TableReaderV2.Parse<ConditionTable>()
-            .Single(condition => condition.Id == 770306);
-        AssertEqual(17424, manualOpenCondition.Type, "Wheelchair Manual client open condition type");
-        AssertIntegerList([1], manualOpenCondition.Params.Select(Convert.ToInt64).ToArray(),
-            "Wheelchair Manual client open condition parameter");
-        AssertEqual(17421, transferCondition.Type, "Wheelchair Manual transfer condition type");
-        AssertIntegerList([1], transferCondition.Params.Select(Convert.ToInt64).ToArray(),
-            "Wheelchair Manual transfer condition parameter");
-        HashSet<int> periodIds = TableReaderV2.Parse<WheelchairManualGuideActivityPeriodTable>()
-            .Select(period => period.Id)
-            .ToHashSet();
-        List<int> expectedOpenActivityIds = TableReaderV2.Parse<WheelchairManualGuideActivityTable>()
-            .Where(entry => periodIds.Contains(entry.PeriodIds))
-            .Select(entry => entry.Id)
-            .OrderBy(id => id)
-            .ToList();
-        if (expectedOpenActivityIds.Count == 0)
-            throw new InvalidDataException("Wheelchair Manual has no authoritative guide activity entries.");
-
+        Dictionary<int, WheelchairManualBattlePassPlanTable> plans =
+            TableReaderV2.Parse<WheelchairManualBattlePassPlanTable>().ToDictionary(plan => plan.Id);
+        int[] planIds = activity.PlanIds.OrderBy(id => id).ToArray();
+        WheelchairManualBattlePassPlanTable firstPlan = plans[planIds[0]];
         MethodInfo builder = RequiredMethod(
-            RequiredAscNetGameServerType("AscNet.GameServer.Handlers.AccountModule"),
-            "BuildWheelchairManualActivityPayload",
-            BindingFlags.Static | BindingFlags.NonPublic,
-            Type.EmptyTypes);
-        NotifyWheelchairManualActivity fresh = (NotifyWheelchairManualActivity)(builder.Invoke(null, null)
-            ?? throw new InvalidDataException("Wheelchair Manual fresh payload was null."));
-        NotifyWheelchairManualActivity relog = (NotifyWheelchairManualActivity)(builder.Invoke(null, null)
-            ?? throw new InvalidDataException("Wheelchair Manual relog payload was null."));
+            RequiredAscNetGameServerType("AscNet.GameServer.Handlers.WheelchairManualModule"),
+            "BuildPayload",
+            BindingFlags.Static | BindingFlags.Public,
+            [typeof(Session), typeof(DateTimeOffset)]);
+        DateTimeOffset now = DateTimeOffset.UtcNow;
+        NotifyWheelchairManualActivity Payload(Player player)
+        {
+            using LoopbackSessionHarness payloadHarness = new(
+                CreateDrawCompatibilityCharacter(player.PlayerData.Id), player,
+                CreateDrawCompatibilityInventory(player.PlayerData.Id, []), "manual-payload");
+            payloadHarness.Session.stage = CreateLoginAccountCompatibilityStage(player.PlayerData.Id);
+            return (NotifyWheelchairManualActivity)builder.Invoke(null, [payloadHarness.Session, now])!;
+        }
 
-        AssertEqual(activity.Id, fresh.ActivityId, "Wheelchair Manual authoritative activity");
-        AssertEqual(activity.PlanIds.Max(), fresh.PlanId, "Wheelchair Manual authoritative current plan");
-        AssertIntegerList(expectedOpenActivityIds.Select(Convert.ToInt64).ToArray(),
-            fresh.OpenActivityIds.Select(Convert.ToInt64).ToArray(), "Wheelchair Manual authoritative open activity ids");
-        AssertEqual(1, fresh.BpLevel, "Wheelchair Manual fresh state level");
-        AssertEqual(false, fresh.IsSeniorManualUnlock, "Wheelchair Manual fresh senior state");
-        AssertEqual(0, fresh.GetRewardManualRewardIds.Count, "Wheelchair Manual fresh rewards");
-        AssertEqual(0, fresh.GetRewardPlanIds.Count, "Wheelchair Manual fresh plan rewards");
-        AssertEqual(0, fresh.FinishStageIds.Count, "Wheelchair Manual fresh teaching progress");
-        AssertEqual(fresh.ActivityId, relog.ActivityId, "Wheelchair Manual relog activity stability");
-        AssertIntegerList(fresh.OpenActivityIds.Select(Convert.ToInt64).ToArray(),
-            relog.OpenActivityIds.Select(Convert.ToInt64).ToArray(), "Wheelchair Manual relog open activity stability");
+        Player manualPlayer = CreateDrawCompatibilityPlayer(46_210);
+        NotifyWheelchairManualActivity fresh = Payload(manualPlayer);
+        AssertEqual(true, plans[fresh.PlanId].TaskIds.Contains(8010),
+            "Wheelchair fresh login phase exposes guide task 8010");
+        Player otherPlayer = CreateDrawCompatibilityPlayer(46_211);
+        using MongoCollectionOverride manualOverride = MongoCollectionOverride.InstallForDailySignInCompatibility(
+            out RecordingMongoCollectionProxy<Player> playerCollection,
+            out RecordingMongoCollectionProxy<Character> characterCollection,
+            out RecordingMongoCollectionProxy<Inventory> inventoryCollection);
+        Inventory manualInventory = CreateDrawCompatibilityInventory(manualPlayer.PlayerData.Id, []);
+        using LoopbackSessionHarness manualHarness = new(
+            CreateDrawCompatibilityCharacter(manualPlayer.PlayerData.Id), manualPlayer, manualInventory,
+            "wheelchair-manual-progression");
+        manualHarness.Session.stage = CreateLoginAccountCompatibilityStage(manualPlayer.PlayerData.Id);
+        AssertEqual(true, BuildTaskData(manualHarness.Session)
+            .Where(task => plans[fresh.PlanId].TaskIds.Contains((int)task.Id)).Any(task => task.Id == 8010),
+            "Wheelchair client-equivalent phase datasource can focus login task 8010");
+        int packetId = 46_710;
+
+        (WheelchairManualGetPlanRewardResponse Response, NotifyWheelchairManualActivity? Push) Claim(
+            LoopbackSessionHarness harness)
+        {
+            int requestId = packetId++;
+            InvokeRegisteredRequestHandler("WheelchairManualGetPlanRewardRequest", harness.Session,
+                requestId, null);
+            NotifyWheelchairManualActivity? manualPush = null;
+            for (int index = 0; index < 16; index++)
+            {
+                Packet packet = harness.ReadPacket("Wheelchair phase reward packet");
+                if (packet.Type == Packet.ContentType.Push)
+                {
+                    Packet.Push push = MessagePackSerializer.Deserialize<Packet.Push>(packet.Content);
+                    if (push.Name == nameof(NotifyWheelchairManualActivity))
+                        manualPush = MessagePackSerializer.Deserialize<NotifyWheelchairManualActivity>(push.Content);
+                    continue;
+                }
+                AssertEqual(Packet.ContentType.Response, packet.Type, "Wheelchair claim response type");
+                Packet.Response response = MessagePackSerializer.Deserialize<Packet.Response>(packet.Content);
+                AssertEqual(requestId, response.Id, "Wheelchair claim response correlation");
+                AssertEqual(nameof(WheelchairManualGetPlanRewardResponse), response.Name,
+                    "Wheelchair claim response name");
+                AssertNoAvailablePacket(harness, "Wheelchair no updates after response callback");
+                return (MessagePackSerializer.Deserialize<WheelchairManualGetPlanRewardResponse>(response.Content), manualPush);
+            }
+            throw new InvalidDataException("Wheelchair claim did not return a response.");
+        }
+
+        var incomplete = Claim(manualHarness);
+        AssertEqual(20236010, incomplete.Response.Code, "Wheelchair incomplete phase rejected");
+        AssertEqual(null, incomplete.Push, "Wheelchair rejected phase does not advance");
+        AssertEqual(0, incomplete.Response.RewardList.Count, "Wheelchair incomplete phase grants nothing");
+
+        // All but the guide task have claimed task rewards; the guide task is achieved but unclaimed.
+        manualPlayer.MissionProgress.ClaimedTaskIds.AddRange(firstPlan.TaskIds.Where(id => id != 8010));
+        var guideTask = TableReaderV2.Parse<AscNet.Table.V2.share.task.CurrentTaskTable>().Single(task => task.Id == 8010);
+        manualPlayer.MissionProgress.ConditionCounters[guideTask.Condition] = guideTask.Result;
+        AssertEqual(3, BuildTaskData(manualHarness.Session).Single(task => task.Id == 8010).State,
+            "Wheelchair guide task is achieved before its task reward is claimed");
+        var achieved = Claim(manualHarness);
+        AssertEqual(20236010, achieved.Response.Code, "Wheelchair achieved task still requires its task reward claim");
+        manualPlayer.MissionProgress.ClaimedTaskIds.Add(8010);
+        AssertEqual(firstPlan.Id, Payload(manualPlayer).PlanId,
+            "Wheelchair completed phase remains current until plan reward claimed");
+
+        List<RewardGoods> ExpectedRewards(WheelchairManualBattlePassPlanTable plan)
+        {
+            RewardTable reward = TableReaderV2.Parse<RewardTable>().Single(row => row.Id == plan.RewardId);
+            return TableReaderV2.Parse<RewardGoodsTable>().Where(row => reward.SubIds.Contains(row.Id))
+                .Select(row => new RewardGoods { TemplateId = row.TemplateId, Count = row.Count })
+                .ToList();
+        }
+        string RewardSignature(IEnumerable<RewardGoods> goods) => string.Join(";",
+            goods.OrderBy(row => row.TemplateId).Select(row => $"{row.TemplateId}:{row.Count}"));
+        void AssertGranted(WheelchairManualBattlePassPlanTable plan, WheelchairManualGetPlanRewardResponse response)
+        {
+            AssertEqual(0, response.Code, "Wheelchair phase claim succeeds");
+            AssertEqual(RewardSignature(ExpectedRewards(plan)), RewardSignature(response.RewardList),
+                "Wheelchair phase response grants authoritative reward");
+        }
+        var claimed = Claim(manualHarness);
+        AssertGranted(firstPlan, claimed.Response);
+        foreach (RewardGoods reward in claimed.Response.RewardList)
+        {
+            switch ((RewardType)reward.RewardType)
+            {
+                case RewardType.Character:
+                    AssertEqual(reward.Count, manualHarness.Session.character.Characters
+                        .Count(character => character.Id == reward.TemplateId),
+                        "Wheelchair configured phase reward unlocks character");
+                    break;
+                case RewardType.Item:
+                    AssertEqual((long)reward.Count, manualInventory.Items
+                        .Single(item => item.Id == reward.TemplateId).Count,
+                        "Wheelchair configured phase reward reaches inventory");
+                    break;
+                default:
+                    throw new InvalidDataException($"Wheelchair first-phase reward destination unsupported: {reward.RewardType}.");
+            }
+        }
+        AssertEqual(planIds[1], claimed.Push?.PlanId, "Wheelchair phase updates before response callback");
+        AssertIntegerList([firstPlan.Id], claimed.Push!.GetRewardPlanIds.Select(Convert.ToInt64).ToArray(),
+            "Wheelchair push marks claimed phase");
+        AssertEqual(firstPlan.Id, Payload(otherPlayer).PlanId, "Wheelchair distinct player remains on first phase");
+        Player reloaded = BsonSerializer.Deserialize<Player>(playerCollection.LastReplacement!.ToBson());
+        AssertIntegerList([firstPlan.Id], reloaded.WheelchairManualClaimedPlanIds[activity.Id]
+            .Select(Convert.ToInt64).ToArray(), "Wheelchair claimed phase persists through BSON");
+        AssertEqual(planIds[1], Payload(reloaded).PlanId, "Wheelchair relog resumes next phase");
+        string inventoryAfterClaim = manualInventory.ToJson();
+        string characterAfterClaim = manualHarness.Session.character.ToJson();
+        var duplicate = Claim(manualHarness);
+        AssertEqual(20236010, duplicate.Response.Code, "Wheelchair repeated claim cannot skip incomplete next phase");
+        AssertEqual(inventoryAfterClaim, manualInventory.ToJson(), "Wheelchair repeated claim does not duplicate rewards");
+        AssertEqual(characterAfterClaim, manualHarness.Session.character.ToJson(),
+            "Wheelchair repeated claim does not duplicate character rewards");
+
+        // A player-save failure happens after durable reward receipts; BSON reload and retry must not grant twice.
+        manualPlayer.MissionProgress.ClaimedTaskIds.AddRange(plans[planIds[1]].TaskIds);
+        playerCollection.ThrowOnReplaceOne = true;
+        try
+        {
+            try
+            {
+                Claim(manualHarness);
+                throw new InvalidDataException("Wheelchair injected player save unexpectedly succeeded.");
+            }
+            catch (InvalidDataException exception) when (exception.InnerException is MongoDB.Driver.MongoException)
+            {
+            }
+        }
+        finally
+        {
+            playerCollection.ThrowOnReplaceOne = false;
+        }
+        AssertNoAvailablePacket(manualHarness, "Wheelchair failed persistence emits no success packet");
+        AssertEqual(planIds[1], Payload(manualPlayer).PlanId, "Wheelchair failed persistence restores current phase");
+        Inventory retryInventory = BsonSerializer.Deserialize<Inventory>(manualInventory.ToBson());
+        Character retryCharacter = BsonSerializer.Deserialize<Character>(manualHarness.Session.character.ToBson());
+        Player retryPlayer = BsonSerializer.Deserialize<Player>(manualPlayer.ToBson());
+        string rewardsAfterFailure = retryInventory.ToJson();
+        string characterAfterFailure = retryCharacter.ToJson();
+        using LoopbackSessionHarness retryHarness = new(retryCharacter, retryPlayer, retryInventory,
+            "wheelchair-manual-persistence-retry");
+        retryHarness.Session.stage = CreateLoginAccountCompatibilityStage(retryPlayer.PlayerData.Id);
+        var retry = Claim(retryHarness);
+        AssertGranted(plans[planIds[1]], retry.Response);
+        AssertEqual(planIds[2], retry.Push?.PlanId, "Wheelchair retry advances pending phase");
+        AssertEqual(rewardsAfterFailure, retryInventory.ToJson(), "Wheelchair BSON retry grants reward only once");
+        AssertEqual(characterAfterFailure, retryCharacter.ToJson(),
+            "Wheelchair BSON retry does not duplicate equipment or character rewards");
+
+        foreach (int planId in planIds.Skip(2))
+        {
+            retryPlayer.MissionProgress.ClaimedTaskIds.AddRange(plans[planId].TaskIds);
+            AssertGranted(plans[planId], Claim(retryHarness).Response);
+        }
+        string finalInventory = retryInventory.ToJson();
+        string finalCharacter = retryCharacter.ToJson();
+        var finalReplay = Claim(retryHarness);
+        AssertEqual(20236009, finalReplay.Response.Code, "Wheelchair final phase replay rejected");
+        AssertEqual(null, finalReplay.Push, "Wheelchair final replay has no state transition");
+        AssertEqual(finalInventory, retryInventory.ToJson(), "Wheelchair final replay grants nothing");
+        AssertEqual(finalCharacter, retryCharacter.ToJson(),
+            "Wheelchair final replay grants no equipment or character rewards");
+        AssertEqual(planIds[^1], Payload(BsonSerializer.Deserialize<Player>(retryPlayer.ToBson())).PlanId,
+            "Wheelchair fully claimed relog stays on final phase");
 
         LottoTable lotto = TableReaderV2.Parse<LottoTable>()
             .Single(row => row.Id == activity.LottoId && row.TimeId == activity.TimeId);

@@ -243,9 +243,9 @@ internal static class TransfiniteModule
             {
                 int total = battle.StageInfo.Sum(x => x.Score);
                 applied = RewardHandler.ApplyRewardsOnceAndPersist(
-                    [new RewardGrant($"transfinite-terminal:{state.ActivityId}:{state.CircleId}:{battle.StageGroupId}", [new RewardGoodsTable { Id = TransfiniteScoreItemId, TemplateId = TransfiniteScoreItemId, Count = total }])], s);
+                    [new RewardGrant($"transfinite-terminal:{state.ActivityId}:{state.CircleId}:{battle.StageGroupId}", [new RewardGoodsTable { Id = TransfiniteScoreItemId, TemplateId = TransfiniteScoreItemId, Count = total }], EventCause: WheelchairManualGuideManager.GetUniqueWeeklyEventCause(91))], s);
             }
-            s.player.Save();
+            s.player.SaveChecked();
             if (taskUpdate is not null) s.SendPush(taskUpdate);
             if (applied is not null) applied.SendPushes(s);
             s.SendResponse(terminal
@@ -279,6 +279,7 @@ internal static class TransfiniteModule
 
         TransfiniteState snapshot = BsonSerializer.Deserialize<TransfiniteState>(state!.ToBson());
         Inventory inventorySnapshot = BsonSerializer.Deserialize<Inventory>(s.inventory.ToBson());
+        var guideReceiptsSnapshot = s.player.WheelchairManualGuideRewardReceipts;
         Fight? fightSnapshot = s.fight;
         state.BattleInfo = null;
         state.LastModifyTime = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
@@ -289,7 +290,7 @@ internal static class TransfiniteModule
             if (score > 0)
                 applied = RewardHandler.ApplyRewardsOnceAndPersist(
                     [new RewardGrant($"transfinite-reset:{state.ActivityId}:{state.CircleId}:{battle.StageGroupId}:{battle.StageProgressIndex}",
-                        [new RewardGoodsTable { Id = TransfiniteScoreItemId, TemplateId = TransfiniteScoreItemId, Count = score }])], s);
+                        [new RewardGoodsTable { Id = TransfiniteScoreItemId, TemplateId = TransfiniteScoreItemId, Count = score }], EventCause: WheelchairManualGuideManager.GetUniqueWeeklyEventCause(91))], s);
             s.player.Save();
         }
         catch
@@ -300,6 +301,8 @@ internal static class TransfiniteModule
             {
                 s.inventory = inventorySnapshot;
                 try { s.inventory.SaveChecked(); } catch { }
+                s.player.WheelchairManualGuideRewardReceipts = guideReceiptsSnapshot;
+                try { s.player.SaveChecked(); } catch { }
             }
             s.SendResponse(new TransfiniteResetStageGroupResponse { Code = StageGroupCfgNotFound }, p.Id);
             return;
@@ -307,7 +310,7 @@ internal static class TransfiniteModule
         applied?.SendPushes(s);
         s.SendResponse(new TransfiniteResetStageGroupResponse { RewardGoodsList = applied?.RewardGoods ?? [] }, p.Id);
     }
-    [RequestPacketHandler("TransfiniteGetScoreRewardRequest")] public static void GetScoreReward(Session s, Packet.Request p) { var r = p.Deserialize<TransfiniteGetScoreRewardRequest>(); var state = s.player.Transfinite; if (!Authorized(state)) { s.SendResponse(new TransfiniteGetScoreRewardResponse { Code = ActivityNotOpen }, p.Id); return; } var group = Rewards.Value.SingleOrDefault(x => x.RegionId == state!.RegionId && x.ScoreRewardGroupId == state.ScoreRewardGroupId); if (group is null || r.ScoreRewardIndex.Count == 0 || r.ScoreRewardIndex.Distinct().Count() != r.ScoreRewardIndex.Count || r.ScoreRewardIndex.Any(i => i < 0 || i >= group.Score.Count || i >= group.RewardId.Count || state.GotScoreRewardIndex.Contains(i) || group.Score[i] > Score(s) || group.RewardId[i] <= 0)) { s.SendResponse(new TransfiniteGetScoreRewardResponse { Code = StageGroupCfgNotFound }, p.Id); return; } try { var applied = RewardHandler.ApplyRewardsOnceAndPersist(r.ScoreRewardIndex.Select(i => new RewardGrant($"transfinite-score:{state.ActivityId}:{state.CircleId}:{i}", RewardHandler.GetRewardGoods(group.RewardId[i]))).ToList(), s); int before = state.GotScoreRewardIndex.Count; state.GotScoreRewardIndex.AddRange(r.ScoreRewardIndex); try { s.player.Save(); } catch { state.GotScoreRewardIndex.RemoveRange(before, r.ScoreRewardIndex.Count); throw; } applied.SendPushes(s); s.SendResponse(new TransfiniteGetScoreRewardResponse { RewardGoodsList = applied.RewardGoods, GotScoreRewardIndex = state.GotScoreRewardIndex.ToList() }, p.Id); } catch { s.SendResponse(new TransfiniteGetScoreRewardResponse { Code = StageGroupCfgNotFound }, p.Id); } }
+    [RequestPacketHandler("TransfiniteGetScoreRewardRequest")] public static void GetScoreReward(Session s, Packet.Request p) { var r = p.Deserialize<TransfiniteGetScoreRewardRequest>(); var state = s.player.Transfinite; if (!Authorized(state)) { s.SendResponse(new TransfiniteGetScoreRewardResponse { Code = ActivityNotOpen }, p.Id); return; } var group = Rewards.Value.SingleOrDefault(x => x.RegionId == state!.RegionId && x.ScoreRewardGroupId == state.ScoreRewardGroupId); if (group is null || r.ScoreRewardIndex.Count == 0 || r.ScoreRewardIndex.Distinct().Count() != r.ScoreRewardIndex.Count || r.ScoreRewardIndex.Any(i => i < 0 || i >= group.Score.Count || i >= group.RewardId.Count || state.GotScoreRewardIndex.Contains(i) || group.Score[i] > Score(s) || group.RewardId[i] <= 0)) { s.SendResponse(new TransfiniteGetScoreRewardResponse { Code = StageGroupCfgNotFound }, p.Id); return; } try { var applied = RewardHandler.ApplyRewardsOnceAndPersist(r.ScoreRewardIndex.Select(i => new RewardGrant($"transfinite-score:{state.ActivityId}:{state.CircleId}:{i}", RewardHandler.GetRewardGoods(group.RewardId[i]), EventCause: WheelchairManualGuideManager.GetUniqueWeeklyEventCause(91))).ToList(), s); int before = state.GotScoreRewardIndex.Count; state.GotScoreRewardIndex.AddRange(r.ScoreRewardIndex); try { s.player.Save(); } catch { state.GotScoreRewardIndex.RemoveRange(before, r.ScoreRewardIndex.Count); throw; } applied.SendPushes(s); s.SendResponse(new TransfiniteGetScoreRewardResponse { RewardGoodsList = applied.RewardGoods, GotScoreRewardIndex = state.GotScoreRewardIndex.ToList() }, p.Id); } catch { s.SendResponse(new TransfiniteGetScoreRewardResponse { Code = StageGroupCfgNotFound }, p.Id); } }
     [RequestPacketHandler("TransfiniteGetRotateSettleInfoRequest")]
     public static void GetRotateSettleInfo(Session s, Packet.Request p)
     {
@@ -319,14 +322,19 @@ internal static class TransfiniteModule
         if (group is null || !TryResolveRotateRewards(pending, group, out List<RewardGoodsTable> rows)) { s.SendResponse(new TransfiniteGetRotateSettleInfoResponse { Code = StageGroupCfgNotFound }, p.Id); return; }
         List<TransfiniteInventoryReceipt> matches = s.inventory.TransfiniteReceipts.Where(x => x.ActivityId == state.ActivityId && x.RotationId == pending.RotationId).Take(2).ToList();
         if (matches.Count > 1) { s.SendResponse(new TransfiniteGetRotateSettleInfoResponse { Code = StageGroupCfgNotFound }, p.Id); return; }
-        if (matches.SingleOrDefault() is { } saved) { if (!ReceiptMatches(saved, pending, rows) || !CommitRotateReceipt(s, state, ToPlayerReceipt(saved))) { s.SendResponse(new TransfiniteGetRotateSettleInfoResponse { Code = StageGroupCfgNotFound }, p.Id); return; } SendReceiptPush(s, saved); s.SendResponse(ToResponse(saved), p.Id); return; }
+        if (matches.SingleOrDefault() is { } saved) { if (!ReceiptMatches(saved, pending, rows) || !CommitRotateReceipt(s, state, ToPlayerReceipt(saved), rows)) { s.SendResponse(new TransfiniteGetRotateSettleInfoResponse { Code = StageGroupCfgNotFound }, p.Id); return; } SendReceiptPush(s, saved); WheelchairManualGuideManager.SendUpdate(s); s.SendResponse(ToResponse(saved), p.Id); return; }
         if (!CanApplyItems(rows, s.inventory)) { s.SendResponse(new TransfiniteGetRotateSettleInfoResponse { Code = StageGroupCfgNotFound }, p.Id); return; }
         List<RewardGoods> goods = rows.Select(x => new RewardGoods { Id = x.Id, TemplateId = x.TemplateId, Count = x.Count, RewardType = (int)RewardType.Item }).ToList();
         TransfiniteInventoryReceipt receipt = new() { ActivityId = state.ActivityId, RotationId = pending.RotationId, RegionId = pending.RegionId, ScoreRewardGroupId = pending.ScoreRewardGroupId, MaxStageProgressIndex = pending.MaxStageProgressIndex, SettleTransfiniteScore = pending.SettleTransfiniteScore, UnSettleTransfiniteScore = pending.UnSettleTransfiniteScore, RewardGoods = goods.Select(ToReceipt).ToList() };
         Inventory snapshot = BsonSerializer.Deserialize<Inventory>(s.inventory.ToBson()); List<Item> changed = rows.GroupBy(x => x.TemplateId).Select(x => s.inventory.Do(x.Key, checked(x.Sum(y => y.Count)))).ToList(); s.inventory.TransfiniteReceipts.Add(receipt);
-        try { s.inventory.Save(); } catch { s.inventory.Items = snapshot.Items; s.inventory.TransfiniteReceipts = snapshot.TransfiniteReceipts; s.SendResponse(new TransfiniteGetRotateSettleInfoResponse { Code = StageGroupCfgNotFound }, p.Id); return; }
-        if (!CommitRotateReceipt(s, state, ToPlayerReceipt(receipt))) { s.SendResponse(new TransfiniteGetRotateSettleInfoResponse { Code = StageGroupCfgNotFound }, p.Id); return; }
-        if (changed.Count > 0) s.SendPush(new NotifyItemDataList { ItemDataList = changed }); s.SendResponse(ToResponse(receipt), p.Id);
+        string claimKey = $"transfinite-rotate:{state.ActivityId}:{pending.RotationId}";
+        if (rows.Count > 0 && WheelchairManualGuideManager.GetUniqueWeeklyEventCause(91).HasValue)
+            s.inventory.RewardClaimTimes[claimKey] = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+        try { s.inventory.Save(); } catch { s.inventory.Items = snapshot.Items; s.inventory.TransfiniteReceipts = snapshot.TransfiniteReceipts; s.inventory.RewardClaimTimes = snapshot.RewardClaimTimes; s.SendResponse(new TransfiniteGetRotateSettleInfoResponse { Code = StageGroupCfgNotFound }, p.Id); return; }
+        if (!CommitRotateReceipt(s, state, ToPlayerReceipt(receipt), rows)) { s.SendResponse(new TransfiniteGetRotateSettleInfoResponse { Code = StageGroupCfgNotFound }, p.Id); return; }
+        if (changed.Count > 0) s.SendPush(new NotifyItemDataList { ItemDataList = changed });
+        WheelchairManualGuideManager.SendUpdate(s);
+        s.SendResponse(ToResponse(receipt), p.Id);
     }
     private static bool IsAllowedGroup(TransfiniteState state, int groupId) => state.StageGroupId == groupId || Regions.Value.SingleOrDefault(x => x.RegionId == state.RegionId) is { } region && Islands.Value.Any(x => x.Id == region.IslandId && x.StageGroupId.Contains(groupId));
     internal static bool IsRetryPreFight(Session s, uint stageId) =>
@@ -496,7 +504,34 @@ internal static class TransfiniteModule
         try { foreach (var g in rows.GroupBy(x => x.TemplateId)) { if (g.Any(x => x.Count <= 0 || RewardHandler.GetRewardType(x) != RewardType.Item) || !Items.Value.TryGetValue(g.Key, out ItemTable? item)) return false; List<Item> have = inventory.Items.Where(x => x.Id == g.Key).ToList(); if (have.Count > 1) return false; long now = have.SingleOrDefault()?.Count ?? 0, add = g.Sum(x => (long)x.Count), max = Inventory.GetMaxCount(item); if (now < 0 || add > max - now) return false; } return true; } catch (OverflowException) { return false; }
     }
     private static bool ReceiptMatches(TransfiniteInventoryReceipt r, TransfiniteRotateSettleState p, IReadOnlyList<RewardGoodsTable> rows) => r.RegionId == p.RegionId && r.ScoreRewardGroupId == p.ScoreRewardGroupId && r.MaxStageProgressIndex == p.MaxStageProgressIndex && r.SettleTransfiniteScore == p.SettleTransfiniteScore && r.UnSettleTransfiniteScore == p.UnSettleTransfiniteScore && r.RewardGoods.Count == rows.Count && r.RewardGoods.Zip(rows).All(x => x.First.Id == x.Second.Id && x.First.TemplateId == x.Second.TemplateId && x.First.Count == x.Second.Count && x.First.RewardType == (int)RewardType.Item);
-    private static bool CommitRotateReceipt(Session s, TransfiniteState state, TransfiniteRotateSettleReceipt receipt) { var pending = state.RotateSettleInfo; var old = state.LastRotateReceipt; long time = state.LastModifyTime; state.LastRotateReceipt = receipt; state.RotateSettleInfo = null; state.LastModifyTime = DateTimeOffset.UtcNow.ToUnixTimeSeconds(); try { s.player.Save(); return true; } catch { state.RotateSettleInfo = pending; state.LastRotateReceipt = old; state.LastModifyTime = time; return false; } }
+    private static bool CommitRotateReceipt(Session s, TransfiniteState state, TransfiniteRotateSettleReceipt receipt, IReadOnlyList<RewardGoodsTable>? goods = null)
+    {
+        var pending = state.RotateSettleInfo;
+        var old = state.LastRotateReceipt;
+        var guideReceipts = s.player.WheelchairManualGuideRewardReceipts;
+        long time = state.LastModifyTime;
+        state.LastRotateReceipt = receipt;
+        state.RotateSettleInfo = null;
+        state.LastModifyTime = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+        try
+        {
+            string claimKey = $"transfinite-rotate:{state.ActivityId}:{receipt.RotationId}";
+            if (goods is { Count: > 0 }
+                && WheelchairManualGuideManager.GetUniqueWeeklyEventCause(91) is int eventCause
+                && s.inventory.RewardClaimTimes.TryGetValue(claimKey, out long grantedAt))
+                WheelchairManualGuideManager.RecordReward(s, claimKey, eventCause, goods, DateTimeOffset.FromUnixTimeSeconds(grantedAt));
+            s.player.Save();
+            return true;
+        }
+        catch
+        {
+            state.RotateSettleInfo = pending;
+            state.LastRotateReceipt = old;
+            state.LastModifyTime = time;
+            s.player.WheelchairManualGuideRewardReceipts = guideReceipts;
+            return false;
+        }
+    }
     private static TransfiniteRotateSettleReceipt ToPlayerReceipt(TransfiniteInventoryReceipt x) => new() { RotationId = x.RotationId, MaxStageProgressIndex = x.MaxStageProgressIndex, SettleTransfiniteScore = x.SettleTransfiniteScore, UnSettleTransfiniteScore = x.UnSettleTransfiniteScore, RewardGoods = x.RewardGoods.ToList() };
     private static TransfiniteGetRotateSettleInfoResponse ToResponse(TransfiniteRotateSettleReceipt x) => new() { MaxStageProgressIndex = x.MaxStageProgressIndex, SettleTransfiniteScore = x.SettleTransfiniteScore, UnSettleTransfiniteScore = x.UnSettleTransfiniteScore, RewardGoodsList = x.RewardGoods.Select(ToWireReward).ToList() };
     private static TransfiniteGetRotateSettleInfoResponse ToResponse(TransfiniteInventoryReceipt x) => ToResponse(ToPlayerReceipt(x));

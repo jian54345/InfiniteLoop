@@ -6,6 +6,7 @@ namespace AscNet.GameServer.Game
     {
         public int StageId { get; init; }
         public int StageType { get; init; }
+        public bool IsWin { get; init; }
         public int SectionId { get; init; }
         public int BuffGroup { get; init; }
         public Dictionary<int, int> BuffChoices { get; init; } = new();

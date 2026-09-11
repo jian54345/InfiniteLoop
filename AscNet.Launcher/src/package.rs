@@ -27,8 +27,28 @@ pub struct Manifest {
     pub schema_version: u32,
     pub version: String,
     pub application_version: String,
-    pub originals: BTreeMap<String, String>,
+    pub originals: BTreeMap<String, Vec<String>>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub pgr_base: Option<PgrBaseBuild>,
     pub files: Vec<File>,
+}
+
+impl Manifest {
+    pub fn accepts_original(&self, path: &str, hash: Option<&str>) -> bool {
+        hash.is_some_and(|hash| {
+            self.originals
+                .get(path)
+                .is_some_and(|allowed| allowed.iter().any(|expected| expected == hash))
+        })
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub struct PgrBaseBuild {
+    pub originals: Vec<String>,
+    pub unity_players: Vec<String>,
+    pub original_export_jump: [u8; 5],
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -51,9 +71,33 @@ pub struct PatchPackage {
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
 struct SupportedClient {
     application_version: String,
-    originals: BTreeMap<String, String>,
+    originals: BTreeMap<String, Vec<String>>,
     #[serde(default)]
     patch_version: Option<String>,
+    #[serde(default)]
+    pgr_base: Option<PgrBaseBuild>,
+}
+
+pub fn refresh_supported_client(directory: &Path, source: &Path) -> Result<()> {
+    let bytes = read_bounded(source, MAX_METADATA_BYTES)?;
+    parse_supported_client(&bytes).context("invalid bundled supported-client.json")?;
+    reject_links(directory, "supported-client.json")?;
+    let destination = directory.join("supported-client.json");
+    if read_bounded(&destination, MAX_METADATA_BYTES)? != bytes {
+        fs::write(&destination, bytes)
+            .with_context(|| format!("refresh {}", destination.display()))?;
+    }
+    Ok(())
+}
+
+fn parse_supported_client(bytes: &[u8]) -> Result<SupportedClient> {
+    let metadata: SupportedClient =
+        serde_json::from_slice(bytes).context("invalid supported-client.json")?;
+    validate_supported_client(&metadata)?;
+    if let Some(version) = &metadata.patch_version {
+        parse_version(version).context("invalid patch version")?;
+    }
+    Ok(metadata)
 }
 
 pub fn load_package(directory: &Path) -> Result<PatchPackage> {
@@ -64,14 +108,10 @@ pub fn load_package(directory: &Path) -> Result<PatchPackage> {
     }
     let metadata_path = directory.join("supported-client.json");
     reject_links(&directory, "supported-client.json")?;
-    let metadata: SupportedClient =
-        serde_json::from_slice(&read_bounded(&metadata_path, MAX_METADATA_BYTES)?)
-            .context("invalid supported-client.json")?;
-    validate_supported_client(&metadata)?;
+    let metadata = parse_supported_client(&read_bounded(&metadata_path, MAX_METADATA_BYTES)?)?;
     let version = metadata
         .patch_version
         .unwrap_or_else(|| env!("CARGO_PKG_VERSION").to_owned());
-    parse_version(&version).context("invalid patch version")?;
 
     let mut files = Vec::with_capacity(REQUIRED_FILES.len());
     for (path, source) in REQUIRED_FILES {
@@ -95,6 +135,7 @@ pub fn load_package(directory: &Path) -> Result<PatchPackage> {
             version,
             application_version: metadata.application_version,
             originals: metadata.originals,
+            pgr_base: metadata.pgr_base,
             files,
         },
         directory,
@@ -119,12 +160,29 @@ fn validate_supported_client(metadata: &SupportedClient) -> Result<()> {
         bail!("supported-client.json must contain exactly the required original hashes");
     }
     for key in REQUIRED_ORIGINALS {
-        validate_hash(
-            metadata
-                .originals
-                .get(key)
-                .ok_or_else(|| anyhow!("missing original hash for {key}"))?,
-        )?;
+        let hashes = metadata
+            .originals
+            .get(key)
+            .ok_or_else(|| anyhow!("missing original hashes for {key}"))?;
+        if hashes.is_empty() {
+            bail!("missing original hashes for {key}");
+        }
+        for hash in hashes {
+            validate_hash(hash)?;
+        }
+    }
+    if let Some(build) = &metadata.pgr_base {
+        if build.original_export_jump[0] != 0xe9 {
+            bail!("PGRBase stock export preimage must be a relative jump");
+        }
+        for hashes in [&build.originals, &build.unity_players] {
+            if hashes.is_empty() {
+                bail!("PGRBase startup patch requires verified stock PGRBase and UnityPlayer hashes");
+            }
+            for hash in hashes {
+                validate_hash(hash)?;
+            }
+        }
     }
     Ok(())
 }
@@ -284,9 +342,9 @@ mod tests {
                 "applicationVersion": "4.7.0",
                 "patchVersion": "2.0.0",
                 "originals": {
-                    "PGR.exe": "00".repeat(32),
-                    "GameAssembly.dll": "11".repeat(32),
-                    "PGR_Data/Plugins/KRSDK.dll": "22".repeat(32)
+                    "PGR.exe": ["00".repeat(32)],
+                    "GameAssembly.dll": ["11".repeat(32), "33".repeat(32)],
+                    "PGR_Data/Plugins/KRSDK.dll": ["22".repeat(32)]
                 }
             }))
             .unwrap(),
@@ -304,6 +362,83 @@ mod tests {
         fs::remove_file(root.join("version.dll")).unwrap();
         assert!(load_package(&root).is_err());
         let _ = fs::remove_dir_all(root);
+    }
+
+    #[test]
+    fn supported_assembly_identities_are_exact() {
+        let root = package();
+        fs::write(
+            root.join("supported-client.json"),
+            include_bytes!("../supported-client.json"),
+        )
+        .unwrap();
+        let package = load_package(&root).unwrap();
+        for hash in [
+            "036b2f823e89465cd0542c7736e9d763ef880d9a791c19d412dfe1f4d8fd5ed0",
+            "7dbdbc91ea9952b3e1d37b65817152326287c36e1cf82f6a83ad33d37c5d5eab",
+        ] {
+            assert!(package.manifest.accepts_original("GameAssembly.dll", Some(hash)));
+            assert!(!package.manifest.accepts_original("PGR.exe", Some(hash)));
+            assert!(!package.manifest.accepts_original("PGR_Data/Plugins/KRSDK.dll", Some(hash)));
+        }
+        assert!(!package.manifest.accepts_original("GameAssembly.dll", Some(&"00".repeat(32))));
+        assert!(!package.manifest.accepts_original("GameAssembly.dll", None));
+        let _ = fs::remove_dir_all(root);
+    }
+
+    #[test]
+    fn bundled_metadata_upgrades_scalar_cache_without_trusting_old_hashes() {
+        let root = package();
+        let cached = root.join("supported-client.json");
+        let source = root.join("bundled.json");
+        let mut old: serde_json::Value =
+            serde_json::from_slice(&fs::read(&cached).unwrap()).unwrap();
+        for hashes in old["originals"].as_object_mut().unwrap().values_mut() {
+            *hashes = hashes[0].clone();
+        }
+        fs::write(&cached, serde_json::to_vec(&old).unwrap()).unwrap();
+        fs::write(&source, include_bytes!("../supported-client.json")).unwrap();
+        refresh_supported_client(&root, &source).unwrap();
+        let upgraded = load_package(&root).unwrap();
+        let shipped: SupportedClient =
+            parse_supported_client(include_bytes!("../supported-client.json")).unwrap();
+        assert_eq!(upgraded.manifest.originals, shipped.originals);
+        assert!(!upgraded.manifest.accepts_original("PGR.exe", Some(&"00".repeat(32))));
+        fs::remove_dir_all(root).unwrap();
+    }
+
+    #[test]
+    fn malformed_bundled_metadata_preserves_cache() {
+        let root = package();
+        let cached = root.join("supported-client.json");
+        let source = root.join("bundled.json");
+        let original = fs::read(&cached).unwrap();
+        let mut invalid: serde_json::Value = serde_json::from_slice(&original).unwrap();
+        invalid["patchVersion"] = serde_json::json!("1.02");
+        for bytes in [b"{".to_vec(), serde_json::to_vec(&invalid).unwrap()] {
+            fs::write(&source, bytes).unwrap();
+            assert!(refresh_supported_client(&root, &source).is_err());
+            assert_eq!(fs::read(&cached).unwrap(), original);
+            assert_eq!(load_package(&root).unwrap().manifest.version, "2.0.0");
+        }
+        fs::remove_dir_all(root).unwrap();
+    }
+
+    #[test]
+    fn pgrbase_metadata_requires_stock_identity_and_jump_preimage() {
+        let root = package();
+        let path = root.join("supported-client.json");
+        let mut metadata: serde_json::Value = serde_json::from_slice(&fs::read(&path).unwrap()).unwrap();
+        for build in [
+            serde_json::json!({"originals": [], "unityPlayers": ["11".repeat(32)], "originalExportJump": [233, 0, 0, 0, 0]}),
+            serde_json::json!({"originals": ["00".repeat(32)], "unityPlayers": [], "originalExportJump": [233, 0, 0, 0, 0]}),
+            serde_json::json!({"originals": ["00".repeat(32)], "unityPlayers": ["11".repeat(32)], "originalExportJump": [144, 0, 0, 0, 0]}),
+        ] {
+            metadata["pgrBase"] = build;
+            fs::write(&path, serde_json::to_vec(&metadata).unwrap()).unwrap();
+            assert!(load_package(&root).is_err());
+        }
+        fs::remove_dir_all(root).unwrap();
     }
 
     #[test]

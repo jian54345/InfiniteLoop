@@ -24,6 +24,23 @@ public sealed class LottoStateInfo
 
     [BsonElement("lotto_records")]
     public List<LottoStateRecord> LottoRecords { get; set; } = new();
+
+    [BsonElement("ticket_purchase_count")]
+    public int TicketPurchaseCount { get; set; }
+
+    [BsonElement("pending")]
+    public LottoPendingOperation? Pending { get; set; }
+}
+
+public sealed class LottoPendingOperation
+{
+    public int RewardId { get; set; }
+    public int LottoTime { get; set; }
+    public int TicketId { get; set; }
+    public int TicketKey { get; set; }
+    public int CostItemId { get; set; }
+    public int CostCount { get; set; }
+    public int ItemCount { get; set; }
 }
 
 public sealed class LottoStateRecord

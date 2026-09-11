@@ -48,7 +48,6 @@ namespace AscNet.GameServer.Handlers
             TableReaderV2.Parse<GuideGroupTable>().ToDictionary(guide => guide.Id));
         private static readonly Lazy<Dictionary<int, GuideCompleteTable>> GuideCompletions = new(() =>
             TableReaderV2.Parse<GuideCompleteTable>().ToDictionary(completion => completion.Id));
-        private static readonly HashSet<int> StageCompletionModes = [2, 12];
         [RequestPacketHandler("GuideOpenRequest")]
         public static void GuideOpenRequestHandler(Session session, Packet.Request packet)
         {
@@ -201,15 +200,21 @@ namespace AscNet.GameServer.Handlers
 
 
         internal static void CompleteOpenedGuideOnStageSettle(Session session, IEnumerable<uint> settledStageIds)
+            => CompleteOpenedGuide(session, 2, settledStageIds);
+
+        internal static void CompleteOpenedGuideOnCourseClaim(Session session, uint stageId)
+            => CompleteOpenedGuide(session, 12, [stageId]);
+
+        private static void CompleteOpenedGuide(Session session, int completionMode, IEnumerable<uint> stageIds)
         {
             if (session.OpenedGuideGroupId is not int openedGuideId
                 || !GuideGroups.Value.TryGetValue(openedGuideId, out GuideGroupTable? guide)
                 || guide.RewardId != 0
                 || !GuideCompletions.Value.TryGetValue(guide.CompleteId, out GuideCompleteTable? completion)
                 || completion.Param.Count < 2
-                || !StageCompletionModes.Contains(completion.Param[0])
+                || completion.Param[0] != completionMode
                 || completion.Param[1] <= 0
-                || !settledStageIds.Contains((uint)completion.Param[1]))
+                || !stageIds.Contains((uint)completion.Param[1]))
             {
                 return;
             }
@@ -229,7 +234,7 @@ namespace AscNet.GameServer.Handlers
             catch (Exception exception)
             {
                 session.player.PlayerData.GuideData.Remove(openedGuideId);
-                session.log.Error($"Failed to persist stage-completed guide {openedGuideId}: {exception}");
+                session.log.Error($"Failed to persist completed guide {openedGuideId}: {exception}");
                 return;
             }
 
@@ -255,8 +260,10 @@ namespace AscNet.GameServer.Handlers
             {
                 if (!GuideCompletions.Value.TryGetValue(guide.CompleteId, out GuideCompleteTable? completion)
                     || completion.Param.Count < 2
-                    || !StageCompletionModes.Contains(completion.Param[0])
-                    || !passedStageIds.Contains(completion.Param[1])
+                    // CompleteCourse is a claimed legacy course reward, not a stage clear.
+                    || !(completion.Param[0] == 2 && passedStageIds.Contains(completion.Param[1])
+                        || completion.Param[0] == 12 && completion.Param[1] > 0
+                            && stage.Course.Contains((uint)completion.Param[1]))
                     || !completedGuideIds.Add(guide.Id))
                 {
                     continue;

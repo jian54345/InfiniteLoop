@@ -3,7 +3,6 @@ param(
     [string]$Root = (Join-Path $env:LOCALAPPDATA 'AscNetLauncher\local'),
     [string]$Repository = 'https://github.com/reiserFSs/InfiniteLoop.git',
     [string]$Branch = 'master',
-    [string]$PreparedCheckout,
     [switch]$SetupLockHeld
 )
 
@@ -62,7 +61,7 @@ function Git-Output([string]$Git, [string]$Directory, [string[]]$Arguments) {
     if ($LASTEXITCODE -ne 0) { Fail "git $($Arguments -join ' ') failed: $($output -join [Environment]::NewLine)" }
     return (($output | ForEach-Object { "$_" }) -join "`n").Trim()
 }
-function Update-Checkout([string]$Git, [string]$Checkout, [bool]$Pull = $true) {
+function Update-Checkout([string]$Git, [string]$Checkout) {
     if (-not (Test-Path -LiteralPath $Checkout)) {
         $parent = Split-Path -Parent $Checkout
         [IO.Directory]::CreateDirectory($parent) | Out-Null
@@ -76,7 +75,7 @@ function Update-Checkout([string]$Git, [string]$Checkout, [bool]$Pull = $true) {
     if ($current -cne $Branch) { Fail "Checkout is on branch '$current', expected '$Branch'. Switch it manually; setup will not reset your work." }
     $dirty = Git-Output $Git $Checkout @('status', '--porcelain', '--untracked-files=normal')
     if ($dirty) { Fail "Checkout has local changes. Commit or remove them before updating; setup will not reset, clean, or stash files.`n$dirty" }
-    if ($Pull) { Invoke-Checked $Git @('-C', $Checkout, 'pull', '--ff-only', 'origin', $Branch) 'Fast-forward repository update' }
+    Invoke-Checked $Git @('-C', $Checkout, 'pull', '--ff-only', 'origin', $Branch) 'Fast-forward repository update'
 }
 function Ensure-DotNet {
     $dotnet = Find-Command 'dotnet.exe' @("$env:ProgramFiles\dotnet\dotnet.exe")
@@ -214,17 +213,8 @@ if (-not $SetupLockHeld) {
 try {
     $checkout = Join-Path $Root 'checkout'
     $git = Ensure-Git
-    if (-not $PreparedCheckout) {
-        Update-Checkout $git $checkout
-        $pulledScript = Join-Path $checkout 'AscNet.Launcher\setup-local.ps1'
-        if (-not (Test-Path -LiteralPath $pulledScript -PathType Leaf)) { Fail "The updated repository does not contain AscNet.Launcher\setup-local.ps1. Publish the source script before using the bundled bootstrap." }
-        & powershell.exe -NoProfile -ExecutionPolicy Bypass -File $pulledScript -Root $Root -Repository $Repository -Branch $Branch -PreparedCheckout $checkout -SetupLockHeld
-        if ($LASTEXITCODE -ne 0) { Fail "The prepared repository setup failed with exit code $LASTEXITCODE." }
-        exit 0
-    }
-    if ([IO.Path]::GetFullPath($PreparedCheckout).TrimEnd('\') -cne [IO.Path]::GetFullPath($checkout).TrimEnd('\')) { Fail '-PreparedCheckout must identify Root\checkout; it is only valid for bootstrap handoff.' }
-    if ([IO.Path]::GetFullPath($PSCommandPath) -cne [IO.Path]::GetFullPath((Join-Path $checkout 'AscNet.Launcher\setup-local.ps1'))) { Fail '-PreparedCheckout may only run the script from the prepared checkout.' }
-    Update-Checkout $git $checkout $false
+    # Keep the bundled setup fixes in control even when the remote checkout is older.
+    Update-Checkout $git $checkout
     $revision = Git-Output $git $checkout @('rev-parse', 'HEAD')
     $statePath = Join-Path $Root 'build-state.json'
     $pendingStatePath = Join-Path $Root 'build-state.pending.json'
@@ -279,7 +269,7 @@ try {
         [IO.Directory]::CreateDirectory($stage) | Out-Null
         try {
             $server = Join-Path $stage 'server'
-            Invoke-Checked $dotnet @('publish', (Join-Path $checkout 'AscNet\AscNet.csproj'), '-c', 'Release', '-o', $server, '--artifacts-path', (Join-Path $stage 'dotnet-artifacts')) 'Publishing AscNet server'
+            Invoke-Checked $dotnet @('publish', (Join-Path $checkout 'AscNet\AscNet.csproj'), '-c', 'Release', '-o', $server, '--artifacts-path', (Join-Path $stage 'dotnet-artifacts'), '--source', 'https://api.nuget.org/v3/index.json') 'Publishing AscNet server'
             if (-not (Test-Path -LiteralPath (Join-Path $server 'Configs\version_config.json') -PathType Leaf)) { Fail 'Published server is missing Configs\version_config.json.' }
             Copy-Item -LiteralPath $persistentConfig -Destination (Join-Path $server 'Configs\config.json') -Force
             $patch = Join-Path $stage 'patch'; [IO.Directory]::CreateDirectory($patch) | Out-Null
@@ -291,7 +281,7 @@ try {
             Invoke-Checked $msbuild @((Join-Path $checkout 'AscNet.Patch\VersionShim\src\VersionShim.vcxproj'), '/m:1', '/p:Configuration=Release', '/p:Platform=x64', "/p:OutDir=$loaderOut\", "/p:IntDir=$(Join-Path $stage 'loader-obj')\") 'Building version loader'
             Copy-Item -LiteralPath (Join-Path $loaderOut 'VersionShim.dll') -Destination (Join-Path $patch 'version.dll')
             [IO.File]::WriteAllText((Join-Path $patch 'libraries.txt'), "*PGR.exe`nlucia.dll`n", (New-Object Text.UTF8Encoding($false)))
-            Copy-Item -LiteralPath (Join-Path $checkout 'AscNet.Launcher\supported-client.json') -Destination (Join-Path $patch 'supported-client.json')
+            Copy-Item -LiteralPath (Join-Path $PSScriptRoot 'supported-client.json') -Destination (Join-Path $patch 'supported-client.json')
             if (Test-Path -LiteralPath $final) { Remove-Item -LiteralPath $final -Recurse -Force }
             Move-Item -LiteralPath $stage -Destination $final
         } catch { Remove-Item -LiteralPath $stage -Recurse -Force -ErrorAction SilentlyContinue; throw }

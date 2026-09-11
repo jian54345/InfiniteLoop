@@ -5,6 +5,8 @@ using AscNet.Common.Util;
 using AscNet.Table.V2.share.fuben.stronghold;
 using AscNet.GameServer.Game;
 using AscNet.Table.V2.share.reward;
+using MongoDB.Bson;
+using MongoDB.Bson.Serialization;
 
 namespace AscNet.GameServer.Handlers;
 
@@ -28,15 +30,20 @@ internal static class StrongholdModule
     }
 
 
-    internal static NotifyStrongholdLoginData BuildLoginData(Player p)
+    internal static NotifyStrongholdLoginData BuildLoginData(Player p) => BuildLoginData(p, DateTimeOffset.UtcNow);
+
+    internal static NotifyStrongholdLoginData BuildLoginData(Player p, DateTimeOffset now)
     {
         StrongholdState state = p.Stronghold;
         Normalize(state);
+        StrongholdActivityTable? activity = Activity(state.ActivityId);
+        bool visible = state.BeginTime <= now.ToUnixTimeSeconds()
+            && activity is not null && InWindow(activity, now);
         return new()
         {
             Id = state.ActivityId,
-            BeginTime = state.BeginTime,
-            FightBeginTime = state.FightBeginTime,
+            BeginTime = visible ? state.BeginTime : 0,
+            FightBeginTime = visible ? state.FightBeginTime : 0,
             CurDay = state.CurDay,
             AssistCharacterId = state.AssistCharacterId,
             SetAssistCharacterTime = state.SetAssistCharacterTime,
@@ -81,6 +88,9 @@ internal static class StrongholdModule
         state.ClaimedRewardIds.Clear();
         state.ClaimedRewardIds.AddRange(state.RewardIds);
         state.LastResultRecord ??= new();
+        state.CurrentResultRecord ??= state.LastResultRecord.Id == 0 || state.LastResultRecord.Id == state.ActivityId
+            ? BsonSerializer.Deserialize<StrongholdResultRecord>(state.LastResultRecord.ToBson())
+            : new();
         foreach (StrongholdGroupInfo group in state.GroupInfos)
             group.FinishStageIds ??= [];
         foreach (StrongholdGroupStageData group in state.GroupStageDatas)
@@ -115,8 +125,8 @@ internal static class StrongholdModule
                 && state.TotalMineral >= condition.Params[0],
             12103 => condition.Params.Count >= 3
                 && (condition.Params.Count > 3 && condition.Params[3] != 0
-                    ? state.HistoryFinishGroupInfos.FirstOrDefault(info => info.Id == condition.Params[0]) is { } historyInfo
-                        && (condition.Params[2] != 0 ? historyInfo.UsedSystemElectricEnergy : historyInfo.UsedElectricEnergy) <= condition.Params[1]
+                    ? state.HistoryFinishGroupInfos.Any(info => info.Id == condition.Params[0]
+                        && (condition.Params[2] != 0 ? info.UsedSystemElectricEnergy : info.UsedElectricEnergy) <= condition.Params[1])
                     : state.FinishGroupIds.Contains(condition.Params[0])
                         && (condition.Params[2] != 0
                             ? state.FinishGroupInfos.FirstOrDefault(info => info.Id == condition.Params[0])?.UsedSystemElectricEnergy ?? -1
@@ -128,31 +138,164 @@ internal static class StrongholdModule
 
 
 
-    internal static void PrepareLogin(Player p)
+    internal static void PrepareLogin(Player p) => PrepareLogin(p, DateTimeOffset.UtcNow);
+
+    private static StrongholdActivityTable? Activity(int id) =>
+        Rows<StrongholdActivityTable>().FirstOrDefault(row => row.Id == id)
+        ?? Rows<StrongholdActivityTable>().FirstOrDefault(row => row.Id == 1);
+
+    private static bool InWindow(StrongholdActivityTable activity, DateTimeOffset now) =>
+        activity.OpenTimeId is not > 0
+        || !ActivityScheduleService.TryGet(activity.OpenTimeId.Value, out ActivityScheduleEntry schedule)
+        || schedule.IsOpen(now);
+
+    internal static void PrepareLogin(Player p, DateTimeOffset now)
     {
         StrongholdState state = p.Stronghold;
-        Normalize(state);
-        StrongholdActivityTable? activity = Rows<StrongholdActivityTable>().OrderByDescending(row => row.Id).FirstOrDefault();
+        StrongholdActivityTable? activity = Activity(state.ActivityId);
         StrongholdLevelTable? level = Rows<StrongholdLevelTable>()
             .Where(row => p.PlayerData.Level >= row.MinLevel && p.PlayerData.Level <= row.MaxLevel)
             .OrderBy(row => row.Id).FirstOrDefault();
-        if (state.ActivityId > 0 && Rows<StrongholdLevelTable>().FirstOrDefault(row => row.Id == state.LevelId) is { } selectedLevel)
+        long timestamp = now.ToUnixTimeSeconds();
+        if (state.ActivityId > 0 && state.BeginTime > 0 && activity is not null
+            && activity.OneCycleSeconds > 0 && timestamp >= (long)state.BeginTime + activity.OneCycleSeconds)
         {
-            if (EnsureGroups(p, selectedLevel)) p.Save();
+            StrongholdActivityTable? nextActivity = Activity(1);
+            if (nextActivity is null || nextActivity.OneCycleSeconds <= 0 || level is null
+                || !InWindow(activity, now) || !InWindow(nextActivity, now))
+                return;
+            long nextBegin = (long)state.BeginTime + activity.OneCycleSeconds;
+            if (nextActivity.OpenTimeId is > 0
+                && ActivityScheduleService.TryGet(nextActivity.OpenTimeId.Value, out ActivityScheduleEntry schedule))
+                nextBegin = Math.Max(nextBegin, schedule.StartTime);
+            long skippedCycles = (timestamp - nextBegin) / nextActivity.OneCycleSeconds;
+            nextBegin = checked(nextBegin + skippedCycles * nextActivity.OneCycleSeconds);
+            int nextId = checked((int)(Math.Max((long)state.ActivityId + 1,
+                (long)Rows<StrongholdActivityTable>().Max(row => row.Id) + 1) + skippedCycles));
+
+            // Stage settlement, mail, and the new cycle together; a failed save leaves the session unchanged.
+            Player staged = BsonSerializer.Deserialize<Player>(p.ToBson());
+            Normalize(staged.Stronghold);
+            SettleExpiredCycle(staged, timestamp);
+            StartCycle(staged.Stronghold, nextId, nextBegin, level, nextActivity);
+            staged.Stronghold.RewardIds.Sort();
+            staged.Stronghold.ClaimedRewardIds.Sort();
+            EnsureGroups(staged, level);
+            staged.SaveChecked();
+            p.Stronghold = staged.Stronghold;
+            p.Mails = staged.Mails;
+            p.MailExpireIds = staged.MailExpireIds;
             return;
         }
-        if (activity is null || level is null)
+
+        Normalize(state);
+        if (state.ActivityId > 0 && Rows<StrongholdLevelTable>().FirstOrDefault(row => row.Id == state.LevelId) is { } selectedLevel)
+        {
+            if (EnsureGroups(p, selectedLevel)) p.SaveChecked();
             return;
-        long now = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+        }
+        activity = state.ActivityId > 0 ? activity
+            : Rows<StrongholdActivityTable>().OrderByDescending(row => row.Id).FirstOrDefault();
+        if (activity is null || level is null || !InWindow(activity, now))
+            return;
         state.ActivityId = state.ActivityId > 0 ? state.ActivityId : activity.Id;
-        state.BeginTime = state.BeginTime > 0 ? state.BeginTime : checked((uint)now);
-        state.FightBeginTime = state.FightBeginTime > 0 ? state.FightBeginTime : checked((int)Math.Min(now, int.MaxValue));
+        state.BeginTime = state.BeginTime > 0 ? state.BeginTime : checked((uint)timestamp);
+        state.FightBeginTime = state.FightBeginTime > 0 ? state.FightBeginTime : checked((int)timestamp);
         state.LevelId = level.Id;
         state.ElectricEnergy = level.InitElectricEnergy;
         state.Endurance = level.InitEndurance;
         state.CurDay = 0;
         EnsureGroups(p, level);
-        p.Save();
+        p.SaveChecked();
+    }
+
+    private static void SettleExpiredCycle(Player player, long now)
+    {
+        StrongholdState state = player.Stronghold;
+        foreach (StrongholdRewardTable reward in Rows<StrongholdRewardTable>()
+            .Where(reward => !state.RewardIds.Contains(reward.Id) && IsRewardEligible(state, reward)))
+        {
+            List<PlayerMailRewardGoods> goods = RewardHandler.GetRewardGoods(reward.RewardId)
+                .Select(row => new PlayerMailRewardGoods
+                {
+                    Id = row.Id,
+                    RewardType = (int)(RewardHandler.GetRewardType(row)
+                        ?? throw new InvalidDataException($"Unknown Stronghold settlement reward {row.Id}.")),
+                    TemplateId = checked((uint)row.TemplateId),
+                    Count = row.Count
+                }).ToList();
+            if (goods.Count == 0)
+                throw new InvalidDataException($"Empty Stronghold settlement reward {reward.RewardId}.");
+            AddSettlementMail(player, Config("UnGetRewardMail"), reward.Id, now, goods,
+                $"stronghold:{player.PlayerData.Id}:achievement:{reward.Id}",
+                $"Unclaimed reward: {reward.Desc}");
+            state.RewardIds.Add(reward.Id);
+            state.ClaimedRewardIds.Add(reward.Id);
+        }
+        foreach (StrongholdFinishGroupInfo info in state.FinishGroupInfos)
+            if (!state.HistoryFinishGroupInfos.Any(history => history.Id == info.Id))
+                state.HistoryFinishGroupInfos.Add(info);
+        StrongholdResultRecord result = state.CurrentResultRecord!;
+        result.Id = state.ActivityId;
+        result.MineralCount = state.TotalMineral;
+        if (state.MineRecords.Count > 0)
+            result.MinerCount = state.MineRecords[^1].MinerCount;
+        state.LastResultRecord = result;
+        AddSettlementMail(player, Config("ResultMail"), 0, now, null, null,
+            $"Cycle {result.Id} complete. Stages cleared: {result.FinishCount}. Ore earned: {result.MineralCount}.");
+    }
+
+    private static void AddSettlementMail(Player player, int templateId, int rewardId, long now,
+        List<PlayerMailRewardGoods>? goods, string? claimKey, string content)
+    {
+        if (templateId <= 0)
+            throw new InvalidDataException("Missing Stronghold settlement mail configuration.");
+        string id = $"stronghold:{player.PlayerData.Id}:{player.Stronghold.ActivityId}:{player.Stronghold.BeginTime}:{templateId}:{rewardId}";
+        if (player.Mails.Any(mail => mail.Id == id) || player.MailExpireIds.Contains(id))
+            return;
+        player.Mails.Add(new PlayerMail
+        {
+            Id = id,
+            GroupId = templateId,
+            SendName = "Norman Revival Plan",
+            Title = goods is null ? "Norman Revival Plan results" : "Norman Revival Plan unclaimed rewards",
+            Content = content,
+            CreateTime = now,
+            SendTime = now,
+            RewardGoodsList = goods,
+            RewardClaimKey = claimKey
+        });
+    }
+
+    private static void StartCycle(StrongholdState state, int id, long begin,
+        StrongholdLevelTable level, StrongholdActivityTable activity)
+    {
+        state.ActivityId = id;
+        state.BeginTime = checked((uint)begin);
+        state.FightBeginTime = checked((int)begin);
+        state.CurDay = 0;
+        state.LevelId = level.Id;
+        state.AssistCharacterId = 0;
+        state.SetAssistCharacterTime = 0;
+        state.BorrowCount = 0;
+        state.ElectricEnergy = level.InitElectricEnergy;
+        state.Endurance = level.InitEndurance;
+        state.MineralLeft = 0;
+        state.TotalMineral = 0;
+        state.ElectricCharacterIds.Clear();
+        state.FinishGroupIds.Clear();
+        state.FinishGroupInfos.Clear();
+        state.GroupInfos.Clear();
+        state.GroupStageDatas.Clear();
+        if (activity.IsClearTeam != 0)
+            state.TeamInfos.Clear();
+        state.FightTeamInfos.Clear();
+        state.RuneList.Clear();
+        state.StayDays.Clear();
+        state.MineRecords.Clear();
+        state.CurrentResultRecord = new();
+        state.PendingGroupId = 0;
+        state.PendingStageId = 0;
     }
 
     private static bool EnsureGroups(Player p, StrongholdLevelTable level)
@@ -213,7 +356,8 @@ internal static class StrongholdModule
         if (newlyCleared)
         {
             group.FinishStageIds.Add(stageId);
-            state.LastResultRecord.FinishCount++;
+            if (state.CurrentResultRecord is null) Normalize(state);
+            state.CurrentResultRecord!.FinishCount++;
         }
         int next = Next(state, groupId);
         bool groupFinished = next == 0;
@@ -241,7 +385,8 @@ internal static class StrongholdModule
             {
                 List<AscNet.Table.V2.share.reward.RewardGoodsTable> rewardRows = RewardHandler.GetRewardGoods(rewardId);
                 RewardApplicationResult grant = RewardHandler.ApplyRewardsOnceAndPersist(
-                    [new RewardGrant($"stronghold:{p.PlayerData.Id}:{state.ActivityId}:{groupId}", rewardRows)], session);
+                    [new RewardGrant($"stronghold:{p.PlayerData.Id}:{state.ActivityId}:{groupId}", rewardRows,
+                        EventCause: WheelchairManualGuideManager.GetUniqueWeeklyEventCause(44))], session);
                 goods = grant.RewardGoods;
                 grant.SendPushes(session);
             }
@@ -313,6 +458,15 @@ internal static class StrongholdModule
         StrongholdState state = p.Stronghold;
         StrongholdGroupStageData? stageData = state.GroupStageDatas.FirstOrDefault(group => group.StageIds.Contains(stageId));
         if (stageData is null) return false;
+        StrongholdActivityTable? activity = Activity(state.ActivityId);
+        DateTimeOffset now = DateTimeOffset.UtcNow;
+        if (activity is null || state.BeginTime == 0 || now.ToUnixTimeSeconds() < state.BeginTime
+            || now.ToUnixTimeSeconds() >= (long)state.BeginTime + activity.OneCycleSeconds
+            || !InWindow(activity, now))
+        {
+            code = 20113001;
+            return true;
+        }
         if (!IsGroupUnlocked(state, stageData.Id)
             || state.PendingGroupId != stageData.Id
             || state.PendingStageId != (int)stageId)
@@ -445,7 +599,9 @@ internal static class StrongholdModule
             return;
         }
         RewardApplicationResult grant = RewardHandler.ApplyRewardsOnceAndPersist(
-            rows.Select(row => new RewardGrant($"stronghold:{s.player.PlayerData.Id}:achievement:{row.Id}", RewardHandler.GetRewardGoods(row.RewardId))).ToList(), s);
+            rows.Select(row => new RewardGrant($"stronghold:{s.player.PlayerData.Id}:achievement:{row.Id}",
+                RewardHandler.GetRewardGoods(row.RewardId),
+                EventCause: WheelchairManualGuideManager.GetUniqueWeeklyEventCause(44))).ToList(), s);
         state.RewardIds.AddRange(ids);
         state.RewardIds = state.RewardIds.Distinct().OrderBy(id => id).ToList();
         state.ClaimedRewardIds.AddRange(ids);
@@ -466,10 +622,11 @@ internal static class StrongholdModule
         StrongholdState state = State(s);
         var groups = Rows<StrongholdGroupTable>().ToDictionary(row => row.Id);
         StrongholdLevelTable? level = Rows<StrongholdLevelTable>().FirstOrDefault(row => row.Id == state.LevelId);
-        StrongholdActivityTable? activity = Rows<StrongholdActivityTable>().FirstOrDefault(row => row.Id == state.ActivityId);
+        StrongholdActivityTable? activity = Activity(state.ActivityId);
         long now = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
         int code = activity is null || state.BeginTime == 0 || now < state.BeginTime
-            || now >= (long)state.BeginTime + activity.OneCycleSeconds ? 20113001 : 0;
+            || now >= (long)state.BeginTime + activity.OneCycleSeconds
+            || !InWindow(activity, DateTimeOffset.FromUnixTimeSeconds(now)) ? 20113001 : 0;
         if (code == 0 && (!groups.ContainsKey(request.GroupId) || level is null
             || !Rows<StrongholdChapterTable>().Any(chapter => level.Chapter.Contains(chapter.Id)
                 && chapter.GroupId.Contains(request.GroupId)))) code = Invalid;
@@ -551,6 +708,7 @@ internal static class StrongholdModule
         state.GroupStageDatas.Clear();
         EnsureGroups(s.player, level);
         Save(s);
+        WheelchairManualGuideManager.SendUpdate(s);
         s.SendResponse(new SelectStrongholdLevelResponse
         {
             ElectricEnergy = state.ElectricEnergy,

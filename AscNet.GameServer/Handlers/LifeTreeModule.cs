@@ -312,7 +312,7 @@ namespace AscNet.GameServer.Handlers
             return 0;
         }
 
-        private static bool ConditionSatisfied(Session session, ConditionTable condition)
+        internal static bool ConditionSatisfied(Session session, ConditionTable condition)
             => ConditionSatisfied(session, condition, new HashSet<int>());
 
         private static bool ConditionSatisfied(Session session, ConditionTable condition, HashSet<int> visiting)
@@ -336,6 +336,7 @@ namespace AscNet.GameServer.Handlers
                     return false;
                 return condition.Type switch
                 {
+                    10101 => condition.Params.All(value => session.player.PlayerData.Level >= value),
                     10105 => condition.Params.All(value =>
                         session.stage.Stages.TryGetValue((uint)value, out StageDatum? stage) && stage.Passed),
                     10102 => condition.Params.All(value =>

@@ -261,6 +261,8 @@ namespace AscNet.GameServer.Handlers
                     player.Save();
 
                 session.AppliedTeamPrefabId = null;
+                session.GuildIdentityReady = false;
+                GuildModule.BeginLogin(session);
 
                 session.SendResponse(new LoginResponse
                 {
@@ -342,6 +344,7 @@ namespace AscNet.GameServer.Handlers
                     ReconnectToken = request.Token,
                     RequestNo = request.LastMsgSeqNo
                 }, packet.Id);
+                session.GuildIdentityReady = true;
                 PartnerModule.SyncArchive(session);
                 TaskModule.SendTaskSync(session);
             }
@@ -533,8 +536,11 @@ namespace AscNet.GameServer.Handlers
             return DateTimeOffset.FromUnixTimeSeconds(unixSeconds).ToUniversalTime().ToString("yyyy/M/d H:mm");
         }
 
-        private static List<TimeLimitCtrlConfigList> BuildTimeLimitControlConfigList() =>
-            BuildTimeLimitControlConfigList(DateTimeOffset.UtcNow, BuildWheelchairManualActivityPayload().ActivityId > 0);
+        private static List<TimeLimitCtrlConfigList> BuildTimeLimitControlConfigList()
+        {
+            DateTimeOffset now = DateTimeOffset.UtcNow;
+            return BuildTimeLimitControlConfigList(now, WheelchairManualModule.IsActive(now));
+        }
 
         internal static List<TimeLimitCtrlConfigList> BuildTimeLimitControlConfigList(
             DateTimeOffset now,
@@ -661,8 +667,16 @@ namespace AscNet.GameServer.Handlers
                         AddDerived(timeId, 0, 0);
                     }
                 }
+                // Server-owned policy: configured manual periods remain available without a supplied window.
+                foreach (int timeId in TableReaderV2.Parse<AscNet.Table.V2.share.wheelchairmanual.WheelchairManualGuideActivityPeriodTable>()
+                    .Select(period => period.TimeId).Distinct())
+                    AddDerived(timeId, 0, 0);
             }
 
+            foreach (TimeLimitCtrlConfigList control in GuildWarModule.BuildTimeLimits(now))
+                controls[control.Id] = control;
+            foreach (TimeLimitCtrlConfigList control in GuildBossModule.BuildTimeLimits(now))
+                controls[control.Id] = control;
             return controls.Values.OrderBy(control => control.Id).ToList();
         }
 
@@ -719,6 +733,14 @@ namespace AscNet.GameServer.Handlers
 
         private static NotifyLogin BuildNotifyLogin(Session session)
         {
+            ItemModule.ResumePendingItemUse(session);
+            PayModule.ResumePendingPurchase(session);
+            BiancaTheatreModule.PrepareLogin(session);
+            GuildModule.PrepareLogin(session);
+            GuildBossModule.PrepareLogin(session);
+            GuildWarModule.PrepareLogin(session);
+            GuildDormModule.PrepareLogin(session);
+            WheelchairManualModule.RefreshProgress(session);
             BossModule.PrepareLogin(session);
             BossInshotModule.PrepareLogin(session.player, DateTimeOffset.UtcNow);
             FashionStoryModule.PrepareLogin(session.player, DateTimeOffset.UtcNow);
@@ -1058,18 +1080,6 @@ namespace AscNet.GameServer.Handlers
                 ["CurrentWearNameplate"] = 0,
                 ["UnlockNameplates"] = Array.Empty<object>()
             }),
-            ["NotifyGuildDormPlayerData"] = SerializeStartupPayload(new Dictionary<string, object?>
-            {
-                ["GuildDormData"] = new Dictionary<string, object?>
-                {
-                    ["CurrentCharacterId"] = 1021001,
-                    ["DailyInteractRewardTotalTimes"] = 0,
-                    ["DailyInteractRewardCurTimes"] = 0,
-                    ["OneTimeInteractReplyIds"] = Array.Empty<object>(),
-                    ["InteractedFurnitureIds"] = Array.Empty<object>(),
-                    ["RandomBoxes"] = Array.Empty<object>()
-                }
-            }),
             ["NotifyHoldRegressionIgnoreChannel"] = SerializeStartupPayload(new Dictionary<string, object?>
             {
                 ["IgnoreChannelIds"] = Array.Empty<object>()
@@ -1113,22 +1123,6 @@ namespace AscNet.GameServer.Handlers
                 ["MonthlyStudentCount"] = 0,
                 ["Message"] = null
             }),
-            ["NotifyGuildData"] = SerializeStartupPayload(new Dictionary<string, object?>
-            {
-                ["GuildId"] = 0,
-                ["GuildName"] = string.Empty,
-                ["GuildLevel"] = 0,
-                ["IconId"] = 0,
-                ["GuildRankLevel"] = 0,
-                ["HasContributeReward"] = 0,
-                ["HasRecruit"] = false,
-                ["BossEndTime"] = 0,
-                ["FreeChangeGuildNameCount"] = 0,
-                ["ShopCoin"] = 0,
-                ["HeadPortraits"] = Array.Empty<object>(),
-                ["DormThemes"] = Array.Empty<object>(),
-                ["DormBgms"] = Array.Empty<object>()
-            }),
             ["NotifyMentorChat"] = SerializeStartupPayload(new Dictionary<string, object?>
             {
                 ["ChatMessages"] = Array.Empty<object>()
@@ -1155,12 +1149,33 @@ namespace AscNet.GameServer.Handlers
             }
             if (name == nameof(NotifyWheelchairManualActivity))
             {
-                session.SendPush(BuildWheelchairManualActivityPayload());
+                session.SendPush(WheelchairManualModule.BuildPayload(session, DateTimeOffset.UtcNow));
                 return;
             }
             if (name == nameof(NotifyWheelchairManualActivityUpdate))
             {
-                session.SendPush(BuildWheelchairManualActivityUpdatePayload());
+                session.SendPush(WheelchairManualGuideManager.BuildUpdate(session, DateTimeOffset.UtcNow));
+                return;
+            }
+            if (name == nameof(NotifyGuildData))
+            {
+                session.SendPush(GuildModule.BuildLoginData(session));
+                session.GuildIdentityReady = true;
+                return;
+            }
+            if (name == nameof(NotifyGuildSignPlayerData))
+            {
+                session.SendPush(GuildModule.BuildSignLoginData(session));
+                return;
+            }
+            if (name == nameof(NotifyGuildDormPlayerData))
+            {
+                session.SendPush(GuildDormModule.BuildLoginData(session));
+                return;
+            }
+            if (name == nameof(NotifyGuildWarActivityData))
+            {
+                session.SendPush(GuildWarModule.BuildLoginData(session));
                 return;
             }
             if (name == "NotifySelfChoiceLottoData")
@@ -1226,6 +1241,7 @@ namespace AscNet.GameServer.Handlers
                     .Order()
                     .ToList(),
                 UnlockComics = unlockComics,
+                UnlockCgs = player.ArchiveUnlockedCgs.Order().Select(id => checked((uint)id)).ToList(),
                 PartnerUnlockIds = player.ArchivePartnerUnlockIds.ToList(),
                 PartnerSettings = player.ArchivePartnerSettings.ToList()
             };
@@ -1268,12 +1284,15 @@ namespace AscNet.GameServer.Handlers
             StrongholdModule.PrepareLogin(session.player);
             if (PartnerModule.RefreshArchive(session.player, session.character))
                 session.player.SaveChecked();
+            ArchiveCgModule.Reconcile(session, notify: false);
 
 
             // Reconcile before NotifyLogin so repaired equipped head ids are present in the login
             // payload; the returned timeout state is pushed AFTER NotifyLogin (retail order).
             NotifyHeadTimeout? headTimeout = PlayerModule.ReconcileHeadTimeouts(session, DateTimeOffset.UtcNow);
 
+            TheatreModule.PrepareLogin(session);
+            Theatre3Module.PrepareLogin(session);
             NotifyLogin notifyLogin = BuildNotifyLogin(session);
 
 
@@ -1288,7 +1307,7 @@ namespace AscNet.GameServer.Handlers
             NotifyChatLoginData notifyChatLoginData = new()
             {
                 RefreshTime = ((DateTimeOffset)Process.GetCurrentProcess().StartTime).ToUnixTimeSeconds(),
-                UnlockEmojis = TableReaderV2.Parse<EmojiTable>().Select(x => new NotifyChatLoginData.NotifyChatLoginDataUnlockEmoji() { Id = (uint)x.Id }).ToList()
+                UnlockEmojis = session.character.GetUnlockedEmojis(DateTimeOffset.UtcNow.ToUnixTimeSeconds())
             };
 
             PassportModule.PrepareLogin(session);
@@ -1330,6 +1349,8 @@ namespace AscNet.GameServer.Handlers
             NotifyFunctionalEntranceData notifyFunctionalEntranceData = BuildFunctionalEntranceData();
             PurchaseDailyNotify purchaseDailyNotify = BuildPurchaseDailyNotify();
             NotifyPurchaseRecommendConfig purchaseRecommendConfig = BuildPurchaseRecommendConfig();
+            // Seed the manual before NotifyLogin fires login-complete; the late full push refreshes Lotto/Purchase after cache initialization.
+            session.SendPush(WheelchairManualModule.BuildPayload(session, DateTimeOffset.UtcNow));
             session.SendPush(notifyLogin);
             if (headTimeout is not null)
                 session.SendPush(headTimeout);
@@ -1358,8 +1379,10 @@ namespace AscNet.GameServer.Handlers
             session.SendPush(new NotifyAllRedEnvelope());
             session.SendPush(new NotifyScoreTitleData { TitleInfos = session.character.ScoreTitles });
             session.SendPush(BuildBfrtLoginData(session.player));
-            session.SendPush(new NotifyBiancaTheatreActivityData());
-            SendEmptyStartupPush(session, "NotifyTheatre3ActivityData");
+            session.SendPush(BiancaTheatreModule.BuildLoginData(session, DateTimeOffset.UtcNow));
+            BiancaTheatreModule.SendRecoveredSettlement(session);
+            session.SendPush(Theatre3Module.BuildLoginData(session));
+            Theatre3Module.SendRecoveredSettlement(session);
             SendEmptyStartupPush(session, "NotifyFangKuaiData");
             session.SendPush(new NotifyWorkNextRefreshTime()
             {
@@ -1370,7 +1393,6 @@ namespace AscNet.GameServer.Handlers
             session.SendPush(BuildMedalLoginData(session.player));
             session.SendPush(ExploreModule.BuildLoginData(session.player));
             session.SendPush(notifyGatherRewardList);
-            session.SendPush(new NotifyGuildEvent());
             SendEmptyStartupPush(session, "NotifyNewActivityCalendarData");
             session.SendPush(notifyAssistData);
             SendEmptyStartupPush(session, "NotifyDlcFightCharacterId");
@@ -1408,7 +1430,7 @@ namespace AscNet.GameServer.Handlers
             SendEmptyStartupPush(session, "NotifyBountyChallengeMonsterDifficultyState");
             session.SendPush(BuildNotifyBriefStoryData(session.player));
             SendEmptyStartupPush(session, "NotifyCerberusGameData");
-            SendEmptyStartupPush(session, "NotifyLoginCharacterTowerData");
+            TowerModule.PrepareLogin(session);
             SendEmptyStartupPush(session, "NotifyClickClearData");
             SendEmptyStartupPush(session, "NotifyClientVersion");
             SendEmptyStartupPush(session, "NotifyColorTableActivityData");
@@ -1453,14 +1475,15 @@ namespace AscNet.GameServer.Handlers
             session.SendPush(new NotifyLoginMailCollectionBoxData());
             SendEmptyStartupPush(session, "NotifyNonogramData");
             SendEmptyStartupPush(session, "NotifyPivotCombatData");
-            SendEmptyStartupPush(session, "NotifySettingLoadingOption");
+            session.SendPush(LoadingModule.BuildLoginData(session.player));
             session.SendPush(RepeatChallengeModule.BuildLoginData(session.player));
             SendEmptyStartupPush(session, "NotifyPlayerReportData");
             SendEmptyStartupPush(session, "NotifySameColorGameData");
             session.SendPush(StrongholdModule.BuildLoginData(session.player));
             SendEmptyStartupPush(session, "NotifySucceedBossData");
             SendEmptyStartupPush(session, "NotifyTaikoMasterData");
-            SendEmptyStartupPush(session, "NotifyTheatreData");
+            session.SendPush(TheatreModule.BuildLoginData(session));
+            TheatreModule.SendRecoveredSettlement(session);
             SendCurrentEventTaskBatch(session, RetroArcadeTaskBatchPostTaikoA);
             SendCurrentEventTaskBatch(session, RetroArcadeTaskBatchPostTaikoB);
             NotifyTransfiniteData transfiniteData = TransfiniteModule.BuildNotify(session.player);
