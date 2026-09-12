@@ -1,0 +1,923 @@
+Id	Type	Site	Star	WeaponSkillId	CharacterId	SuitId	LogName
+2013001	1	0	3	2013001	0	0	3★ Dual Guns: Standard Pistol
+2014001	1	0	4	2014001	0	0	4★ Dual Guns: Tokarev
+2015001	1	0	5	2015001	0	0	5★ Dual Guns: Gloomlight
+2016001	1	0	6	2016001	0	0	6★ Dual Guns: Wolf Fang
+2016002	1	0	6	2016002	0	0	6★ Dual Guns: Zero Scale
+2016003	1	0	6	2016003	0	0	6★ Dual Guns: Scion
+2022001	2	0	2	2022001	0	0	2★ Katana: Standard Katana
+2023001	2	0	3	2023001	0	0	3★ Katana: Combat Katana
+2024001	2	0	4	2024001	0	0	4★ Katana: Unbranded Katana
+2024002	2	0	4	2024001	0	0	4★ Katana: Unbranded Katana
+2025001	2	0	5	2025001	0	0	5★ Katana: Kuji no Sada
+2026001	2	0	6	2026001	0	0	6★ Katana: Lotus Berserker
+2026002	2	0	6	2026002	0	0	6★ Katana: Inverse - Shadow
+2026003	2	0	6	2026003	0	0	6★ Katana: Sirius
+2026004	2	0	6	2026004	0	0	6★ Katana: Sakura
+2026005	2	0	6	2026005	0	0	6★ Katana: Crimson Birch
+2026006	2	0	6	2026006	0	0	6★ Katana: Sariel
+2032001	3	0	2	2032001	0	0	2★ Levi-Gun: Levitator
+2033001	3	0	3	2033001	0	0	3★ Levi-Gun: Semi-Auto Turret
+2034001	3	0	4	2034001	0	0	4★ Levi-Gun: Fish Mount
+2035001	3	0	5	2035001	0	0	5★ Levi-Gun: Guardian Mount
+2036001	3	0	6	2036001	0	0	6★ Levi-Gun: Type Zero
+2036002	3	0	6	2036002	0	0	6★ Levi-Gun: Benediction
+2036003	3	0	6	2036003	0	0	6★ Levi-Gun: Dragon Wind
+2043001	4	0	3	2043001	0	0	3★ Bow: Practice Bow
+2044001	4	0	4	2044001	0	0	4★ Bow: Pulley Bow
+2045001	4	0	5	2045001	0	0	5★ Bow: Falcon E-3320
+2046001	4	0	6	2046001	0	0	6★ Bow: Ramiel
+2046002	4	0	6	2046002	0	0	6★ Bow: Tonitrus
+2046003	4	0	6	2046003	0	0	6★ Bow Astraea
+2053001	5	0	3	2053001	0	0	3★ Saw: Chainsaw
+2054001	5	0	4	2054001	0	0	4★ Saw: Noise
+2055001	5	0	5	2055001	0	0	5★ Saw: Lightning Spark
+2056001	5	0	6	2056001	0	0	6★ Saw: Inverse - Chimera
+2056002	5	0	6	2056002	0	0	6★ Saw: Hydro Heat
+2063001	6	0	3	2063001	0	0	3★ Greatsword: Greatsword
+2064001	6	0	4	2064001	0	0	4★ Greatsword: Suppressor
+2065001	6	0	5	2065001	0	0	5★ Greatsword: Dynamo Greatsword
+2065050	6	0	5	2065050	0	0	5★ Greatsword: Star of Bethlehem
+2066001	6	0	6	2066001	0	0	6★ Greatsword: Big Kamui
+2066002	6	0	6	2066002	0	0	6★ Greatsword: Darkness
+2073001	7	0	3	2073001	0	0	3★ Bazooka: Bazooka
+2074001	7	0	4	2074001	0	0	4★ Bazooka: Rifled Gun
+2075001	7	0	5	2075001	0	0	5★ Bazooka: Magma Pillar
+2075002	7	0	5	2075002	0	0	5★ Bazooka: Firecrackers
+2076001	7	0	6	2076001	0	0	6★ Bazooka: Berserk Fusion
+2076002	7	0	6	2076002	0	0	6★ Bazooka: Fusion Dragon
+2083001	8	0	3	2083001	0	0	3★ Dagger: Machete
+2084001	8	0	4	2084001	0	0	4★ Dagger: Hunter Knife
+2085001	8	0	5	2085001	0	0	5★ Dagger: Stone Heart
+2085002	8	0	5	2085002	0	0	5★ Dagger: Yuan Night
+2086001	8	0	6	2086001	0	0	6★ Dagger: Soul Ripper
+2086002	8	0	6	2086002	0	0	6★ Dagger: Peacemaker
+2093001	9	0	3	2093001	0	0	3★ Scythe: Standard Scythe
+2094001	9	0	4	2094001	0	0	4★ Scythe: Bleak Scythe
+2095001	9	0	5	2095001	0	0	5★ Scythe: Faded Color
+2096001	9	0	6	2096001	0	0	6★ Scythe: Purple Peony
+2096002	9	0	6	2096002	0	0	6★ Scythe: St. Elmo
+2096003	9	0	6	2096003	0	0	6★ Scythe Galatea
+2104001	10	0	4	2104001	0	0	4★ Uniframe: Greatsword Photophage
+2105001	10	0	5	2105001	0	0	5★ Uniframe: Greatsword Shadow
+2106001	10	0	6	2106001	0	0	6★ Uniframe: Greatsword Thanatos
+2114001	11	0	4	2114001	0	0	4★ Spear Shield Astray Explorer
+2115001	11	0	5	2115001	0	0	5★ Spear Shield RL-03C Black Spike
+2116001	11	0	6	2116001	0	0	6★ Spear Shield Gungnir
+2125001	12	0	5	2125001	0	0	5★ Katana & Greatsword Virtuous Contract
+2126001	12	0	6	2126001	0	0	6★ Katana & Greatsword Virtuous Contract - Mod
+2134001	13	0	4	2134001	0	0	4★ Uniframe: Glaive Iron Star Type VI
+2135001	13	0	5	2135001	0	0	5★ Uniframe: Glaive Guiyun
+2136001	13	0	6	2136001	0	0	6★ Uniframe: Glaive Qinghe
+2144001	14	0	4	2144001	0	0	4★ Gauntlets Armor Break Type IX
+2145001	14	0	5	2145001	0	0	5★ Gauntlets White Qilin
+2146001	14	0	6	2146001	0	0	6★ Gauntlets Baji
+2155001	15	0	5	2155001	0	0	5★ Tactical Lance Type-4O Lance
+2156001	15	0	6	2156001	0	0	6★ Tactical Lance Type-4O Lance - Mod
+2165001	16	0	5	2165001	0	0	5★ Katana Cruel Oath
+2166001	16	0	6	2166001	0	0	6★ Cruel Oath - Mod
+2174001	17	0	4	2174001	0	0	4★ Amplifier Genesis
+2175001	17	0	5	2175001	0	0	5★ Amplifier Solar Ring
+2176001	17	0	6	2176001	0	0	6★ Amplifier Ozma
+2184001	18	0	4	2184001	0	0	4★ Gun Set Bullet Ant
+2185001	18	0	5	2185001	0	0	5★ Gun Set FA2D-AP
+2186001	18	0	6	2186001	0	0	6★ Gun Set Scale
+2194001	19	0	4	2194001	0	0	4★ Uniframe: Cello Blade Overture
+2195001	19	0	5	2195001	0	0	5★ Uniframe: Cello Blade Odette
+2196001	19	0	6	2196001	0	0	6★ Uniframe: Cello Blade Waldmeister
+2204001	20	0	4	2204001	0	0	4★Gunblade: Standard Gunblade
+2205001	20	0	5	2205001	0	0	5★Gunblade: Kara Type I Gunblade
+2206001	20	0	6	2206001	0	0	6★Gunblade: Apollo
+2214001	21	0	4	2214001	0	0	4★ Co-Bot
+2215001	21	0	5	2215001	0	0	5★ Co-Bot
+2216001	21	0	6	2216001	0	0	6★ Co-Bot
+2224001	22	0	4	2224001	0	0	4★ Uniframe: Chain Blade Pioneer
+2225001	22	0	5	2225001	0	0	5★ Uniframe: Chain Blade Blooming Rose
+2226001	22	0	6	2226001	0	0	6★ Uniframe: Chain Blade Durendal
+2234001	23	0	4	2234001	0	0	4★ Banner Oriflamme
+2235001	23	0	5	2235001	0	0	5★ Banner Spear Glorious Knight
+2236001	23	0	6	2236001	0	0	6★ Banner Spear Phoenix
+2244001	24	0	4	2244001	0	0	4★ Scepter Apocalypse
+2245001	24	0	5	2245001	0	0	5★ Scepter Bipolar Star Rift
+2246001	24	0	6	2246001	0	0	6★Scepter Hestia
+2254001	25	0	4	2254001	0	0	4★ Flute Sword Standard Mode
+2255001	25	0	5	2255001	0	0	5★ Flute Sword Neapolitan Solo
+2256001	25	0	6	2256001	0	0	6★ Flute Sword Sarastro
+2264001	26	0	4	2264001	0	0	4★ Dragon Axe Gray Iron
+2265001	26	0	5	2265001	0	0	5★ Dragon Axe Whitefrost Ruler
+2266001	26	0	6	2266001	0	0	6★ Dragon Axe Infinity
+2274001	27	0	4	2274001	0	0	4★ Mega Saw: Rage
+2275001	27	0	5	2275001	0	0	5★ Mega Saw: Red Shift
+2276001	27	0	6	2276001	0	0	6★ Mega Saw: Implosion
+2284001	28	0	4	2284001	0	0	4★ Blast Hammer - Blast Hammer Prototype
+2285001	28	0	5	2285001	0	0	5★ Blast Hammer - Despair Breaker
+2286001	28	0	6	2286001	0	0	6★ Blast Hammer - Illuminare
+2294001	29	0	4	2294001	0	0	4★ Rev Blade Hope of the Village
+2295001	29	0	5	2295001	0	0	5★ Rev Blade Progressive Knife
+2296001	29	0	6	2296001	0	0	6★ Rev Blade Prometheus
+2304001	30	0	4	2304001	0	0	4★ Swordstaff Dusk Mirage
+2305001	30	0	5	2305001	0	0	5★ Swordstaff Polar Night
+2306001	30	0	6	2306001	0	0	6★ Swordstaff Hecate
+2314001	31	0	4	2314001	0	0	4★ Mantis Blades Heartless Blades
+2315001	31	0	5	2315001	0	0	5★ Mantis Blades Comet's Edge
+2316001	31	0	6	2316001	0	0	6★ Mantis Blades Sound of Silence
+2324001	32	0	4	2324001	0	0	4★ Composite Armaments - Composite Armaments Prototype
+2325001	32	0	5	2325001	0	0	5★ Composite Armaments: Nuclear Meltdown δ
+2326001	32	0	6	2326001	0	0	6★ Composite Armaments - Key of Tempus Gate - Stokes
+2334001	33	0	4	2334001	0	0	4★ Beam Gunlance: "Paintbrush" Prototype
+2335001	33	0	5	2335001	0	0	5★ Beam Gunlance: Dual Rainbows
+2336001	33	0	6	2336001	0	0	6★ Beam Gunlance: Star Voyager
+2344001	34	0	4	2344001	0	0	4★ Daisho: Swiftplume
+2345001	34	0	5	2345001	0	0	5★ Daisho: Red Sprite
+2346001	34	0	6	2346001	0	0	6★ Daisho: Nightblaze
+2354001	35	0	4	2354001	0	0	4★ Folding Fan Severed Rain
+2355001	35	0	5	2355001	0	0	5★ Folding Fan Returning Wind
+2356001	35	0	6	2356001	0	0	6★ Folding Fan Perpetuity
+2364001	36	0	4	2364001	0	0	4★ Claw Blades Lightning Devourer
+2365001	36	0	5	2365001	0	0	5★ Claw Blades Trio-Claws
+2366001	36	0	6	2366001	0	0	6★ Claw Blades Managarm
+2374001	37	0	4	2374001	0	0	4★ Robotic Arm: Heart of Gold
+2375001	37	0	5	2375001	0	0	5★ Robotic Arm: FPT-II - Mod
+2376001	37	0	6	2376001	0	0	6★ Robotic Arm: Crimson Howl
+2384001	38	0	4	2384001	0	0	4★ Halberd Blade Atoll
+2385001	38	0	5	2385001	0	0	5★ Halberd Blade Reversal Node
+2386001	38	0	6	2386001	0	0	6★ Halberd Blade Metis
+2395001	39	0	5	2395001	0	0	5★ Bladed Cannon - Rock Cannon
+2396001	39	0	6	2396001	0	0	6★ Bladed Cannon - ★Rock Cannon
+2404001	40	0	4	2404001	0	0	4★ Trailblade: Black Raven
+2405001	40	0	5	2405001	0	0	5★ Trailblade: Pale Plume
+2406001	40	0	6	2406001	0	0	6★ Trailblade: Dark Falcon
+2414001	41	0	4	2414001	0	0	4★ Longsword Emerald Quill
+2415001	41	0	5	2415001	0	0	5★ Longsword Phoenix Edge
+2416001	41	0	6	2416001	0	0	6★ Longsword Akasha Keyblade
+2424001	42	0	4	2424001	0	0	4★ Tactical Headphones PESW-II - Mod
+2425001	42	0	5	2425001	0	0	5★ Tactical Headphones White Night's Noise
+2426001	42	0	6	2426001	0	0	6★ Tactical Headphones Hacker's Tune
+2434001	43	0	4	2434001	0	0	4★ Chakram Reappearance
+2435001	43	0	5	2435001	0	0	5★ Chakram Dark Moon
+2436001	43	0	6	2436001	0	0	6★ Chakram Reconstruction of Law
+2444001	44	0	4	2444001	0	0	4★ Tactical Tonfas Standard Tactical Tonfas
+2445001	44	0	5	2445001	0	0	5★ Tactical Tonfas Everburning Ray
+2446001	44	0	6	2446001	0	0	6★ Tactical Tonfas Cestus
+2454001	45	0	4	2454001	0	0	4★ Pipa  Frontier Foliage
+2455001	45	0	5	2455001	0	0	5★ Pipa  Moonside Petal
+2456001	45	0	6	2456001	0	0	6★ Pipa  Dream Roamer
+2464001	46	0	4	2464001	0	0	4★ Revolver - Load & Rest
+2465001	46	0	5	2465001	0	0	5★ Revolver - Eternal Peace
+2466001	46	0	6	2466001	0	0	6★ Revolver - Renewed Dawn
+2474001	47	0	4	2474001	0	0	4★ Pyro Katana LB - Flash Prototype
+2475001	47	0	5	2475001	0	0	5★ Pyro Katana Mist Netherlight
+2476001	47	0	6	2476001	0	0	6★ Pyro Katana Flamewing of Dawn
+2484001	48	0	4	2484001	0	0	4★ Powered Arms: Rasetsu
+2485001	48	0	5	2485001	0	0	5★ Powered Arms: Raijin
+2486001	48	0	6	2486001	0	0	6★ Powered Arms: Fudo Myo-o
+2494001	49	0	4	2494001	0	0	4★ Shield Axe ZL-07 Prototype
+2495001	49	0	5	2495001	0	0	5★ Shield Axe Sparkle ZL-09 - Mod
+2496001	49	0	6	2496001	0	0	6★ Shield Axe: Starlight Glare
+2504001	50	0	4	2504001	0	0	4★ Keystaff: The Last Answer
+2505001	50	0	5	2505001	0	0	5★ Keystaff: Celestial Reflection
+2506001	50	0	6	2506001	0	0	6★ Keystaff: Alpha-Omega
+2514001	51	0	4	2514001	0	0	4★ Moon Umbrella  Rosy Silhouette
+2515001	51	0	5	2515001	0	0	5★ Moon Umbrella  Glazed Enigma
+2516001	51	0	6	2516001	0	0	6★ Moon Umbrella  Sorrow of Fata Morgana
+2524001	52	0	4	2524001	0	0	4★ Bowstring Rapier Verse Abiding
+2525001	52	0	5	2525001	0	0	5★ Bowstring Rapier Crowned Laurel
+2526001	52	0	6	2526001	0	0	6★ Bowstring Rapier Orpheus' Lullaby
+2534001	53	0	4	2534001	0	0	4★ Fusion Gunsword Standard MK II
+2535001	53	0	5	2535001	0	0	5★ Fusion Gunsword Lethal Shadow
+2536001	53	0	6	2536001	0	0	6★ Fusion Gunsword Final Arbiter
+2544001	54	0	4	2544001	0	0	4★ Dual-Bladed Lance: Firecrash
+2545001	54	0	5	2545001	0	0	5★ Dual-Bladed Lance: Fiery Twilight
+2546001	54	0	6	2546001	0	0	6★ Dual-Bladed Lance: Deathless Flame
+2555001	55	0	5	2555001	0	0	5★ Yamato: Yamato - Kageuchi
+2556001	55	0	6	2556001	0	0	6★ Yamato: Yamato
+2565001	56	0	5	2565001	0	0	5★ Devil Sword: Devil Hunter Sword
+2566001	56	0	6	2566001	0	0	6★ Devil Sword: Devil Sword Dante
+2574001	57	0	4	2574001	0	0	4★ Lashblade: Smiter
+2575001	57	0	5	2575001	0	0	5★ Lashblade: Night Sunderer
+2576001	57	0	6	2576001	0	0	6★ Lashblade: Aurora
+2584001	58	0	4	2584001	0	0	4★ Scissors: Laceration
+2585001	58	0	5	2585001	0	0	5★ Scissors: Spinebreaker
+2586001	58	0	6	2586001	0	0	6★ Scissors: Osseous Guillotine
+2594001	59	0	4	2594001	0	0	4★ Lance: Flamethorn
+2595001	59	0	5	2595001	0	0	5★ Lance: Skyradiance
+2596001	59	0	6	2596001	0	0	6★ Lance: Empyrean Wrath
+2604001	60	0	4	2604001	0	0	4★ Lotus Wheel MW-03 Prototype
+2605001	60	0	5	2605001	0	0	5★ Lotus Wheel: Cyan Blossom
+2606001	60	0	6	2606001	0	0	6★ Lotus Wheel Wheel: Ripples of the Aloft Sea
+2614001	61	0	4	2614001	0	0	4★ Digital Warboots: Lunar Stride
+2615001	61	0	5	2615001	0	0	5★ Digital Warboots: Skybound Beats
+2616001	61	0	6	2616001	0	0	6★ Digital Warboots: Neon Wayfarer
+2624001	62	0	4	2624001	0	0	4★ Radiant Halberd: Aftershock Halberd
+2625001	62	0	5	2625001	0	0	5★ Radiant Halberd: Mirage Halberd
+2626001	62	0	6	2626001	0	0	6★ Radiant Halberd: Mirage Halberd: Amalga
+2634001	63	0	4	2634001	0	0	4★ Judgment Scythe: Grief's End
+2635001	63	0	5	2635001	0	0	5★ Judgment Scythe: Death's Plume
+2636001	63	0	6	2636001	0	0	6★ Judgment Scythe: Obituary for Yesterday
+2644001	64	0	4	2644001	0	0	4★ Kinetic Greatsword: Folded Edge
+2645001	64	0	5	2645001	0	0	5★ Kinetic Greatsword: Ray Slasher
+2646001	64	0	6	2646001	0	0	6★ Kinetic Greatsword: Solar Flare
+2654001	65	0	4	2654001	0	0	4★ Cylinder Katana Ratchet Blade AX-01 Prototype
+2655001	65	0	5	2655001	0	0	5★ Cylinder Katana BX-02M Fellfrost
+2656001	65	0	6	2656001	0	0	6★ Cylinder Katana Lightless Dusk
+2664001	66	0	4	2664001	0	0	4★ Folding Buzzsaw: Flange
+2665001	66	0	5	2665001	0	0	5★ Folding Buzzsaw: Base Fog
+2666001	66	0	6	2666001	0	0	6★ Folding Buzzsaw: Hear the Bell
+2674001	67	0	4	2674001	0	0	4★ Drift Anchor: White Crest
+2675001	67	0	5	2675001	0	0	5★ Drift Anchor: Spindrift Shimmer
+2676001	67	0	6	2676001	0	0	6★ Drift Anchor: Star of Niflheim
+2980201	2	0	4	2013001	0	0	Display weapon - Sariel
+2980202	2	0	4	2013001	0	0	Display weapon - Lupercalia
+2981101	11	0	4	2013001	0	0	Display Gungnir
+2981102	11	0	4	2013001	0	0	Display weapon - Howling Crown
+2982001	2	0	4	2013001	0	0	Display weapon Crimson Birch
+2981301	13	0	4	2013001	0	0	Display weapon - Starry Clouds
+2981401	14	0	4	2013001	0	0	Display weapon Baji
+2980301	3	0	4	2013001	0	0	Wedding dress weapon
+2980401	4	0	4	2013001	0	0	Wedding dress weapon
+2981701	17	0	4	2013001	0	0	Corrosive amplifier
+2984001	2	0	4	2013001	0	0	FPS Weapon
+2984002	2	0	4	2013001	0	0	FPS Weapon
+2984003	2	0	4	2013001	0	0	FPS Weapon
+2991001	99	0	1	2991001	0	0	1★ Weapon Enhancer
+2992001	99	0	2	2992001	0	0	2★ Weapon Enhancer
+2993001	99	0	3	2993001	0	0	3★ Weapon Enhancer
+2994001	99	0	4	2994001	0	0	4★ Weapon Enhancer
+3911001	99	1	1	0	0	1901	1★ Memory Enhancer Grid 1
+3912001	99	1	2	0	0	1902	2★ Memory Enhancer Grid 1
+3913001	99	1	3	0	0	1903	3★ Memory Enhancer Grid 1
+3914001	99	1	4	0	0	1904	4★ Memory Enhancer Grid 1
+3915001	99	1	5	0	0	1905	5★ Memory Enhancer Grid 1
+3916001	99	1	6	0	0	1906	6★ Memory Enhancer Grid 1
+3921001	99	2	1	0	0	1901	1★ Memory Enhancer Grid 2
+3922001	99	2	2	0	0	1902	2★ Memory Enhancer Grid 2
+3923001	99	2	3	0	0	1903	3★ Memory Enhancer Grid 2
+3924001	99	2	4	0	0	1904	4★ Memory Enhancer Grid 2
+3925001	99	2	5	0	0	1905	5★ Memory Enhancer Grid 2
+3926001	99	2	6	0	0	1906	6★ Memory Enhancer Grid 2
+3931001	99	3	1	0	0	1901	1★ Memory Enhancer Grid 3
+3932001	99	3	2	0	0	1902	2★ Memory Enhancer Grid 3
+3933001	99	3	3	0	0	1903	3★ Memory Enhancer Grid 3
+3934001	99	3	4	0	0	1904	4★ Memory Enhancer Grid 3
+3935001	99	3	5	0	0	1905	5★ Memory Enhancer Grid 3
+3936001	99	3	6	0	0	1906	6★ Memory Enhancer Grid 3
+3941001	99	4	1	0	0	1901	1★ Memory Enhancer Grid 4
+3942001	99	4	2	0	0	1902	2★ Memory Enhancer Grid 4
+3943001	99	4	3	0	0	1903	3★ Memory Enhancer Grid 4
+3944001	99	4	4	0	0	1904	4★ Memory Enhancer Grid 4
+3945001	99	4	5	0	0	1905	5★ Memory Enhancer Grid 4
+3946001	99	4	6	0	0	1906	6★ Memory Enhancer Grid 4
+3951001	99	5	1	0	0	1901	1★ Memory Enhancer Grid 5
+3952001	99	5	2	0	0	1902	2★ Memory Enhancer Grid 5
+3953001	99	5	3	0	0	1903	3★ Memory Enhancer Grid 5
+3954001	99	5	4	0	0	1904	4★ Memory Enhancer Grid 5
+3955001	99	5	5	0	0	1905	5★ Memory Enhancer Grid 5
+3956001	99	5	6	0	0	1906	6★ Memory Enhancer Grid 5
+3961001	99	6	1	0	0	1901	1★ Memory Enhancer Grid 6
+3962001	99	6	2	0	0	1902	2★ Memory Enhancer Grid 6
+3963001	99	6	3	0	0	1903	3★ Memory Enhancer Grid 6
+3964001	99	6	4	0	0	1904	4★ Memory Enhancer Grid 6
+3965001	99	6	5	0	0	1905	5★ Memory Enhancer Grid 6
+3966001	99	6	6	0	0	1906	6★ Memory Enhancer Grid 6
+3012001	0	1	2	0	0	1201	2★ Memory Merli Grid 1
+3013001	0	1	3	0	0	1301	3★ Memory Pinoff Grid 1
+3013002	0	1	3	0	0	1304	3★ Memory Pavrey Grid 1
+3014001	0	1	4	0	0	1401	4★ Memory Archimedes Grid 1
+3014002	0	1	4	0	0	1404	4★ Memory Edison Grid 1
+3014003	0	1	4	0	0	1407	4★ Memory Alice Grid 1
+3014004	0	1	4	0	0	1410	4★ Memory Cunningham Grid 1
+3014005	0	1	4	0	0	1413	4★ Memory Kuriko - Eternal Grid 1
+3015001	0	1	5	0	0	1501	5★ Memory Carrielynn Grid 1
+3015002	0	1	5	0	0	1502	5★ Memory Aife Grid 1
+3015003	0	1	5	0	0	1503	5★ Memory Ike Grid 1
+3015004	0	1	5	0	0	1504	5★ Memory Voltaire Grid 1
+3015005	0	1	5	0	0	1505	5★ Memory Gloria Grid 1
+3015006	0	1	5	0	0	1506	5★ Memory Richelieu Grid 1
+3015007	0	1	5	0	0	1507	5★ Memory Samantha Grid 1
+3015008	0	1	5	0	0	1508	5★ Memory Mozart Grid 1
+3015050	0	1	5	0	0	1550	5★ Memory Liv: Reindeer Grid 1
+3016001	0	1	6	0	0	1601	6★ Memory Condelina Grid 1
+3016002	0	1	6	0	0	1602	6★ Memory Shakespeare Grid 1
+3016003	0	1	6	0	0	1603	6★ Memory Heisen Grid 1
+3016004	0	1	6	0	0	1604	6★ Memory Darwin Grid 1
+3016005	0	1	6	0	0	1605	6★ Memory Hanna Grid 1
+3016006	0	1	6	0	0	1606	6★ Memory Cottie Grid 1
+3016007	0	1	6	0	0	1607	6★ Memory Da Vinci Grid 1
+3016008	0	1	6	0	0	1608	6★ Memory Catherine Grid 1
+3016009	0	1	6	0	0	1609	6★ Memory Einsteina Grid 1
+3016010	0	1	6	0	0	1610	6★ Memory Philip II Grid 1
+3016011	0	1	6	0	0	1611	6★ Memory Guinevere Grid 1
+3016012	0	1	6	0	0	1612	6★ Memory Frederick Grid 1
+3022001	0	2	2	0	0	1201	2★ Memory Merli Grid 2
+3023001	0	2	3	0	0	1301	3★ Memory Pinoff Grid 2
+3023002	0	2	3	0	0	1304	3★ Memory Pavrey Grid 2
+3024001	0	2	4	0	0	1401	4★ Memory Archimedes Grid 2
+3024002	0	2	4	0	0	1404	4★ Memory Edison Grid 2
+3024003	0	2	4	0	0	1407	4★ Memory Alice Grid 2
+3024004	0	2	4	0	0	1410	4★ Memory Cunningham Grid 2
+3025001	0	2	5	0	0	1501	5★ Memory Carrielynn Grid 2
+3025002	0	2	5	0	0	1502	5★ Memory Aife Grid 2
+3025003	0	2	5	0	0	1503	5★ Memory Ike Grid 2
+3025004	0	2	5	0	0	1504	5★ Memory Voltaire Grid 2
+3025005	0	2	5	0	0	1505	5★ Memory Gloria Grid 2
+3025006	0	2	5	0	0	1506	5★ Memory Richelieu Grid 2
+3025007	0	2	5	0	0	1507	5★ Memory Samantha Grid 2
+3025008	0	2	5	0	0	1508	5★ Memory Mozart Grid 2
+3025050	0	2	5	0	0	1550	5★ Memory Liv: Reindeer Grid 2
+3026001	0	2	6	0	0	1601	6★ Memory Condelina Grid 2
+3026002	0	2	6	0	0	1602	6★ Memory Shakespeare Grid 2
+3026003	0	2	6	0	0	1603	6★ Memory Heisen Grid 2
+3026004	0	2	6	0	0	1604	6★ Memory Darwin Grid 2
+3026005	0	2	6	0	0	1605	6★ Memory Hanna Grid 2
+3026006	0	2	6	0	0	1606	6★ Memory Cottie Grid 2
+3026007	0	2	6	0	0	1607	6★ Memory Da Vinci Grid 2
+3026008	0	2	6	0	0	1608	6★ Memory Catherine Grid 2
+3026009	0	2	6	0	0	1609	6★ Memory Einsteina Grid 2
+3026010	0	2	6	0	0	1610	6★ Memory Philip II Grid 2
+3026011	0	2	6	0	0	1611	6★ Memory Guinevere Grid 2
+3026012	0	2	6	0	0	1612	6★ Memory Frederick Grid 2
+3032001	0	3	2	0	0	1201	2★ Memory Merli Grid 3
+3033001	0	3	3	0	0	1301	3★ Memory Pinoff Grid 3
+3033002	0	3	3	0	0	1304	3★ Memory Pavrey Grid 3
+3034001	0	3	4	0	0	1401	4★ Memory Archimedes Grid 3
+3034002	0	3	4	0	0	1404	4★ Memory Edison Grid 3
+3034003	0	3	4	0	0	1407	4★ Memory Alice Grid 3
+3034004	0	3	4	0	0	1410	4★ Memory Cunningham Grid 3
+3035001	0	3	5	0	0	1501	5★ Memory Carrielynn Grid 3
+3035002	0	3	5	0	0	1502	5★ Memory Aife Grid 3
+3035003	0	3	5	0	0	1503	5★ Memory Ike Grid 3
+3035004	0	3	5	0	0	1504	5★ Memory Voltaire Grid 3
+3035005	0	3	5	0	0	1505	5★ Memory Gloria Grid 3
+3035006	0	3	5	0	0	1506	5★ Memory Richelieu Grid 3
+3035007	0	3	5	0	0	1507	5★ Memory Samantha Grid 3
+3035008	0	3	5	0	0	1508	5★ Memory Mozart Grid 3
+3035050	0	3	5	0	0	1550	5★ Memory Liv: Reindeer Grid 3
+3036001	0	3	6	0	0	1601	6★ Memory Condelina Grid 3
+3036002	0	3	6	0	0	1602	6★ Memory Shakespeare Grid 3
+3036003	0	3	6	0	0	1603	6★ Memory Heisen Grid 3
+3036004	0	3	6	0	0	1604	6★ Memory Darwin Grid 3
+3036005	0	3	6	0	0	1605	6★ Memory Hanna Grid 3
+3036006	0	3	6	0	0	1606	6★ Memory Cottie Grid 3
+3036007	0	3	6	0	0	1607	6★ Memory Da Vinci Grid 3
+3036008	0	3	6	0	0	1608	6★ Memory Catherine Grid 3
+3036009	0	3	6	0	0	1609	6★ Memory Einsteina Grid 3
+3036010	0	3	6	0	0	1610	6★ Memory Philip II Grid 3
+3036011	0	3	6	0	0	1611	6★ Memory Guinevere Grid 3
+3036012	0	3	6	0	0	1612	6★ Memory Frederick Grid 3
+3042001	0	4	2	0	0	1201	2★ Memory Merli Grid 4
+3043001	0	4	3	0	0	1301	3★ Memory Pinoff Grid 4
+3043002	0	4	3	0	0	1304	3★ Memory Pavrey Grid 4
+3044001	0	4	4	0	0	1401	4★ Memory Archimedes Grid 4
+3044002	0	4	4	0	0	1404	4★ Memory Edison Grid 4
+3044003	0	4	4	0	0	1407	4★ Memory Alice Grid 4
+3044004	0	4	4	0	0	1410	4★ Memory Cunningham Grid 4
+3044005	0	4	4	0	0	1413	4★ Memory Kuriko - Eternal Grid 4
+3045001	0	4	5	0	0	1501	5★ Memory Carrielynn Grid 4
+3045002	0	4	5	0	0	1502	5★ Memory Aife Grid 4
+3045003	0	4	5	0	0	1503	5★ Memory Ike Grid 4
+3045004	0	4	5	0	0	1504	5★ Memory Voltaire Grid 4
+3045005	0	4	5	0	0	1505	5★ Memory Gloria Grid 4
+3045006	0	4	5	0	0	1506	5★ Memory Richelieu Grid 4
+3045007	0	4	5	0	0	1507	5★ Memory Samantha Grid 4
+3045008	0	4	5	0	0	1508	5★ Memory Mozart Grid 4
+3045050	0	4	5	0	0	1550	5★ Memory Liv: Reindeer Grid 4
+3046001	0	4	6	0	0	1601	6★ Memory Condelina Grid 4
+3046002	0	4	6	0	0	1602	6★ Memory Shakespeare Grid 4
+3046003	0	4	6	0	0	1603	6★ Memory Heisen Grid 4
+3046004	0	4	6	0	0	1604	6★ Memory Darwin Grid 4
+3046005	0	4	6	0	0	1605	6★ Memory Hanna Grid 4
+3046006	0	4	6	0	0	1606	6★ Memory Cottie Grid 4
+3046007	0	4	6	0	0	1607	6★ Memory Da Vinci Grid 4
+3046008	0	4	6	0	0	1608	6★ Memory Catherine Grid 4
+3046009	0	4	6	0	0	1609	6★ Memory Einsteina Grid 4
+3046010	0	4	6	0	0	1610	6★ Memory Philip II Grid 4
+3046011	0	4	6	0	0	1611	6★ Memory Guinevere Grid 4
+3046012	0	4	6	0	0	1612	6★ Memory Frederick Grid 4
+3052001	0	5	2	0	0	1201	2★ Memory Merli Grid 5
+3053001	0	5	3	0	0	1301	3★ Memory Pinoff Grid 5
+3053002	0	5	3	0	0	1304	3★ Memory Pavrey Grid 5
+3054001	0	5	4	0	0	1401	4★ Memory Archimedes Grid 5
+3054002	0	5	4	0	0	1404	4★ Memory Edison Grid 5
+3054003	0	5	4	0	0	1407	4★ Memory Alice Grid 5
+3054004	0	5	4	0	0	1410	4★ Memory Cunningham Grid 5
+3055001	0	5	5	0	0	1501	5★ Memory Carrielynn Grid 5
+3055002	0	5	5	0	0	1502	5★ Memory Aife Grid 5
+3055003	0	5	5	0	0	1503	5★ Memory Ike Grid 5
+3055004	0	5	5	0	0	1504	5★ Memory Voltaire Grid 5
+3055005	0	5	5	0	0	1505	5★ Memory Gloria Grid 5
+3055006	0	5	5	0	0	1506	5★ Memory Richelieu Grid 5
+3055007	0	5	5	0	0	1507	5★ Memory Samantha Grid 5
+3055008	0	5	5	0	0	1508	5★ Memory Mozart Grid 5
+3055050	0	5	5	0	0	1550	5★ Memory Liv: Reindeer Grid 5
+3056001	0	5	6	0	0	1601	6★ Memory Condelina Grid 5
+3056002	0	5	6	0	0	1602	6★ Memory Shakespeare Grid 5
+3056003	0	5	6	0	0	1603	6★ Memory Heisen Grid 5
+3056004	0	5	6	0	0	1604	6★ Memory Darwin Grid 5
+3056005	0	5	6	0	0	1605	6★ Memory Hanna Grid 5
+3056006	0	5	6	0	0	1606	6★ Memory Cottie Grid 5
+3056007	0	5	6	0	0	1607	6★ Memory Da Vinci Grid 5
+3056008	0	5	6	0	0	1608	6★ Memory Catherine Grid 5
+3056009	0	5	6	0	0	1609	6★ Memory Einsteina Grid 5
+3056010	0	5	6	0	0	1610	6★ Memory Philip II Grid 5
+3056011	0	5	6	0	0	1611	6★ Memory Guinevere Grid 5
+3056012	0	5	6	0	0	1612	6★ Memory Frederick Grid 5
+3062001	0	6	2	0	0	1201	2★ Memory Merli Grid 6
+3063001	0	6	3	0	0	1301	3★ Memory Pinoff Grid 6
+3063002	0	6	3	0	0	1304	3★ Memory Pavrey Grid 6
+3064001	0	6	4	0	0	1401	4★ Memory Archimedes Grid 6
+3064002	0	6	4	0	0	1404	4★ Memory Edison Grid 6
+3064003	0	6	4	0	0	1407	4★ Memory Alice Grid 6
+3064004	0	6	4	0	0	1410	4★ Memory Cunningham Grid 6
+3065001	0	6	5	0	0	1501	5★ Memory Carrielynn Grid 6
+3065002	0	6	5	0	0	1502	5★ Memory Aife Grid 6
+3065003	0	6	5	0	0	1503	5★ Memory Ike Grid 6
+3065004	0	6	5	0	0	1504	5★ Memory Voltaire Grid 6
+3065005	0	6	5	0	0	1505	5★ Memory Gloria Grid 6
+3065006	0	6	5	0	0	1506	5★ Memory Richelieu Grid 6
+3065007	0	6	5	0	0	1507	5★ Memory Samantha Grid 6
+3065008	0	6	5	0	0	1508	5★ Memory Mozart Grid 6
+3065050	0	6	5	0	0	1550	5★ Memory Liv: Reindeer Grid 6
+3066001	0	6	6	0	0	1601	6★ Memory Condelina Grid 6
+3066002	0	6	6	0	0	1602	6★ Memory Shakespeare Grid 6
+3066003	0	6	6	0	0	1603	6★ Memory Heisen Grid 6
+3066004	0	6	6	0	0	1604	6★ Memory Darwin Grid 6
+3066005	0	6	6	0	0	1605	6★ Memory Hanna Grid 6
+3066006	0	6	6	0	0	1606	6★ Memory Cottie Grid 6
+3066007	0	6	6	0	0	1607	6★ Memory Da Vinci Grid 6
+3066008	0	6	6	0	0	1608	6★ Memory Catherine Grid 6
+3066009	0	6	6	0	0	1609	6★ Memory Einsteina Grid 6
+3066010	0	6	6	0	0	1610	6★ Memory Philip II Grid 6
+3066011	0	6	6	0	0	1611	6★ Memory Guinevere Grid 6
+3066012	0	6	6	0	0	1612	6★ Memory Frederick Grid 6
+3016014	0	1	6	0	0	1614	6★ Memory Patton Grid 1
+3026014	0	2	6	0	0	1614	6★ Memory Patton Grid 2
+3036014	0	3	6	0	0	1614	6★ Memory Patton Grid 3
+3046014	0	4	6	0	0	1614	6★ Memory Patton Grid 4
+3056014	0	5	6	0	0	1614	6★ Memory Patton Grid 5
+3066014	0	6	6	0	0	1614	6★ Memory Patton Grid 6
+3016013	0	1	6	0	0	1613	6★ Memory Bathlon Grid 1
+3026013	0	2	6	0	0	1613	6★ Memory Bathlon Grid 2
+3036013	0	3	6	0	0	1613	6★ Memory Bathlon Grid 3
+3046013	0	4	6	0	0	1613	6★ Memory Bathlon Grid 4
+3056013	0	5	6	0	0	1613	6★ Memory Bathlon Grid 5
+3066013	0	6	6	0	0	1613	6★ Memory Bathlon Grid 6
+3016015	0	1	6	0	0	1615	6★ Memory Chen Jiyuan Grid 1
+3026015	0	2	6	0	0	1615	6★ Memory Chen Jiyuan Grid 2
+3036015	0	3	6	0	0	1615	6★ Memory Chen Jiyuan Grid 3
+3046015	0	4	6	0	0	1615	6★ Memory Chen Jiyuan Grid 4
+3056015	0	5	6	0	0	1615	6★ Memory Chen Jiyuan Grid 5
+3066015	0	6	6	0	0	1615	6★ Memory Chen Jiyuan Grid 6
+3016016	0	1	6	0	0	1616	6★ Uniframe Memory Koya Grid 1
+3026016	0	2	6	0	0	1616	6★ Uniframe Memory Koya Grid 2
+3036016	0	3	6	0	0	1616	6★ Uniframe Memory Koya Grid 3
+3046016	0	4	6	0	0	1616	6★ Uniframe Memory Koya Grid 4
+3056016	0	5	6	0	0	1616	6★ Uniframe Memory Koya Grid 5
+3066016	0	6	6	0	0	1616	6★ Uniframe Memory Koya Grid 6
+3015051	0	1	5	0	0	1551	5★ Memory New Year Fireworks Grid 1
+3025051	0	2	5	0	0	1551	5★ Memory New Year Fireworks Grid 2
+3035051	0	3	5	0	0	1551	5★ Memory New Year Fireworks Grid 3
+3045051	0	4	5	0	0	1551	5★ Memory New Year Fireworks Grid 4
+3055051	0	5	5	0	0	1551	5★ Memory New Year Fireworks Grid 5
+3065051	0	6	5	0	0	1551	5★ Memory New Year Fireworks Grid 6
+3015052	0	1	5	0	0	1552	5★ Memory Lantern Festival: Reunion Grid 1
+3025052	0	2	5	0	0	1552	5★ Memory Lantern Festival: Reunion Grid 2
+3035052	0	3	5	0	0	1552	5★ Memory Lantern Festival: Reunion Grid 3
+3045052	0	4	5	0	0	1552	5★ Memory Lantern Festival: Reunion Grid 4
+3055052	0	5	5	0	0	1552	5★ Memory Lantern Festival: Reunion Grid 5
+3065052	0	6	5	0	0	1552	5★ Memory Lantern Festival: Reunion Grid 6
+3014006	0	1	4	0	0	1416	4★ Uniframe Memory Nimitz Grid 1
+3024006	0	2	4	0	0	1416	4★ Uniframe Memory Nimitz Grid 2
+3034006	0	3	4	0	0	1416	4★ Uniframe Memory Nimitz Grid 3
+3044006	0	4	4	0	0	1416	4★ Uniframe Memory Nimitz Grid 4
+3054006	0	5	4	0	0	1416	4★ Uniframe Memory Nimitz Grid 5
+3064006	0	6	4	0	0	1416	4★ Uniframe Memory Nimitz Grid 6
+3015009	0	1	5	0	0	1509	5★ Uniframe Memory Boudica Grid 1
+3025009	0	2	5	0	0	1509	5★ Uniframe Memory Boudica Grid 2
+3035009	0	3	5	0	0	1509	5★ Uniframe Memory Boudica Grid 3
+3045009	0	4	5	0	0	1509	5★ Uniframe Memory Boudica Grid 4
+3055009	0	5	5	0	0	1509	5★ Uniframe Memory Boudica Grid 5
+3065009	0	6	5	0	0	1509	5★ Uniframe Memory Boudica Grid 6
+3015055	0	1	5	0	0	1555	5★ Memory KFC - Alpha Grid 1
+3025055	0	2	5	0	0	1555	5★ Memory KFC - Alpha Grid 2
+3035055	0	3	5	0	0	1555	5★ Memory KFC - Alpha Grid 3
+3045055	0	4	5	0	0	1555	5★ Memory KFC - Alpha Grid 4
+3055055	0	5	5	0	0	1555	5★ Memory KFC - Alpha Grid 5
+3065055	0	6	5	0	0	1555	5★ Memory KFC - Alpha Grid 6
+3015056	0	1	5	0	0	1556	5★ Memory KFC - Lucia Grid 1
+3025056	0	2	5	0	0	1556	5★ Memory KFC - Lucia Grid 2
+3035056	0	3	5	0	0	1556	5★ Memory KFC - Lucia Grid 3
+3045056	0	4	5	0	0	1556	5★ Memory KFC - Lucia Grid 4
+3055056	0	5	5	0	0	1556	5★ Memory KFC - Lucia Grid 5
+3065056	0	6	5	0	0	1556	5★ Memory KFC - Lucia Grid 6
+3016017	0	1	6	0	0	1617	6★ Memory Leeuwenhoek Grid 1
+3026017	0	2	6	0	0	1617	6★ Memory Leeuwenhoek Grid 2
+3036017	0	3	6	0	0	1617	6★ Memory Leeuwenhoek Grid 3
+3046017	0	4	6	0	0	1617	6★ Memory Leeuwenhoek Grid 4
+3056017	0	5	6	0	0	1617	6★ Memory Leeuwenhoek Grid 5
+3066017	0	6	6	0	0	1617	6★ Memory Leeuwenhoek Grid 6
+3016018	0	1	6	0	0	1618	6★ Uniframe Memory Wu'an Grid 1
+3026018	0	2	6	0	0	1618	6★ Uniframe Memory Wu'an Grid 2
+3036018	0	3	6	0	0	1618	6★ Uniframe Memory Wu'an Grid 3
+3046018	0	4	6	0	0	1618	6★ Uniframe Memory Wu'an Grid 4
+3056018	0	5	6	0	0	1618	6★ Uniframe Memory Wu'an Grid 5
+3066018	0	6	6	0	0	1618	6★ Uniframe Memory Wu'an Grid 6
+3016019	0	1	6	0	0	1619	6★ Flamel Grid 1
+3026019	0	2	6	0	0	1619	6★ Flamel Grid 2
+3036019	0	3	6	0	0	1619	6★ Flamel Grid 3
+3046019	0	4	6	0	0	1619	6★ Flamel Grid 4
+3056019	0	5	6	0	0	1619	6★ Flamel Grid 5
+3066019	0	6	6	0	0	1619	6★ Flamel Grid 6
+3015053	0	1	5	0	0	1553	5★ Memory Lee—Celebration under the Moon Grid 1
+3025053	0	2	5	0	0	1553	5★ Memory Lee—Celebration under the Moon Grid 2
+3035053	0	3	5	0	0	1553	5★ Memory Lee—Celebration under the Moon Grid 3
+3045053	0	4	5	0	0	1553	5★ Memory Lee—Celebration under the Moon Grid 4
+3055053	0	5	5	0	0	1553	5★ Memory Lee—Celebration under the Moon Grid 5
+3065053	0	6	5	0	0	1553	5★ Memory Lee—Celebration under the Moon Grid 6
+3016020	0	1	6	0	0	1620	6★ Uniframe Memory Lucrezia Grid 1
+3026020	0	2	6	0	0	1620	6★ Uniframe Memory Lucrezia Grid 2
+3036020	0	3	6	0	0	1620	6★ Uniframe Memory Lucrezia Grid 3
+3046020	0	4	6	0	0	1620	6★ Uniframe Memory Lucrezia Grid 4
+3056020	0	5	6	0	0	1620	6★ Uniframe Memory Lucrezia Grid 5
+3066020	0	6	6	0	0	1620	6★ Uniframe Memory Lucrezia Grid 6
+3016021	0	1	6	0	0	1621	6★Memory: Exupery Grid 1
+3026021	0	2	6	0	0	1621	6★Memory: Exupery Grid 2
+3036021	0	3	6	0	0	1621	6★Memory: Exupery Grid 3
+3046021	0	4	6	0	0	1621	6★Memory: Exupery Grid 4
+3056021	0	5	6	0	0	1621	6★Memory: Exupery Grid 5
+3066021	0	6	6	0	0	1621	6★Memory: Exupery Grid 6
+3016022	0	1	6	0	0	1622	6★ Memory Tifa Grid 1
+3026022	0	2	6	0	0	1622	6★ Memory Tifa Grid 2
+3036022	0	3	6	0	0	1622	6★ Memory Tifa Grid 3
+3046022	0	4	6	0	0	1622	6★ Memory Tifa Grid 4
+3056022	0	5	6	0	0	1622	6★ Memory Tifa Grid 5
+3066022	0	6	6	0	0	1622	6★ Memory Tifa Grid 6
+3016023	0	1	6	0	0	1623	6★ Memory Jack Grid 1
+3026023	0	2	6	0	0	1623	6★ Memory Jack Grid 2
+3036023	0	3	6	0	0	1623	6★ Memory Jack Grid 3
+3046023	0	4	6	0	0	1623	6★ Memory Jack Grid 4
+3056023	0	5	6	0	0	1623	6★ Memory Jack Grid 5
+3066023	0	6	6	0	0	1623	6★ Memory Jack Grid 6
+3015057	0	1	5	0	0	1557	5★ Memory Liv: United Grid 1
+3025057	0	2	5	0	0	1557	5★ Memory Liv: United Grid 2
+3035057	0	3	5	0	0	1557	5★ Memory Liv: United Grid 3
+3045057	0	4	5	0	0	1557	5★ Memory Liv: United Grid 4
+3055057	0	5	5	0	0	1557	5★ Memory Liv: United Grid 5
+3065057	0	6	5	0	0	1557	5★ Memory Liv: United Grid 6
+3016024	0	1	6	0	0	1624	6★ Memory Elizabeth Grid 1
+3026024	0	2	6	0	0	1624	6★ Memory Elizabeth Grid 2
+3036024	0	3	6	0	0	1624	6★ Memory Elizabeth Grid 3
+3046024	0	4	6	0	0	1624	6★ Memory Elizabeth Grid 4
+3056024	0	5	6	0	0	1624	6★ Memory Elizabeth Grid 5
+3066024	0	6	6	0	0	1624	6★ Memory Elizabeth Grid 6
+3016025	0	1	6	0	0	1625	6★ Memory Seraphine Grid 1
+3026025	0	2	6	0	0	1625	6★ Memory Seraphine Grid 2
+3036025	0	3	6	0	0	1625	6★ Memory Seraphine Grid 3
+3046025	0	4	6	0	0	1625	6★ Memory Seraphine Grid 4
+3056025	0	5	6	0	0	1625	6★ Memory Seraphine Grid 5
+3066025	0	6	6	0	0	1625	6★ Memory Seraphine Grid 6
+3015058	0	1	5	0	0	1558	5★ Memory Chrome Grid 1
+3025058	0	2	5	0	0	1558	5★ Memory Chrome Grid 2
+3035058	0	3	5	0	0	1558	5★ Memory Chrome Grid 3
+3045058	0	4	5	0	0	1558	5★ Memory Chrome Grid 4
+3055058	0	5	5	0	0	1558	5★ Memory Chrome Grid 5
+3065058	0	6	5	0	0	1558	5★ Memory Chrome Grid 6
+3016026	0	1	6	0	0	1626	6★ Memory Marco Grid 1
+3026026	0	2	6	0	0	1626	6★ Memory Marco Grid 2
+3036026	0	3	6	0	0	1626	6★ Memory Marco Grid 3
+3046026	0	4	6	0	0	1626	6★ Memory Marco Grid 4
+3056026	0	5	6	0	0	1626	6★ Memory Marco Grid 5
+3066026	0	6	6	0	0	1626	6★ Memory Marco Grid 6
+3016027	0	1	6	0	0	1627	6★ Memory Unimate Grid 1
+3026027	0	2	6	0	0	1627	6★ Memory Unimate Grid 2
+3036027	0	3	6	0	0	1627	6★ Memory Unimate Grid 3
+3046027	0	4	6	0	0	1627	6★ Memory Unimate Grid 4
+3056027	0	5	6	0	0	1627	6★ Memory Unimate Grid 5
+3066027	0	6	6	0	0	1627	6★ Memory Unimate Grid 6
+3016028	0	1	6	0	0	1628	6★ Memory Isabel Grid 1
+3026028	0	2	6	0	0	1628	6★ Memory Isabel Grid 2
+3036028	0	3	6	0	0	1628	6★ Memory Isabel Grid 3
+3046028	0	4	6	0	0	1628	6★ Memory Isabel Grid 4
+3056028	0	5	6	0	0	1628	6★ Memory Isabel Grid 5
+3066028	0	6	6	0	0	1628	6★ Memory Isabel Grid 6
+3016029	0	1	6	0	0	1629	6★ Memory Boone Grid 1
+3026029	0	2	6	0	0	1629	6★ Memory Boone Grid 2
+3036029	0	3	6	0	0	1629	6★ Memory Boone Grid 3
+3046029	0	4	6	0	0	1629	6★ Memory Boone Grid 4
+3056029	0	5	6	0	0	1629	6★ Memory Boone Grid 5
+3066029	0	6	6	0	0	1629	6★ Memory Boone Grid 6
+3018053	0	1	5	0	0	20001	5★ Memory Ceremony - Liv Grid 1
+3028053	0	2	5	0	0	20001	5★ Memory Ceremony - Liv Grid 2
+3038053	0	3	5	0	0	20001	5★ Memory Ceremony - Liv Grid 3
+3048053	0	4	5	0	0	20001	5★ Memory Ceremony - Liv Grid 4
+3058053	0	5	5	0	0	20001	5★ Memory Ceremony - Liv Grid 5
+3068053	0	6	5	0	0	20001	5★ Memory Ceremony - Liv Grid 6
+3016030	0	1	6	0	0	1630	6★ Memory Shelley Grid 1
+3026030	0	2	6	0	0	1630	6★ Memory Shelley Grid 2
+3036030	0	3	6	0	0	1630	6★ Memory Shelley Grid 3
+3046030	0	4	6	0	0	1630	6★ Memory Shelley Grid 4
+3056030	0	5	6	0	0	1630	6★ Memory Shelley Grid 5
+3066030	0	6	6	0	0	1630	6★ Memory Shelley Grid 6
+3019050	0	1	5	0	0	20002	5★ Memory Vera: Scarlet Summers Grid 1
+3029050	0	2	5	0	0	20002	5★ Memory Vera: Scarlet Summers Grid 2
+3039050	0	3	5	0	0	20002	5★ Memory Vera: Scarlet Summers Grid 3
+3049050	0	4	5	0	0	20002	5★ Memory Vera: Scarlet Summers Grid 4
+3059050	0	5	5	0	0	20002	5★ Memory Vera: Scarlet Summers Grid 5
+3069050	0	6	5	0	0	20002	5★ Memory Vera: Scarlet Summers Grid 6
+3016031	0	1	6	0	0	1631	6★ Memory Charlotte Grid 1
+3026031	0	2	6	0	0	1631	6★ Memory Charlotte Grid 2
+3036031	0	3	6	0	0	1631	6★ Memory Charlotte Grid 3
+3046031	0	4	6	0	0	1631	6★ Memory Charlotte Grid 4
+3056031	0	5	6	0	0	1631	6★ Memory Charlotte Grid 5
+3066031	0	6	6	0	0	1631	6★ Memory Charlotte Grid 6
+3016032	0	1	6	0	0	1632	6★ Memory Turing Grid 1
+3026032	0	2	6	0	0	1632	6★ Memory Turing Grid 2
+3036032	0	3	6	0	0	1632	6★ Memory Turing Grid 3
+3046032	0	4	6	0	0	1632	6★ Memory Turing Grid 4
+3056032	0	5	6	0	0	1632	6★ Memory Turing Grid 5
+3066032	0	6	6	0	0	1632	6★ Memory Turing Grid 6
+3016033	0	1	6	0	0	1633	6★ Memory Aline Grid 1
+3026033	0	2	6	0	0	1633	6★ Memory Aline Grid 2
+3036033	0	3	6	0	0	1633	6★ Memory Aline Grid 3
+3046033	0	4	6	0	0	1633	6★ Memory Aline Grid 4
+3056033	0	5	6	0	0	1633	6★ Memory Aline Grid 5
+3066033	0	6	6	0	0	1633	6★ Memory Aline Grid 6
+3016034	0	1	6	0	0	1634	6★ Memory Diesel Grid 1
+3026034	0	2	6	0	0	1634	6★ Memory Diesel Grid 2
+3036034	0	3	6	0	0	1634	6★ Memory Diesel Grid 3
+3046034	0	4	6	0	0	1634	6★ Memory Diesel Grid 4
+3056034	0	5	6	0	0	1634	6★ Memory Diesel Grid 5
+3066034	0	6	6	0	0	1634	6★ Memory Diesel Grid 6
+3016035	0	1	6	0	0	1635	6★ Memory Fran Grid 1
+3026035	0	2	6	0	0	1635	6★ Memory Fran Grid 2
+3036035	0	3	6	0	0	1635	6★ Memory Fran Grid 3
+3046035	0	4	6	0	0	1635	6★ Memory Fran Grid 4
+3056035	0	5	6	0	0	1635	6★ Memory Fran Grid 5
+3066035	0	6	6	0	0	1635	6★ Memory Fran Grid 6
+3016036	0	1	6	0	0	1636	6★ Memory Signa Grid 1
+3026036	0	2	6	0	0	1636	6★ Memory Signa Grid 2
+3036036	0	3	6	0	0	1636	6★ Memory Signa Grid 3
+3046036	0	4	6	0	0	1636	6★ Memory Signa Grid 4
+3056036	0	5	6	0	0	1636	6★ Memory Signa Grid 5
+3066036	0	6	6	0	0	1636	6★ Memory Signa Grid 6
+3016037	0	1	6	0	0	1637	6★ Memory Derketo Grid 1
+3026037	0	2	6	0	0	1637	6★ Memory Derketo Grid 2
+3036037	0	3	6	0	0	1637	6★ Memory Derketo Grid 3
+3046037	0	4	6	0	0	1637	6★ Memory Derketo Grid 4
+3056037	0	5	6	0	0	1637	6★ Memory Derketo Grid 5
+3066037	0	6	6	0	0	1637	6★ Memory Derketo Grid 6
+3016038	0	1	6	0	0	1638	6★ Memory Alphonse Grid 1
+3026038	0	2	6	0	0	1638	6★ Memory Alphonse Grid 2
+3036038	0	3	6	0	0	1638	6★ Memory Alphonse Grid 3
+3046038	0	4	6	0	0	1638	6★ Memory Alphonse Grid 4
+3056038	0	5	6	0	0	1638	6★ Memory Alphonse Grid 5
+3066038	0	6	6	0	0	1638	6★ Memory Alphonse Grid 6
+3016039	0	1	6	0	0	1639	New 6★ Uniframe Memory Grid 1
+3026039	0	2	6	0	0	1639	New 6★ Uniframe Memory Grid 2
+3036039	0	3	6	0	0	1639	New 6★ Uniframe Memory Grid 3
+3046039	0	4	6	0	0	1639	New 6★ Uniframe Memory Grid 4
+3056039	0	5	6	0	0	1639	New 6★ Uniframe Memory Grid 5
+3066039	0	6	6	0	0	1639	New 6★ Uniframe Memory Grid 6
+3016040	0	1	6	0	0	1640	Qu - 6★ Memory Grid 1
+3026040	0	2	6	0	0	1640	Qu - 6★ Memory Grid 2
+3036040	0	3	6	0	0	1640	Qu - 6★ Memory Grid 3
+3046040	0	4	6	0	0	1640	Qu - 6★ Memory Grid 4
+3056040	0	5	6	0	0	1640	Qu - 6★ Memory Grid 5
+3066040	0	6	6	0	0	1640	Qu - 6★ Memory Grid 6
+3016041	0	1	6	0	0	1641	Luna - 6★ Memory Grid 1
+3026041	0	2	6	0	0	1641	Luna - 6★ Memory Grid 2
+3036041	0	3	6	0	0	1641	Luna - 6★ Memory Grid 3
+3046041	0	4	6	0	0	1641	Luna - 6★ Memory Grid 4
+3056041	0	5	6	0	0	1641	Luna - 6★ Memory Grid 5
+3066041	0	6	6	0	0	1641	Luna - 6★ Memory Grid 6
+3016042	0	1	6	0	0	1642	Hanying - 6★ Memory Grid 1
+3026042	0	2	6	0	0	1642	Hanying - 6★ Memory Grid 2
+3036042	0	3	6	0	0	1642	Hanying - 6★ Memory Grid 3
+3046042	0	4	6	0	0	1642	Hanying - 6★ Memory Grid 4
+3056042	0	5	6	0	0	1642	Hanying - 6★ Memory Grid 5
+3066042	0	6	6	0	0	1642	Hanying - 6★ Memory Grid 6
+3016043	0	1	6	0	0	1643	Wanshi - 6★ Memory Grid 1
+3026043	0	2	6	0	0	1643	Wanshi - 6★ Memory Grid 2
+3036043	0	3	6	0	0	1643	Wanshi - 6★ Memory Grid 3
+3046043	0	4	6	0	0	1643	Wanshi - 6★ Memory Grid 4
+3056043	0	5	6	0	0	1643	Wanshi - 6★ Memory Grid 5
+3066043	0	6	6	0	0	1643	Wanshi - 6★ Memory Grid 6
+3016044	0	1	6	0	0	1644	Lucia - 6★ Memory Grid 1
+3026044	0	2	6	0	0	1644	Lucia - 6★ Memory Grid 2
+3036044	0	3	6	0	0	1644	Lucia - 6★ Memory Grid 3
+3046044	0	4	6	0	0	1644	Lucia - 6★ Memory Grid 4
+3056044	0	5	6	0	0	1644	Lucia - 6★ Memory Grid 5
+3066044	0	6	6	0	0	1644	Lucia - 6★ Memory Grid 6
+3016045	0	1	6	0	0	1645	Lightning Shield - 6★ Memory Grid 1
+3026045	0	2	6	0	0	1645	Lightning Shield - 6★ Memory Grid 2
+3036045	0	3	6	0	0	1645	Lightning Shield - 6★ Memory Grid 3
+3046045	0	4	6	0	0	1645	Lightning Shield - 6★ Memory Grid 4
+3056045	0	5	6	0	0	1645	Lightning Shield - 6★ Memory Grid 5
+3066045	0	6	6	0	0	1645	Lightning Shield - 6★ Memory Grid 6
+3016046	0	1	6	0	0	1646	Nanami - 6★ Memory Grid 1
+3026046	0	2	6	0	0	1646	Nanami - 6★ Memory Grid 2
+3036046	0	3	6	0	0	1646	Nanami - 6★ Memory Grid 3
+3046046	0	4	6	0	0	1646	Nanami - 6★ Memory Grid 4
+3056046	0	5	6	0	0	1646	Nanami - 6★ Memory Grid 5
+3066046	0	6	6	0	0	1646	Nanami - 6★ Memory Grid 6
+3016047	0	1	6	0	0	1647	The Merciful One - 6★ Memory Grid 1
+3026047	0	2	6	0	0	1647	The Merciful One - 6★ Memory Grid 2
+3036047	0	3	6	0	0	1647	The Merciful One - 6★ Memory Grid 3
+3046047	0	4	6	0	0	1647	The Merciful One - 6★ Memory Grid 4
+3056047	0	5	6	0	0	1647	The Merciful One - 6★ Memory Grid 5
+3066047	0	6	6	0	0	1647	The Merciful One - 6★ Memory Grid 6
+3016048	0	1	6	0	0	1648	Lilith - 6★ Memory Grid 1
+3026048	0	2	6	0	0	1648	Lilith - 6★ Memory Grid 2
+3036048	0	3	6	0	0	1648	Lilith - 6★ Memory Grid 3
+3046048	0	4	6	0	0	1648	Lilith - 6★ Memory Grid 4
+3056048	0	5	6	0	0	1648	Lilith - 6★ Memory Grid 5
+3066048	0	6	6	0	0	1648	Lilith - 6★ Memory Grid 6
+3016049	0	1	6	0	0	1649	Selena - 6★ Memory Grid 1
+3026049	0	2	6	0	0	1649	Selena - 6★ Memory Grid 2
+3036049	0	3	6	0	0	1649	Selena - 6★ Memory Grid 3
+3046049	0	4	6	0	0	1649	Selena - 6★ Memory Grid 4
+3056049	0	5	6	0	0	1649	Selena - 6★ Memory Grid 5
+3066049	0	6	6	0	0	1649	Selena - 6★ Memory Grid 6
+3016050	0	1	6	0	0	1650	Ice Cluster - 6★ Memory Grid 1
+3026050	0	2	6	0	0	1650	Ice Cluster - 6★ Memory Grid 2
+3036050	0	3	6	0	0	1650	Ice Cluster - 6★ Memory Grid 3
+3046050	0	4	6	0	0	1650	Ice Cluster - 6★ Memory Grid 4
+3056050	0	5	6	0	0	1650	Ice Cluster - 6★ Memory Grid 5
+3066050	0	6	6	0	0	1650	Ice Cluster - 6★ Memory Grid 6
+3016051	0	1	6	0	0	1651	Vera - 6★ Memory Grid 1
+3026051	0	2	6	0	0	1651	Vera - 6★ Memory Grid 2
+3036051	0	3	6	0	0	1651	Vera - 6★ Memory Grid 3
+3046051	0	4	6	0	0	1651	Vera - 6★ Memory Grid 4
+3056051	0	5	6	0	0	1651	Vera - 6★ Memory Grid 5
+3066051	0	6	6	0	0	1651	Vera - 6★ Memory Grid 6
+3016052	0	1	6	0	0	1652	Bianca - 6★ Memory Grid 1
+3026052	0	2	6	0	0	1652	Bianca - 6★ Memory Grid 2
+3036052	0	3	6	0	0	1652	Bianca - 6★ Memory Grid 3
+3046052	0	4	6	0	0	1652	Bianca - 6★ Memory Grid 4
+3056052	0	5	6	0	0	1652	Bianca - 6★ Memory Grid 5
+3066052	0	6	6	0	0	1652	Bianca - 6★ Memory Grid 6
+3016053	0	1	6	0	0	1653	Veronica - 6★ Memory Grid 1
+3026053	0	2	6	0	0	1653	Veronica - 6★ Memory Grid 2
+3036053	0	3	6	0	0	1653	Veronica - 6★ Memory Grid 3
+3046053	0	4	6	0	0	1653	Veronica - 6★ Memory Grid 4
+3056053	0	5	6	0	0	1653	Veronica - 6★ Memory Grid 5
+3066053	0	6	6	0	0	1653	Veronica - 6★ Memory Grid 6
+3016054	0	1	6	0	0	1654	Liv - 6★ Memory Grid 1
+3026054	0	2	6	0	0	1654	Liv - 6★ Memory Grid 2
+3036054	0	3	6	0	0	1654	Liv - 6★ Memory Grid 3
+3046054	0	4	6	0	0	1654	Liv - 6★ Memory Grid 4
+3056054	0	5	6	0	0	1654	Liv - 6★ Memory Grid 5
+3066054	0	6	6	0	0	1654	Liv - 6★ Memory Grid 6
+3016055	0	1	6	0	0	1655	Darkflow - 6★ Memory Grid 1
+3026055	0	2	6	0	0	1655	Darkflow - 6★ Memory Grid 2
+3036055	0	3	6	0	0	1655	Darkflow - 6★ Memory Grid 3
+3046055	0	4	6	0	0	1655	Darkflow - 6★ Memory Grid 4
+3056055	0	5	6	0	0	1655	Darkflow - 6★ Memory Grid 5
+3066055	0	6	6	0	0	1655	Darkflow - 6★ Memory Grid 6
+3016056	0	1	6	0	0	1656	Teddy - 6★ Memory Grid 1
+3026056	0	2	6	0	0	1656	Teddy - 6★ Memory Grid 2
+3036056	0	3	6	0	0	1656	Teddy - 6★ Memory Grid 3
+3046056	0	4	6	0	0	1656	Teddy - 6★ Memory Grid 4
+3056056	0	5	6	0	0	1656	Teddy - 6★ Memory Grid 5
+3066056	0	6	6	0	0	1656	Teddy - 6★ Memory Grid 6
+3016057	0	1	6	0	0	1657	Rosetta - 6★ Memory Grid 1
+3026057	0	2	6	0	0	1657	Rosetta - 6★ Memory Grid 2
+3036057	0	3	6	0	0	1657	Rosetta - 6★ Memory Grid 3
+3046057	0	4	6	0	0	1657	Rosetta - 6★ Memory Grid 4
+3056057	0	5	6	0	0	1657	Rosetta - 6★ Memory Grid 5
+3066057	0	6	6	0	0	1657	Rosetta - 6★ Memory Grid 6
+3016058	0	1	6	0	0	1658	Ultima Slash - 6★ Memory Grid 1
+3026058	0	2	6	0	0	1658	Ultima Slash - 6★ Memory Grid 2
+3036058	0	3	6	0	0	1658	Ultima Slash - 6★ Memory Grid 3
+3046058	0	4	6	0	0	1658	Ultima Slash - 6★ Memory Grid 4
+3056058	0	5	6	0	0	1658	Ultima Slash - 6★ Memory Grid 5
+3066058	0	6	6	0	0	1658	Ultima Slash - 6★ Memory Grid 6
+3016059	0	1	6	0	0	1659	Nirvatia - 6★ Memory Grid 1
+3026059	0	2	6	0	0	1659	Nirvatia - 6★ Memory Grid 2
+3036059	0	3	6	0	0	1659	Nirvatia - 6★ Memory Grid 3
+3046059	0	4	6	0	0	1659	Nirvatia - 6★ Memory Grid 4
+3056059	0	5	6	0	0	1659	Nirvatia - 6★ Memory Grid 5
+3066059	0	6	6	0	0	1659	Nirvatia - 6★ Memory Grid 6
+3016060	0	1	6	0	0	1660	Kamui - 6★ Memory Grid 1
+3026060	0	2	6	0	0	1660	Kamui - 6★ Memory Grid 2
+3036060	0	3	6	0	0	1660	Kamui - 6★ Memory Grid 3
+3046060	0	4	6	0	0	1660	Kamui - 6★ Memory Grid 4
+3056060	0	5	6	0	0	1660	Kamui - 6★ Memory Grid 5
+3066060	0	6	6	0	0	1660	Kamui - 6★ Memory Grid 6
+3016061	0	1	6	0	0	1661	Lucia: Inverse Crown - 6★ Memory Grid 1
+3026061	0	2	6	0	0	1661	Lucia: Inverse Crown - 6★ Memory Grid 2
+3036061	0	3	6	0	0	1661	Lucia: Inverse Crown - 6★ Memory Grid 3
+3046061	0	4	6	0	0	1661	Lucia: Inverse Crown - 6★ Memory Grid 4
+3056061	0	5	6	0	0	1661	Lucia: Inverse Crown - 6★ Memory Grid 5
+3066061	0	6	6	0	0	1661	Lucia: Inverse Crown - 6★ Memory Grid 6
+3016062	0	1	6	0	0	1662	Ignition - 6★ Memory Grid 1
+3026062	0	2	6	0	0	1662	Ignition - 6★ Memory Grid 2
+3036062	0	3	6	0	0	1662	Ignition - 6★ Memory Grid 3
+3046062	0	4	6	0	0	1662	Ignition - 6★ Memory Grid 4
+3056062	0	5	6	0	0	1662	Ignition - 6★ Memory Grid 5
+3066062	0	6	6	0	0	1662	Ignition - 6★ Memory Grid 6
+3016063	0	1	6	0	0	1663	6★ Memory Helentine: Lacrimosa Memory Grid 1
+3026063	0	2	6	0	0	1663	6★ Memory Helentine: Lacrimosa Memory Grid 2
+3036063	0	3	6	0	0	1663	6★ Memory Helentine: Lacrimosa Memory Grid 3
+3046063	0	4	6	0	0	1663	6★ Memory Helentine: Lacrimosa Memory Grid 4
+3056063	0	5	6	0	0	1663	6★ Memory Helentine: Lacrimosa Memory Grid 5
+3066063	0	6	6	0	0	1663	6★ Memory Helentine: Lacrimosa Memory Grid 6
+3016064	0	1	6	0	0	1664	Karenina: Effulgence - 6★ Memory Grid 1
+3026064	0	2	6	0	0	1664	Karenina: Effulgence - 6★ Memory Grid 2
+3036064	0	3	6	0	0	1664	Karenina: Effulgence - 6★ Memory Grid 3
+3046064	0	4	6	0	0	1664	Karenina: Effulgence - 6★ Memory Grid 4
+3056064	0	5	6	0	0	1664	Karenina: Effulgence - 6★ Memory Grid 5
+3066064	0	6	6	0	0	1664	Karenina: Effulgence - 6★ Memory Grid 6
+3015059	0	1	5	0	0	1559	5★ Memory Bianca: Tipsy Night Grid 1
+3025059	0	2	5	0	0	1559	5★ Memory Bianca: Tipsy Night Grid 2
+3035059	0	3	5	0	0	1559	5★ Memory Bianca: Tipsy Night Grid 3
+3045059	0	4	5	0	0	1559	5★ Memory Bianca: Tipsy Night Grid 4
+3055059	0	5	5	0	0	1559	5★ Memory Bianca: Tipsy Night Grid 5
+3065059	0	6	5	0	0	1559	5★ Memory Bianca: Tipsy Night Grid 6
+3015060	0	1	5	0	0	1560	5★ Memory Luna: Fullmoon Laurel Grid 1
+3025060	0	2	5	0	0	1560	5★ Memory Luna: Fullmoon Laurel Grid 2
+3035060	0	3	5	0	0	1560	5★ Memory Luna: Fullmoon Laurel Grid 3
+3045060	0	4	5	0	0	1560	5★ Memory Luna: Fullmoon Laurel Grid 4
+3055060	0	5	5	0	0	1560	5★ Memory Luna: Fullmoon Laurel Grid 5
+3065060	0	6	5	0	0	1560	5★ Memory Luna: Fullmoon Laurel Grid 6
+3015061	0	1	5	0	0	1561	5★ Memory Cerberus - Rave Party Grid 1
+3025061	0	2	5	0	0	1561	5★ Memory Cerberus - Rave Party Grid 2
+3035061	0	3	5	0	0	1561	5★ Memory Cerberus - Rave Party Grid 3
+3045061	0	4	5	0	0	1561	5★ Memory Cerberus - Rave Party Grid 4
+3055061	0	5	5	0	0	1561	5★ Memory Cerberus - Rave Party Grid 5
+3065061	0	6	5	0	0	1561	5★ Memory Cerberus - Rave Party Grid 6
+3015062	0	1	5	0	0	1562	ChaCha: Qu Memory Grid 1
+3025062	0	2	5	0	0	1562	ChaCha: Qu Memory Grid 2
+3035062	0	3	5	0	0	1562	ChaCha: Qu Memory Grid 3
+3045062	0	4	5	0	0	1562	ChaCha: Qu Memory Grid 4
+3055062	0	5	5	0	0	1562	ChaCha: Qu Memory Grid 5
+3065062	0	6	5	0	0	1562	ChaCha: Qu Memory Grid 6
+3015063	0	1	5	0	0	1563	ChaCha: Hanying Memory Grid 1
+3025063	0	2	5	0	0	1563	ChaCha: Hanying Memory Grid 2
+3035063	0	3	5	0	0	1563	ChaCha: Hanying Memory Grid 3
+3045063	0	4	5	0	0	1563	ChaCha: Hanying Memory Grid 4
+3055063	0	5	5	0	0	1563	ChaCha: Hanying Memory Grid 5
+3065063	0	6	5	0	0	1563	ChaCha: Hanying Memory Grid 6
+3015064	0	1	5	0	0	1564	Nabati: Lucia Memory Grid 1
+3025064	0	2	5	0	0	1564	Nabati: Lucia Memory Grid 2
+3035064	0	3	5	0	0	1564	Nabati: Lucia Memory Grid 3
+3045064	0	4	5	0	0	1564	Nabati: Lucia Memory Grid 4
+3055064	0	5	5	0	0	1564	Nabati: Lucia Memory Grid 5
+3065064	0	6	5	0	0	1564	Nabati: Lucia Memory Grid 6
+3015065	0	1	5	0	0	1565	Nabati: Lee Memory Grid 1
+3025065	0	2	5	0	0	1565	Nabati: Lee Memory Grid 2
+3035065	0	3	5	0	0	1565	Nabati: Lee Memory Grid 3
+3045065	0	4	5	0	0	1565	Nabati: Lee Memory Grid 4
+3055065	0	5	5	0	0	1565	Nabati: Lee Memory Grid 5
+3065065	0	6	5	0	0	1565	Nabati: Lee Memory Grid 6
+3015066	0	1	5	0	0	1566	Nabati: Liv Memory Grid 1
+3025066	0	2	5	0	0	1566	Nabati: Liv Memory Grid 2
+3035066	0	3	5	0	0	1566	Nabati: Liv Memory Grid 3
+3045066	0	4	5	0	0	1566	Nabati: Liv Memory Grid 4
+3055066	0	5	5	0	0	1566	Nabati: Liv Memory Grid 5
+3065066	0	6	5	0	0	1566	Nabati: Liv Memory Grid 6
+3015067	0	1	5	0	0	1567	Treasure Gem: Bianca Memory Grid 1
+3025067	0	2	5	0	0	1567	Treasure Gem: Bianca Memory Grid 2
+3035067	0	3	5	0	0	1567	Treasure Gem: Bianca Memory Grid 3
+3045067	0	4	5	0	0	1567	Treasure Gem: Bianca Memory Grid 4
+3055067	0	5	5	0	0	1567	Treasure Gem: Bianca Memory Grid 5
+3065067	0	6	5	0	0	1567	Treasure Gem: Bianca Memory Grid 6
+3015068	0	1	5	0	0	1568	Treasure Gem: Nanami Memory Grid 1
+3025068	0	2	5	0	0	1568	Treasure Gem: Nanami Memory Grid 2
+3035068	0	3	5	0	0	1568	Treasure Gem: Nanami Memory Grid 3
+3045068	0	4	5	0	0	1568	Treasure Gem: Nanami Memory Grid 4
+3055068	0	5	5	0	0	1568	Treasure Gem: Nanami Memory Grid 5
+3065068	0	6	5	0	0	1568	Treasure Gem: Nanami Memory Grid 6
+3015069	0	1	5	0	0	1569	Nanami: Holoverse Memory Grid 1
+3025069	0	2	5	0	0	1569	Nanami: Holoverse Memory Grid 2
+3035069	0	3	5	0	0	1569	Nanami: Holoverse Memory Grid 3
+3045069	0	4	5	0	0	1569	Nanami: Holoverse Memory Grid 4
+3055069	0	5	5	0	0	1569	Nanami: Holoverse Memory Grid 5
+3065069	0	6	5	0	0	1569	Nanami: Holoverse Memory Grid 6
+3015070	0	1	5	0	0	1570	Lawson: Mind Station Memory Grid 1
+3025070	0	2	5	0	0	1570	Lawson: Mind Station Memory Grid 2
+3035070	0	3	5	0	0	1570	Lawson: Mind Station Memory Grid 3
+3045070	0	4	5	0	0	1570	Lawson: Mind Station Memory Grid 4
+3055070	0	5	5	0	0	1570	Lawson: Mind Station Memory Grid 5
+3065070	0	6	5	0	0	1570	Lawson: Mind Station Memory Grid 6
+3015071	0	1	5	0	0	1571	5.5th Anniversary Memory Grid 1
+3025071	0	2	5	0	0	1571	5.5th Anniversary Memory Grid 2
+3035071	0	3	5	0	0	1571	5.5th Anniversary Memory Grid 3
+3045071	0	4	5	0	0	1571	5.5th Anniversary Memory Grid 4
+3055071	0	5	5	0	0	1571	5.5th Anniversary Memory Grid 5
+3065071	0	6	5	0	0	1571	5.5th Anniversary Memory Grid 6
+3015072	0	1	5	0	0	1572	6th Anniversary Memory Grid 1
+3025072	0	2	5	0	0	1572	6th Anniversary Memory Grid 2
+3035072	0	3	5	0	0	1572	6th Anniversary Memory Grid 3
+3045072	0	4	5	0	0	1572	6th Anniversary Memory Grid 4
+3055072	0	5	5	0	0	1572	6th Anniversary Memory Grid 5
+3065072	0	6	5	0	0	1572	6th Anniversary Memory Grid 6
+3015501	0	1	5	0	0	20000	Straylight Terminal Memory Grid 1
+3025501	0	2	5	0	0	20000	Straylight Terminal Memory Grid 2
+3035501	0	3	5	0	0	20000	Straylight Terminal Memory Grid 3
+3045501	0	4	5	0	0	20000	Straylight Terminal Memory Grid 4
+3015650	0	1	5	0	0	50000	Lucia - Summer Daze Memory Grid 1
+3025650	0	2	5	0	0	50000	Lucia - Summer Daze Memory Grid 2
+3035650	0	3	5	0	0	50000	Lucia - Summer Daze Memory Grid 3
+3045650	0	4	5	0	0	50000	Lucia - Summer Daze Memory Grid 4
+3055650	0	5	5	0	0	50000	Lucia - Summer Daze Memory Grid 5
+3065650	0	6	5	0	0	50000	Lucia - Summer Daze Memory Grid 6
