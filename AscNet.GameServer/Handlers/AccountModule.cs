@@ -771,6 +771,8 @@ namespace AscNet.GameServer.Handlers
                 ItemList = Inventory.FilterClientItems(session.inventory.Items),
                 CharacterList = session.character.Characters.Select(ToLoginCharacter).ToList(),
                 EquipList = session.character.Equips,
+                // The client computes construct power from these garrisons before any Border Pact request.
+                AssignChapterRecord = AssignModule.BuildLoginChapterRecords(session),
                 FashionList = session.character.Fashions,
                 WeaponFashionList = session.character.WeaponFashions
                     .Select(fashion => new WeaponFashionData
