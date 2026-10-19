@@ -262,7 +262,6 @@ namespace AscNet.GameServer.Handlers
                 if (player.NormalizeEquipReferences(session.character.Equips.Select(equip => equip.Id).ToHashSet()))
                     player.Save();
 
-                session.AppliedTeamPrefabId = null;
                 session.GuildIdentityReady = false;
                 GuildModule.BeginLogin(session);
 

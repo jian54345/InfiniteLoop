@@ -38,7 +38,6 @@ namespace AscNet.GameServer
         public int BigWorldWorldId;
         public DateTime BigWorldFightStartedAt;
         public readonly Dictionary<(uint EquipId, int Slot), ResonanceInfo> PendingEquipResonances = new();
-        public int? AppliedTeamPrefabId;
         public readonly Dictionary<uint, (uint FashionId, int WeaponFashionId)> RandomFashionRolls = new();
         internal Dictionary<int, (int Value, int State)>? TaskSnapshotProgress;
         internal bool GuildIdentityReady;

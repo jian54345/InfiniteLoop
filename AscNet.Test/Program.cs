@@ -12290,11 +12290,6 @@ namespace AscNet.Test
             foreach (ResonanceInfo resonance in weaponEquip.ResonanceInfo)
                 resonance.TemplateId = alternateResonanceSkill;
             weaponEquip.WeaponOverrunData.ChoseSuit = 0;
-            int[] canonicalResonanceSkills = weaponEquip.ResonanceInfo
-                .OrderBy(resonance => resonance.Slot)
-                .Select(resonance => resonance.TemplateId)
-                .ToArray();
-            int canonicalOverrunSuitId = weaponEquip.WeaponOverrunData.ChoseSuit;
             character.Equips.AddRange([previousWeapon, previousAwareness, untouchedAwareness]);
 
             PartnerData secondPartner = character.Partners.Single(partner => partner.Id == 802);
@@ -12311,7 +12306,6 @@ namespace AscNet.Test
                 "apply with equipment and partner conflicts");
             AssertAppliedState(character, "first apply");
             AssertBattlePresetEffects(71_037, resonanceSkills, overrunSuitId, "first preset battle");
-            harness.Session.AppliedTeamPrefabId = 3;
             InvokeRegisteredRequestHandler(
                 nameof(EquipResonanceRequest),
                 harness.Session,
@@ -12330,13 +12324,10 @@ namespace AscNet.Test
                 nameof(EquipResonanceResponse),
                 "regular resonance after preset", maxPacketsToRead: 8).Code,
                 "regular resonance after preset Code");
-            AssertEqual(true, harness.Session.AppliedTeamPrefabId is null,
-                "regular resonance clears applied preset");
-            canonicalResonanceSkills[0] = resonanceSkills[0];
             AssertBattlePresetEffects(
                 71_043,
-                canonicalResonanceSkills,
-                canonicalOverrunSuitId,
+                resonanceSkills,
+                overrunSuitId,
                 "regular resonance battle after preset");
 
             AssertEqual(0, displacedPartner.CharacterId, "first apply clears displaced partner");
@@ -12370,18 +12361,18 @@ namespace AscNet.Test
             });
             player.TeamPrefabs.Add(alternatePreset);
             DispatchApplyAndAssert(4, 71_038, [801, 802], [2], "alternate preset apply");
-            AssertAppliedState(character, "alternate preset apply");
+            AssertAppliedState(character, "alternate preset apply", [alternateResonanceSkill, resonanceSkills[1]]);
             AssertBattlePresetEffects(
                 71_039,
                 [alternateResonanceSkill, resonanceSkills[1]],
-                0,
-                "alternate preset battle");
+                overrunSuitId,
+                "alternate preset (suit 0 keeps the weapon's suit) battle");
             RejectApply(int.MaxValue, 71_040, "failed apply retains selected preset");
             AssertBattlePresetEffects(
                 71_041,
                 [alternateResonanceSkill, resonanceSkills[1]],
-                0,
-                "failed apply retained battle preset");
+                overrunSuitId,
+                "failed apply retained weapon");
             player.TeamPrefabs.Remove(alternatePreset);
             int chipGroupPlayerSaves = playerCollection.ReplaceOneCalls;
             EquipData recycledAwareness = character.Equips.Single(equip => equip.Id == 7_002);
@@ -12529,6 +12520,14 @@ namespace AscNet.Test
                             $"{name} client receives preset equipment ownership before acknowledgement");
                 }
 
+                EquipData pushedWeapon = equipPush.EquipDataList.Single(equip => equip.Id == weaponEquip.Id);
+                AssertIntegerList(
+                    weaponEquip.ResonanceInfo.OrderBy(value => value.Slot).Select(value => (long)value.TemplateId).ToArray(),
+                    pushedWeapon.ResonanceInfo.OrderBy(value => value.Slot).Select(value => (long)value.TemplateId).ToArray(),
+                    $"{name} equipment push carries the written resonance");
+                AssertEqual(weaponEquip.WeaponOverrunData.ChoseSuit, pushedWeapon.WeaponOverrunData.ChoseSuit,
+                    $"{name} equipment push carries the written overrun suit");
+
                 JObject response = ReadResponseMapPayload(
                     harness,
                     packetId,
@@ -12614,16 +12613,16 @@ namespace AscNet.Test
                     RequiredDynamicInteger(overrun, "ChoseSuit", $"{name} overrun"),
                     $"{name} overrun selection");
                 AssertIntegerList(
-                    canonicalResonanceSkills.Select(value => (long)value).ToArray(),
+                    expectedResonanceSkills.Select(value => (long)value).ToArray(),
                     weaponEquip.ResonanceInfo
                         .OrderBy(resonance => resonance.Slot)
                         .Select(resonance => (long)resonance.TemplateId)
                         .ToArray(),
-                    $"{name} preserves global resonance");
+                    $"{name} writes preset resonance to the real weapon");
                 AssertEqual(
-                    canonicalOverrunSuitId,
+                    expectedOverrunSuitId,
                     weaponEquip.WeaponOverrunData.ChoseSuit,
-                    $"{name} preserves global overrun");
+                    $"{name} real weapon overrun selection");
                 AssertNoExtraPacket(name);
             }
 
@@ -12669,7 +12668,7 @@ namespace AscNet.Test
                 AssertNoExtraPacket(name);
             }
 
-            void AssertAppliedState(AscNet.Common.Database.Character actual, string name)
+            void AssertAppliedState(AscNet.Common.Database.Character actual, string name, IReadOnlyList<int>? expectedSkills = null)
             {
                 AssertEqual(firstCharacterId,
                     actual.Equips.Single(equip => equip.Id == 7_001).CharacterId,
@@ -12687,16 +12686,16 @@ namespace AscNet.Test
                     actual.Equips.Single(equip => equip.Id == 7_005).CharacterId,
                     $"{name} untouched awareness carrier");
                 AssertIntegerList(
-                    canonicalResonanceSkills.Select(value => (long)value).ToArray(),
+                    (expectedSkills ?? resonanceSkills).Select(value => (long)value).ToArray(),
                     actual.Equips.Single(equip => equip.Id == 7_001).ResonanceInfo
                         .OrderBy(value => value.Slot)
                         .Select(value => (long)value.TemplateId)
                         .ToArray(),
-                    $"{name} preserves global weapon resonance");
+                    $"{name} weapon resonance follows the applied preset");
                 AssertEqual(
-                    canonicalOverrunSuitId,
+                    overrunSuitId,
                     actual.Equips.Single(equip => equip.Id == 7_001).WeaponOverrunData.ChoseSuit,
-                    $"{name} preserves global weapon overrun");
+                    $"{name} weapon overrun follows the applied preset");
 
                 PartnerData appliedFirstPartner = actual.Partners.Single(partner => partner.Id == 801);
                 PartnerData appliedSecondPartner = actual.Partners.Single(partner => partner.Id == 802);
@@ -26604,7 +26603,6 @@ namespace AscNet.Test
                     out _);
 
             using LoopbackSessionHarness harness = new(character);
-            harness.Session.AppliedTeamPrefabId = 3;
 
             EquipPutOnRequest request = new()
             {
@@ -26632,8 +26630,6 @@ namespace AscNet.Test
             AssertEqual(0, firstPreviousEquip.CharacterId, "EquipPutOnRequestHandler behavior unequipped first previous Type 1 weapon");
             AssertEqual(0, secondPreviousEquip.CharacterId, "EquipPutOnRequestHandler behavior unequipped second previous Type 1 weapon");
             AssertEqual(characterId + 1, otherCharacterWeapon.CharacterId, "EquipPutOnRequestHandler behavior does not unequip another character's Type 1 weapon");
-            AssertEqual(true, harness.Session.AppliedTeamPrefabId is null,
-                "EquipPutOnRequestHandler clears applied preset");
             AssertEqual(1, characterCollection.ReplaceOneCalls,
                 "EquipPutOnRequestHandler persists equipment assignments");
             AssertEqual(characterId,

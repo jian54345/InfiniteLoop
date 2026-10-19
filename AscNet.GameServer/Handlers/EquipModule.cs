@@ -1257,7 +1257,6 @@ namespace AscNet.GameServer.Handlers
             toEquip.CharacterId = request.CharacterId;
             if (changed)
                 session.character.Save();
-            session.AppliedTeamPrefabId = null;
 
 
             // The client rebuilds each affected slot solely from this push, before the response callback.
@@ -1293,7 +1292,6 @@ namespace AscNet.GameServer.Handlers
             if (changed)
             {
                 session.character.Save();
-                session.AppliedTeamPrefabId = null;
             }
             session.SendPush(new NotifyEquipDataList { EquipDataList = affectedEquips });
 
@@ -1395,7 +1393,6 @@ namespace AscNet.GameServer.Handlers
                     equip.CharacterId = request.CharacterId;
             }
             session.character.Save();
-            session.AppliedTeamPrefabId = null;
             session.SendPush(new NotifyEquipDataList { EquipDataList = affectedEquips });
 
             session.SendResponse(new EquipPutOnChipGroupResponse(), packet.Id);
@@ -1711,7 +1708,6 @@ namespace AscNet.GameServer.Handlers
                 if (commitsWeaponResonance)
                 {
                     session.PendingEquipResonances.Remove((equip.Id, resonance.Slot));
-                    session.AppliedTeamPrefabId = null;
                     TaskModule.RecordEquipmentProgress(session, 12205, [equip]);
                 }
                 else
@@ -1737,7 +1733,6 @@ namespace AscNet.GameServer.Handlers
                 equip.ResonanceInfo.Add(resonance);
                 session.PendingEquipResonances.Remove((equip.Id, resonance.Slot));
                 session.character.Save();
-                session.AppliedTeamPrefabId = null;
 
             }
             else
@@ -1923,7 +1918,6 @@ namespace AscNet.GameServer.Handlers
             session.inventory.Save();
             TaskModule.RecordTableDrivenProgress(session, [(11202, (int?)request.UseItemId, totalMaterialCost)]);
             TaskModule.RecordEquipmentProgress(session, 12205, equips);
-            session.AppliedTeamPrefabId = null;
 
             session.SendPush(archivePush);
             session.SendPush(itemPush);
@@ -2241,7 +2235,6 @@ namespace AscNet.GameServer.Handlers
             {
                 session.character.Save();
                 TaskModule.RecordEquipmentProgress(session, 12205, [equip]);
-                session.AppliedTeamPrefabId = null;
             }
 
             session.SendResponse(new EquipResonanceConfirmResponse(), packet.Id);
@@ -2343,7 +2336,6 @@ namespace AscNet.GameServer.Handlers
 
             equip.WeaponOverrunData.ChoseSuit = request.SuitId;
             session.character.Save();
-            session.AppliedTeamPrefabId = null;
             session.SendResponse(new EquipWeaponChoseOverrunSuitResponse
             {
                 WeaponOverrunData = equip.WeaponOverrunData
