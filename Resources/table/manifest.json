@@ -8808,6 +8808,51 @@
       "transformation": [
         "all authored rows and fields in source order; lists expanded to one-based indexed columns; omitted values remain blank"
       ]
+    },
+    {
+      "path": "share/fuben/maintaineraction/MaintainerActionConfig.tsv",
+      "rows": 1,
+      "columns": 14,
+      "naturalKey": "Id",
+      "filter": "all",
+      "contentSha256": "25052a423f6f99cde0c8c066196e8f716a3b9efcb5cb7e3530f182d5f1c1cf63",
+      "source": [
+        "/Volumes/Lucia/PGR-native-research/PGR_DATA/en/bytes/share/fuben/maintaineraction/MaintainerActionConfig.json (sha256:f9adce4f67d3b47f625cf10e02468a1d4107cb27f8dba498ddaa5096df136a4a)",
+        "Scripts/import_maintaineraction_4_8.py"
+      ],
+      "transformation": [
+        "all authored rows and fields in source order; lists expanded to one-based indexed columns; omitted values remain blank"
+      ]
+    },
+    {
+      "path": "share/fuben/maintaineraction/MaintainerActionLevel.tsv",
+      "rows": 2,
+      "columns": 15,
+      "naturalKey": "Level",
+      "filter": "all",
+      "contentSha256": "9fa00845ea4b51854618b18894811a4fc2c04408082952df593842fdcd6bf47c",
+      "source": [
+        "/Volumes/Lucia/PGR-native-research/PGR_DATA/en/bytes/share/fuben/maintaineraction/MaintainerActionLevel.json (sha256:b037f443c28eb7610f93469105c8b9ef1a73feaaa3b353285f071b7769f35048)",
+        "Scripts/import_maintaineraction_4_8.py"
+      ],
+      "transformation": [
+        "all authored rows and fields in source order; lists expanded to one-based indexed columns; omitted values remain blank"
+      ]
+    },
+    {
+      "path": "share/fuben/maintaineraction/MaintainerActionEvent.tsv",
+      "rows": 20,
+      "columns": 7,
+      "naturalKey": "Id",
+      "filter": "all",
+      "contentSha256": "350dd5f4b52e2fe9d085f52a9b49176b1cc0d05e3f44463cf613660d72c723d3",
+      "source": [
+        "/Volumes/Lucia/PGR-native-research/PGR_DATA/en/bytes/share/fuben/maintaineraction/MaintainerActionEvent.json (sha256:830554f66130d3ec7e8d3de8f0de59661784583a811a4357741f050a657b765e)",
+        "Scripts/import_maintaineraction_4_8.py"
+      ],
+      "transformation": [
+        "all authored rows and fields in source order; lists expanded to one-based indexed columns; omitted values remain blank; the Id-less first event row is written as Id 0"
+      ]
     }
   ],
   "validationNotes": [

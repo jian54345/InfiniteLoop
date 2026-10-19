@@ -1464,6 +1464,8 @@ namespace AscNet.GameServer.Handlers
             SendEmptyStartupPush(session, "NotifyBountyChallengeMonsterDifficultyState");
             session.SendPush(BuildNotifyBriefStoryData(session.player));
             session.SendPush(CerberusGameModule.BuildNotify(session));
+            if (MaintainerActionModule.BuildNotify(session) is { } maintainerAction)
+                session.SendPush(maintainerAction);
             TowerModule.PrepareLogin(session);
             SendEmptyStartupPush(session, "NotifyClickClearData");
             SendEmptyStartupPush(session, "NotifyClientVersion");

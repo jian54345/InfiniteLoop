@@ -37,7 +37,14 @@ Item 35 (S-rank inver material) and item 48 (Uniframe material) have no goods li
 
 ## Operation Guardians
 
-Operation Guardians is Maintainer Action. The client opens it through `OnOpenMaintainerAction` with functional id 1302. This repository has the error strings and the `NotifyMaintainerActionData` schema, and no Maintainer Action share tables. Login does not push that notify. The mode stays unimplemented until those tables exist.
+Operation Guardians is Maintainer Action (functional id 1302, `OnOpenMaintainerAction`). It is open: the 4.8 dump supplies `MaintainerActionConfig`, `MaintainerActionLevel` and `MaintainerActionEvent`, imported by `Scripts/import_maintaineraction_4_8.py`. These parts remain AscNet policy or closed, not retail behavior:
+
+- The node pool for `NodePoolId` 2 is not in the dump. Board generation, node composition, hidden-node selection, card draws, the extra-action amounts of events 8 and 12 (event 13 states +2), the once-per-day start bonus and the warehouse reward (the level's `BoxRewardIds` entry) are labelled AscNet policy, seeded per player and week and persisted.
+- `TimeId` 123 has no calendar row; availability is a labelled permanent-mode policy in `ActivityScheduleService`.
+- Mentor nodes (node type 13, events 16-19, mails 61002/61003) stay inert: the mentor system is absent, so they are never generated and `HasMentorNode` is false.
+- Other players on the board, cross-check requests and shared records are not simulated; the board shows only the owner and `MaintainerActionRecordRequest` returns only their own records.
+- A lost response to a relocation node's event cannot be replayed (the follow-up request is indistinguishable from a retry); every other accepted node event is replayed.
+- Only login creates the first board. A player who reaches the unlock condition mid-session gets the mode's data at their next login.
 
 ## Lightning and Thunder / The Meandering Three shops
 

@@ -3,6 +3,7 @@ using AscNet.Table.V2.share.activity;
 using AscNet.Table.V2.share.condition;
 using AscNet.Table.V2.share.fuben.simulatetrain;
 using AscNet.Table.V2.share.fuben.cerberusgame;
+using AscNet.Table.V2.share.fuben.maintaineraction;
 using AscNet.Table.V2.share.miniactivity.dyemerge;
 using AscNet.Table.V2.share.samecolorgame;
 using AscNet.Table.V2.share.theatre;
@@ -63,6 +64,7 @@ public static class ActivityScheduleService
             .Concat(PunishaarStageEntries())
             .Concat(TransfiniteTowerEntries())
             .Concat(CerberusGameEntries())
+            .Concat(MaintainerActionEntries())
             // AscNet policy (user-approved, not retail parity): the separate self-choice lottery
             // has no authoritative calendar. Its client requires a positive end time.
             .Concat(new[] { new ActivityScheduleEntry(49501, 0, UnboundedEnd,
@@ -114,6 +116,16 @@ public static class ActivityScheduleService
             }
         }
     }
+
+    /// <summary>
+    /// AscNet policy (missing-retail policy): Operation Guardians' MaintainerActionConfig.TimeId has no authored
+    /// calendar row, so the mode is permanently available. A positive end keeps the client's countdown valid.
+    /// An official ActivitySchedule row for the same TimeId precedes this one and wins.
+    /// </summary>
+    private static IEnumerable<ActivityScheduleEntry> MaintainerActionEntries() =>
+        TableReaderV2.Parse<MaintainerActionConfigTable>().Where(row => row.TimeId > 0)
+            .Select(row => new ActivityScheduleEntry(row.TimeId, 0, UnboundedEnd,
+                $"local-policy:MaintainerAction:missing-calendar:permanent-mode:MaintainerActionConfig:Id={row.Id}:TimeId={row.TimeId}"));
 
     /// <summary>
     /// AscNet policy (user-approved): missing Cerberus activity, chapter, and reachable condition

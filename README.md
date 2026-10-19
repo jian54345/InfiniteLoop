@@ -88,6 +88,7 @@ Distributed sources do not carry every retail rule. These surfaces state their l
 | Simulated Battlefield `50402` / `50403` | Availability follows the 4.8 activity start after the 2026-09-24 05:00 UTC update through the explicitly dated shop expiry on 2026-11-05 05:00 UTC. Applying those same bounds to task calendar `50403` is an AscNet scheduling policy, supported by the paired-ID precedent in 4.7, not a claim of an independently recovered retail task end date. |
 | Theatre6 / Nirvatia | Default buff 10 authors starting-skill family 22, whose composition is not shipped. AscNet policy (not retail parity) resolves it through authored Theatre6BuildTag 31 "Dreamlure": the lowest-id level-1, in-pool Nirvatia skill carrying that tag. Characters without such skills still reject. Character-specific mission counters and the authored skill-level-up trigger are implemented. |
 | Lightning and Thunder / The Meandering Three (`CerberusGame`) | Authoritative activity, chapter, story-line, point, challenge and communication tables supply the content and unlock references. Missing retail calendar/progression rules use explicitly labelled AscNet policy; permanent availability is not an automatic clear, route choice or reward grant. Shops `4008`/`4009` remain closed because their catalogs are absent; guide reward totals are not replacement catalogs. See the mode notes below and `Docs/closed.md`. |
+| Operation Guardians (`MaintainerAction`, functional `1302`) | Authoritative `MaintainerActionConfig`/`Level`/`Event` tables, FunctionalOpen `1302`, Stage/Reward tables and client CodeText supply content, limits, stages, rewards and errors. The node pool for `NodePoolId` is not shipped, so board generation, node composition and card draws are **AscNet policy** (seeded from the persisted per-player weekly seed); `TimeId` `123` has no calendar and is permanently available; only the owner appears on the board; mentor nodes are inert. See the section below and `Docs/closed.md`. |
 
 The table decoder verified 16,113 typed tables; 4,461 ancillary raw assets remain undecoded, outside the imported gameplay dependencies.
 
@@ -157,6 +158,22 @@ Run the focused compatibility harness (requires Lua; set `ASCNET_LUA` to its exe
 
 ```bash
 dotnet run --project AscNet.Test/AscNet.Test.csproj -- --cerberus-game-compat-only
+```
+
+### Operation Guardians (MaintainerAction)
+
+Client `UiFubenMaintaineraction`, opened by `OnOpenMaintainerAction` (functional `1302`, gated by its authored level/story condition). `MaintainerActionModule` serves `MaintainerActionPlayCardRequest`, `MaintainerActionNodeEventRequest` and `MaintainerActionRecordRequest`, pushes `NotifyMaintainerActionData` at login (persisted board) and weekly reset, `NotifyMaintainerActionDailyReset` at daily reset, `NotifyMaintainerActionFightWin` after a won board fight, and never needs `NotifyMaintainerActionNodeChange` (every node change rides a `MaintainerActionNodeEventResponse`). Fights use the generic `PreFight`/`FightSettle` pipeline; the mode only authorises the stage (must be the stage of the fight node the player stands on) and resolves the node on a win.
+
+- **Authoritative:** table limits (`MaxDailyActionCount`, `MaxFightWinCount`, `MaxBoxCount`, `MaxWarehouseFinishCount`, `NodeCount`, `MaxCardNumber`, `MaxHandCardCount`), `Level` stage lists (highest `Level` not above the commandant level) and `BoxRewardIds`, event rows (names/texts), stage drops, client CodeText `20103001`-`20103017`.
+- **AscNet policy (not retail parity):** weekly board generation (3-4 fight nodes, 1 simulated fight, 2-3 boxes, an optional warehouse, one each of sensing/card change/direction change/action point, one forward and one back relocation that never land on each other, 3-4 hidden "Unknown Area" nodes, remainder empty road), card draws, the +1/+2 action grants of events `8`/`12`/`13` (only `13` states its amount), the once-per-day start-node bonus, the warehouse reward (the level's `BoxRewardIds` entry), and permanent availability for `TimeId` `123`. Boards derive from a persisted seed and draw counter, so relog, BSON reload and retries reproduce them.
+- **Resets:** daily (`TaskModule` daily period) clears used/extra actions and the start bonus; weekly clears fight/box/warehouse counters, records and position and builds a new board and hand. Rollovers are applied at login and before every request.
+- **Retry safety:** the accepted node event of a landing is stored and replayed verbatim; rewards use `ApplyRewardsOnceAndPersist` claim keys scoped to config/week/landing; a duplicate fight settlement cannot recount a win.
+- **Inert / closed:** mentor nodes (events `16`-`19`, node type `13`, mails `61002`/`61003`) are never generated because the mentor system is absent; other players, cross-check requests and shared records are not simulated.
+
+Run the focused compatibility harness (requires Lua; set `ASCNET_LUA` and, if needed, `ASCNET_PGR_EN_ROOT` to the EN `PGR_Data/en` directory):
+
+```bash
+dotnet run --project AscNet.Test/AscNet.Test.csproj -- --maintainer-action-compat-only
 ```
 
 ### Recitativo di Fantasia (original Theatre)

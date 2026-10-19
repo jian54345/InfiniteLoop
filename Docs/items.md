@@ -46,7 +46,7 @@ Guild contribution (38), Command Bureau EXP (40), Beacon Amplifier Points (46), 
 
 | ID | Name | Notes |
 | --- | --- | --- |
-| 50000 | Basic Construct R&D Ticket | Standard construct banner. This exact ID. |
+| 50000 | Basic Construct R&D Ticket | Standard construct banner. This exact ID. Also the authored reward of Operation Guardians supply crates and the abandoned warehouse (`BoxRewardIds` 40203/40204). |
 | 50001 | Basic Weapon R&D Ticket | Standard weapon banner. This exact ID. |
 | 50003 | Target Weapon R&D Ticket | Shares a balance with 50020. 50020 is spent first. |
 | 50020 | Target Weapon R&D Ticket | Earned stack of the same banner. |

@@ -522,6 +522,12 @@ namespace AscNet.GameServer.Handlers
                 session.SendResponse(new PreFightResponse { Code = cerberusCode }, packet.Id);
                 return;
             }
+            int maintainerActionCode = MaintainerActionModule.ValidatePreFight(session, req.PreFightData);
+            if (maintainerActionCode != 0)
+            {
+                session.SendResponse(new PreFightResponse { Code = maintainerActionCode }, packet.Id);
+                return;
+            }
             int explorePreFightCode = ExploreModule.ValidatePreFight(session, req.PreFightData);
             if (explorePreFightCode != 0)
             {
@@ -3189,6 +3195,8 @@ namespace AscNet.GameServer.Handlers
                 TaskModule.RecordStageParticipation(session, checked((int)req.Result.StageId),
                     acceptedCards.Select(id => checked((int)id)).ToArray(), challengeCount);
             }
+            if (isSuccessfulSettle)
+                MaintainerActionModule.RecordFightWin(session, req.Result);
             session.fight = null;
             session.SendPush(new NotifyStageData() { StageList = new() { stageData } });
             if (isFirstClear)

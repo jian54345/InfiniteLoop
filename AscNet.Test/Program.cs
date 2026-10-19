@@ -85,6 +85,11 @@ namespace AscNet.Test
                     ValidateCerberusGameCompatibility();
                     return;
                 }
+                if (args.Contains("--maintainer-action-compat-only"))
+                {
+                    ValidateMaintainerActionCompatibility();
+                    return;
+                }
                 if (args.Contains("--cn-sdk-config-only"))
                 {
                     ValidateKuroSdkCompatibilityEndpoints().GetAwaiter().GetResult();
@@ -1173,6 +1178,7 @@ namespace AscNet.Test
                 }
 
                 ValidateCerberusGameCompatibility();
+                ValidateMaintainerActionCompatibility();
                 ValidateUltimaAwakenCompatibility();
                 ValidateLoadingOptionCompatibility();
                 ValidateDormDispatchAllCompatibility();
@@ -5369,8 +5375,14 @@ namespace AscNet.Test
                 startupPushes,
                 retailCriticalStartupOrderThroughPassport,
                 "AccountModule.DoLogin retail-critical startup order");
-            AssertEqual(false, startupPushes.Contains(nameof(NotifyMaintainerActionData)),
-                "AccountModule.DoLogin omits inactive Maintainer Action data");
+            // The fixture player (level 80) satisfies FunctionalOpen 1302, so login pushes the persisted board.
+            AssertEqual(true, startupPushesByName.TryGetValue(nameof(NotifyMaintainerActionData), out Packet.Push? maintainerPush),
+                "AccountModule.DoLogin pushes Maintainer Action data for an eligible player");
+            NotifyMaintainerActionData maintainerBoard = MessagePackSerializer.Deserialize<NotifyMaintainerActionData>(maintainerPush!.Content);
+            AssertEqual(TableReaderV2.Parse<AscNet.Table.V2.share.fuben.maintaineraction.MaintainerActionConfigTable>().Single().NodeCount + 1,
+                maintainerBoard.Nodes.Count, "AccountModule.DoLogin Maintainer Action board shape");
+            AssertEqual(true, startupPushes.IndexOf(nameof(NotifyMaintainerActionData)) > startupPushes.IndexOf(nameof(NotifyCerberusGameData)),
+                "AccountModule.DoLogin Maintainer Action data follows Cerberus data");
             int guildDormPlayerDataIndex = RequiredPushIndex(
                 startupPushes,
                 "NotifyGuildDormPlayerData",
