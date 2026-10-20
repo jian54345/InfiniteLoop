@@ -60,20 +60,10 @@ const ID_SETTINGS: i32 = 121;
 const ID_MINIMIZE: i32 = 122;
 const ID_CLOSE: i32 = 123;
 const ID_CARD_HEADING: i32 = 124;
-const ID_FPS_ENABLED: i32 = 125;
-const ID_FPS_VALUE: i32 = 126;
-const ID_FPS_ACTION: i32 = 127;
-const ID_FPS_STATUS: i32 = 128;
-const ID_FPS_VALUE_FIELD: i32 = 129;
 const ID_MUSIC_MUTED: i32 = 130;
-const ID_GAME_TWEAKS: i32 = 131;
 const ID_LAUNCHER_HEADING: i32 = 132;
-const ID_FPS_LABEL: i32 = 133;
 const ID_MUSIC_LABEL: i32 = 134;
-const ID_FPS_UNIT: i32 = 135;
 const ID_STATUS_LINE: i32 = 136;
-const ID_NOFADE: i32 = 137;
-const ID_NOFADE_LABEL: i32 = 138;
 /// Settings action. The home button becomes PLAY after setup succeeds, so this
 /// is the way to run that same setup again.
 const ID_RERUN_SETUP: i32 = 139;
@@ -91,9 +81,9 @@ struct DistributorConfig {
 #[serde(rename_all = "camelCase")]
 struct Settings {
     selected_game: Option<PathBuf>,
-    /// Last FPS the user applied: only the field's default while the unlock is off (the ini holds `fps` only while on).
-    #[serde(default = "default_fps")]
-    fps_value: i32,
+    /// Legacy (pre-ini) frame-rate field: migration input only, never written once consumed.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    fps_value: Option<i32>,
     #[serde(default)]
     music_muted: bool,
     /// Pre-ini launcher versions kept these here; `migrate_legacy_graphics` moves them into the
@@ -110,7 +100,7 @@ impl Default for Settings {
     fn default() -> Self {
         Self {
             selected_game: None,
-            fps_value: default_fps(),
+            fps_value: None,
             music_muted: false,
             fps_enabled: false,
             no_camera_fade: false,
@@ -118,27 +108,28 @@ impl Default for Settings {
         }
     }
 }
-const fn default_fps() -> i32 {
-    240
-}
 fn is_false(value: &bool) -> bool {
     !*value
 }
 
-/// One-time: moves legacy `fps_enabled` / `no_camera_fade` into the selected client's ini (absent keys only).
+/// One-time: moves legacy `fps_enabled` / `fps_value` / `no_camera_fade` into the selected client's ini (absent keys only).
 fn migrate_legacy_graphics(settings: &mut Settings) {
     let Some(game) = settings.selected_game.as_deref() else { return };
+    let fps_value = settings.fps_value.take();
     if !settings.fps_enabled && !settings.no_camera_fade {
         return;
     }
-    let fps = settings.fps_enabled.then_some(settings.fps_value);
+    let fps = settings.fps_enabled.then_some(fps_value.unwrap_or(240));
     let line = match graphics_ini::migrate(game, fps, settings.no_camera_fade) {
         Ok(written) => {
             settings.fps_enabled = false;
             settings.no_camera_fade = false;
             format!("Moved launcher settings into {}: {}", graphics_ini::FILE, if written.is_empty() { "nothing (keys already present)".to_owned() } else { written.join(", ") })
         }
-        Err(e) => local::summarized_error("move FPS/no-camera-fade settings into the graphics ini", &e),
+        Err(e) => {
+            settings.fps_value = fps_value;
+            local::summarized_error("move FPS/no-camera-fade settings into the graphics ini", &e)
+        }
     };
     let _ = local::launcher_log(&line);
 }
@@ -506,7 +497,6 @@ unsafe extern "system" fn wndproc(hwnd: HWND, msg: u32, wp: WPARAM, lp: LPARAM) 
                     )
                 };
                 set_text(hwnd, ID_PATH, &path);
-                sync_graphics_controls(hwnd, &(*ptr).model);
                 let _ = SendMessageW(
                     GetDlgItem(hwnd, ID_MUSIC_MUTED),
                     BM_SETCHECK,
@@ -554,7 +544,7 @@ unsafe extern "system" fn wndproc(hwnd: HWND, msg: u32, wp: WPARAM, lp: LPARAM) 
             let child = HWND(lp.0);
             let dc = HDC(wp.0 as isize);
             let id = GetDlgCtrlID(child);
-            if matches!(id, ID_PATH_FIELD | ID_FPS_VALUE_FIELD | client::ID_FOLDER_FIELD | client::ID_FOLDER) {
+            if matches!(id, ID_PATH_FIELD | client::ID_FOLDER_FIELD | client::ID_FOLDER) {
                 let _ = SetBkColor(dc, COLORREF(0x00221c1b));
                 return LRESULT((*ptr).edit_brush.0);
             }
@@ -791,7 +781,7 @@ unsafe extern "system" fn backdrop_control_subclass(
     }
     if msg != WM_PAINT {
         let result = DefSubclassProc(hwnd, msg, wp, lp);
-        if matches!(GetDlgCtrlID(hwnd), ID_FPS_ENABLED | ID_MUSIC_MUTED | ID_NOFADE)
+        if GetDlgCtrlID(hwnd) == ID_MUSIC_MUTED
             && matches!(msg, BM_SETCHECK | BM_SETSTATE | WM_SETFOCUS | WM_KILLFOCUS | WM_ENABLE)
         {
             let _ = InvalidateRect(hwnd, None, false);
@@ -824,7 +814,7 @@ unsafe extern "system" fn backdrop_control_subclass(
     // Color queries also happen during partial native focus/state updates.
     // Restore only for a full paint, then present backdrop and native text together.
     paint_control_backdrop(hwnd, target, &*state);
-    if matches!(GetDlgCtrlID(hwnd), ID_FPS_ENABLED | ID_MUSIC_MUTED | ID_NOFADE) {
+    if matches!(GetDlgCtrlID(hwnd), ID_MUSIC_MUTED) {
         draw_toggle(hwnd, target, rect, &*state);
     } else {
         let _ = DefSubclassProc(
@@ -1088,61 +1078,6 @@ unsafe fn create_controls(hwnd: HWND, state: &Window) {
     control(
         hwnd,
         w!("BUTTON"),
-        w!("FPS &unlock"),
-        WS_VISIBLE | WS_TABSTOP | WINDOW_STYLE(BS_AUTOCHECKBOX as u32),
-        ID_FPS_ENABLED,
-        0,
-        0,
-        0,
-        0,
-    );
-    control(
-        hwnd,
-        w!("STATIC"),
-        PCWSTR::null(),
-        WS_VISIBLE | WINDOW_STYLE(SS_NOTIFY.0),
-        ID_FPS_VALUE_FIELD,
-        0,
-        0,
-        0,
-        0,
-    );
-    control(
-        hwnd,
-        w!("EDIT"),
-        w!("240"),
-        WS_VISIBLE | WS_TABSTOP | WINDOW_STYLE((ES_AUTOHSCROLL | ES_CENTER | ES_NUMBER) as u32),
-        ID_FPS_VALUE,
-        0,
-        0,
-        0,
-        0,
-    );
-    control(
-        hwnd,
-        w!("BUTTON"),
-        w!("&Apply"),
-        WS_VISIBLE | WS_TABSTOP | WINDOW_STYLE((BS_OWNERDRAW | BS_FLAT) as u32),
-        ID_FPS_ACTION,
-        0,
-        0,
-        0,
-        0,
-    );
-    control(
-        hwnd,
-        w!("STATIC"),
-        w!("Not inspected"),
-        WS_VISIBLE,
-        ID_FPS_STATUS,
-        0,
-        0,
-        0,
-        0,
-    );
-    control(
-        hwnd,
-        w!("BUTTON"),
         w!("Background &music"),
         WS_VISIBLE | WS_TABSTOP | WINDOW_STYLE(BS_AUTOCHECKBOX as u32),
         ID_MUSIC_MUTED,
@@ -1151,24 +1086,9 @@ unsafe fn create_controls(hwnd: HWND, state: &Window) {
         0,
         0,
     );
-    control(
-        hwnd,
-        w!("BUTTON"),
-        w!("No camera &fade"),
-        WS_VISIBLE | WS_TABSTOP | WINDOW_STYLE(BS_AUTOCHECKBOX as u32),
-        ID_NOFADE,
-        0,
-        0,
-        0,
-        0,
-    );
     for (id, text) in [
-        (ID_GAME_TWEAKS, w!("GAME TWEAKS")),
         (ID_LAUNCHER_HEADING, w!("LAUNCHER")),
-        (ID_FPS_LABEL, w!("FPS unlock")),
         (ID_MUSIC_LABEL, w!("Background music")),
-        (ID_NOFADE_LABEL, w!("No camera fade")),
-        (ID_FPS_UNIT, w!("FPS")),
     ] {
         control(hwnd, w!("STATIC"), text, WS_VISIBLE, id, 0, 0, 0, 0);
     }
@@ -1231,16 +1151,9 @@ unsafe fn create_controls(hwnd: HWND, state: &Window) {
         ID_DETAIL,
         ID_CARD_HEADING,
         ID_STATUS_LINE,
-        ID_FPS_STATUS,
-        ID_FPS_ENABLED,
         ID_MUSIC_MUTED,
-        ID_GAME_TWEAKS,
         ID_LAUNCHER_HEADING,
-        ID_FPS_LABEL,
         ID_MUSIC_LABEL,
-        ID_NOFADE,
-        ID_NOFADE_LABEL,
-        ID_FPS_UNIT,
     ] {
         let _ = SetWindowSubclass(GetDlgItem(hwnd, id), Some(backdrop_control_subclass), 1, 0);
     }
@@ -1262,18 +1175,9 @@ unsafe fn create_controls(hwnd: HWND, state: &Window) {
         (ID_MINIMIZE, state.heading_font),
         (ID_CLOSE, state.heading_font),
         (ID_HOME_ACTION, state.heading_font),
-        (ID_FPS_ENABLED, state.body_font),
-        (ID_FPS_VALUE, state.body_font),
-        (ID_FPS_ACTION, state.body_font),
-        (ID_FPS_STATUS, state.label_font),
         (ID_MUSIC_MUTED, state.body_font),
-        (ID_GAME_TWEAKS, state.label_font),
         (ID_LAUNCHER_HEADING, state.label_font),
-        (ID_FPS_LABEL, state.body_font),
         (ID_MUSIC_LABEL, state.body_font),
-        (ID_NOFADE, state.body_font),
-        (ID_NOFADE_LABEL, state.body_font),
-        (ID_FPS_UNIT, state.label_font),
         (ID_STATUS_LINE, state.label_font),
     ] {
         let _ = SendMessageW(
@@ -1302,7 +1206,6 @@ unsafe fn create_controls(hwnd: HWND, state: &Window) {
         ID_MINIMIZE,
         ID_CLOSE,
         ID_HOME_ACTION,
-        ID_FPS_ACTION,
     ] {
         let _ = SetWindowSubclass(GetDlgItem(hwnd, id), Some(button_subclass), 1, 0);
     }
@@ -1316,19 +1219,9 @@ unsafe fn create_controls(hwnd: HWND, state: &Window) {
         ID_RERUN_SETUP,
         ID_ACTION,
         ID_PLAY,
-        ID_FPS_ENABLED,
-        ID_FPS_VALUE_FIELD,
-        ID_FPS_VALUE,
         ID_MUSIC_MUTED,
-        ID_FPS_ACTION,
-        ID_FPS_STATUS,
-        ID_GAME_TWEAKS,
         ID_LAUNCHER_HEADING,
-        ID_FPS_LABEL,
         ID_MUSIC_LABEL,
-        ID_NOFADE,
-        ID_NOFADE_LABEL,
-        ID_FPS_UNIT,
     ] {
         let _ = ShowWindow(GetDlgItem(hwnd, id), SW_HIDE);
     }
@@ -1433,19 +1326,9 @@ unsafe fn layout(hwnd: HWND, width: i32, height: i32, settings: bool, client: bo
         ID_RESTORE,
         ID_RERUN_SETUP,
         client::ID_OPEN,
-        ID_FPS_ENABLED,
-        ID_FPS_VALUE_FIELD,
-        ID_FPS_VALUE,
-        ID_FPS_ACTION,
-        ID_FPS_STATUS,
         ID_MUSIC_MUTED,
-        ID_GAME_TWEAKS,
         ID_LAUNCHER_HEADING,
-        ID_FPS_LABEL,
         ID_MUSIC_LABEL,
-        ID_NOFADE,
-        ID_NOFADE_LABEL,
-        ID_FPS_UNIT,
     ] {
         let _ = ShowWindow(
             GetDlgItem(hwnd, id),
@@ -1523,67 +1406,13 @@ unsafe fn layout(hwnd: HWND, width: i32, height: i32, settings: bool, client: bo
                 true,
             );
         }
-        let fps_y = top + 220;
         let toggle_x = settings_x + settings_content - 72;
-        for (id, y) in [(ID_GAME_TWEAKS, top + 194), (ID_LAUNCHER_HEADING, top + 328)] {
-            let _ = MoveWindow(GetDlgItem(hwnd, id), settings_x, y, settings_content, 20, true);
-        }
-        let _ = MoveWindow(GetDlgItem(hwnd, ID_FPS_LABEL), settings_x, fps_y + 7, 164, 24, true);
-        let _ = MoveWindow(GetDlgItem(hwnd, ID_MUSIC_LABEL), settings_x, top + 355, 220, 24, true);
-        let _ = MoveWindow(GetDlgItem(hwnd, ID_NOFADE_LABEL), settings_x, top + 291, 220, 24, true);
-        let _ = MoveWindow(GetDlgItem(hwnd, ID_FPS_UNIT), toggle_x - 152, fps_y + 9, 40, 22, true);
-        let _ = MoveWindow(
-            GetDlgItem(hwnd, ID_FPS_ENABLED),
-            toggle_x,
-            fps_y,
-            72,
-            36,
-            true,
-        );
-        let _ = MoveWindow(
-            GetDlgItem(hwnd, ID_FPS_VALUE_FIELD),
-            toggle_x - 232,
-            fps_y,
-            72,
-            36,
-            true,
-        );
-        let _ = MoveWindow(
-            GetDlgItem(hwnd, ID_FPS_VALUE),
-            toggle_x - 232,
-            fps_y + (36 - CENTERED_EDIT_HEIGHT) / 2,
-            72,
-            CENTERED_EDIT_HEIGHT,
-            true,
-        );
-        let _ = MoveWindow(
-            GetDlgItem(hwnd, ID_FPS_ACTION),
-            toggle_x - 108,
-            fps_y,
-            96,
-            36,
-            true,
-        );
-        let _ = MoveWindow(
-            GetDlgItem(hwnd, ID_FPS_STATUS),
-            settings_x,
-            fps_y + 40,
-            settings_content,
-            20,
-            true,
-        );
+        let _ = MoveWindow(GetDlgItem(hwnd, ID_LAUNCHER_HEADING), settings_x, top + 194, settings_content, 20, true);
+        let _ = MoveWindow(GetDlgItem(hwnd, ID_MUSIC_LABEL), settings_x, top + 221, 220, 24, true);
         let _ = MoveWindow(
             GetDlgItem(hwnd, ID_MUSIC_MUTED),
             toggle_x,
-            top + 348,
-            72,
-            36,
-            true,
-        );
-        let _ = MoveWindow(
-            GetDlgItem(hwnd, ID_NOFADE),
-            toggle_x,
-            top + 284,
+            top + 214,
             72,
             36,
             true,
@@ -1810,15 +1639,8 @@ unsafe fn command(hwnd: HWND, state: &mut Window, id: i32, notification: u16) {
         return;
     }
     // Static and button click notifications both use zero; scope by control ID.
-    if notification == STN_CLICKED as u16
-        && matches!(id, ID_PATH_FIELD | ID_FPS_VALUE_FIELD)
-    {
-        let edit = match id {
-            ID_PATH_FIELD => ID_PATH,
-            ID_FPS_VALUE_FIELD => ID_FPS_VALUE,
-            _ => return,
-        };
-        let _ = SetFocus(GetDlgItem(hwnd, edit));
+    if notification == STN_CLICKED as u16 && id == ID_PATH_FIELD {
+        let _ = SetFocus(GetDlgItem(hwnd, ID_PATH));
         return;
     }
     if notification == EN_CHANGE as u16 && id == ID_PATH {
@@ -1831,19 +1653,6 @@ unsafe fn command(hwnd: HWND, state: &mut Window, id: i32, notification: u16) {
             m.generation.fetch_add(1, Ordering::SeqCst);
         }
         update_view(hwnd, &state.model);
-        return;
-    }
-    if notification == BN_CLICKED as u16 && id == ID_FPS_ENABLED {
-        let _ = InvalidateRect(GetDlgItem(hwnd, ID_FPS_ENABLED), None, false);
-        return;
-    }
-    if notification == BN_CLICKED as u16 && id == ID_NOFADE {
-        let checked = SendMessageW(GetDlgItem(hwnd, ID_NOFADE), BM_GETCHECK, WPARAM(0), LPARAM(0)).0
-            == BST_CHECKED.0 as isize;
-        let game = state.model.lock().unwrap().settings.selected_game.clone();
-        if let Some(Err(e)) = game.as_deref().map(|g| graphics_ini::set_nofade(g, checked)) {
-            show_fatal(&format!("{e:#}"));
-        }
         return;
     }
     if notification == BN_CLICKED as u16 && id == ID_MUSIC_MUTED {
@@ -1917,7 +1726,6 @@ unsafe fn command(hwnd: HWND, state: &mut Window, id: i32, notification: u16) {
             }
         }
         ID_RESTORE => start_restore(hwnd, state),
-        ID_FPS_ACTION => save_fps_setting(hwnd, state),
         ID_PLAY => {
             if commit_inputs(hwnd, state) {
                 start_play(hwnd, state)
@@ -2045,69 +1853,6 @@ fn start_refresh(hwnd: HWND, check_remote: bool, automatic: bool) {
         })();
         post_event(hwnd, &events, Event::Work(Work { generation, result }));
     });
-}
-/// Persists the FPS checkbox/value; lucia applies it natively from the next game launch.
-fn save_fps_setting(hwnd: HWND, state: &mut Window) {
-    let enabled = unsafe { fps_checked(hwnd) };
-    let text = match unsafe { get_text(hwnd, ID_FPS_VALUE) } {
-        Ok(text) => text,
-        Err(e) => {
-            show_fatal(&format!("{e:#}"));
-            return;
-        }
-    };
-    let value = match text.parse::<i32>() {
-        Ok(value) if value > 0 => Some(value),
-        _ if !enabled => None,
-        _ => {
-            show_fatal("FPS must be a positive whole number.");
-            return;
-        }
-    };
-    let game = {
-        let mut m = state.model.lock().unwrap();
-        let Some(game) = m.settings.selected_game.clone() else {
-            show_fatal("Select a game folder first; the FPS unlock is stored in it.");
-            return;
-        };
-        // The ini only holds the value while the unlock is on; keep the last one as the field's default.
-        if let Some(value) = value {
-            m.settings.fps_value = value;
-            if let Err(e) = save_settings(&m.settings) {
-                show_fatal(&format!("{e:#}"));
-                return;
-            }
-        }
-        game
-    };
-    if let Err(e) = graphics_ini::set_fps(&game, value.filter(|_| enabled)) {
-        show_fatal(&format!("{e:#}"));
-        return;
-    }
-    let message = match value.filter(|_| enabled) {
-        Some(value) => format!("FPS unlock set to {value}; applied by the patch at the next game launch (live in the overlay)"),
-        None => "FPS unlock off; the game keeps its own frame rate at the next launch".to_owned(),
-    };
-    unsafe { append_log(hwnd, state, &message) };
-    unsafe { update_view(hwnd, &state.model) };
-}
-
-/// Loads the FPS/no-fade controls from the selected client's ini (the only place they are stored).
-unsafe fn sync_graphics_controls(hwnd: HWND, model: &Arc<Mutex<Model>>) {
-    let (game, remembered) = {
-        let m = model.lock().unwrap();
-        (m.settings.selected_game.clone(), m.settings.fps_value)
-    };
-    let options = game.as_deref().and_then(|g| graphics_ini::read(g).ok()).unwrap_or_default();
-    set_text(hwnd, ID_FPS_VALUE, &options.fps.unwrap_or(remembered).to_string());
-    for (id, on) in [(ID_FPS_ENABLED, options.fps.is_some()), (ID_NOFADE, options.nofade)] {
-        let _ = SendMessageW(
-            GetDlgItem(hwnd, id),
-            BM_SETCHECK,
-            WPARAM(if on { BST_CHECKED.0 as usize } else { BST_UNCHECKED.0 as usize }),
-            LPARAM(0),
-        );
-    }
 }
 
 fn start_prepare(hwnd: HWND, state: &mut Window) {
@@ -2342,7 +2087,7 @@ unsafe fn finish_work(hwnd: HWND, state: &mut Window, work: Work) {
             m.patch = patch;
             match fps_migration {
                 Ok(Some(value)) => {
-                    fps_status = Some(match m.settings.selected_game.as_deref().map(|g| graphics_ini::set_fps(g, Some(value))) {
+                    fps_status = Some(match m.settings.selected_game.as_deref().map(|g| graphics_ini::set_fps(g, value)) {
                         Some(Ok(())) => format!("Removed the old bundle FPS patch (backup kept); FPS unlock is now native, `fps = {value}` written to {}", graphics_ini::FILE),
                         Some(Err(e)) => local::summarized_error("save the FPS setting after removing the old bundle FPS patch", &e),
                         None => "Removed the old bundle FPS patch, but no game folder is selected to store the FPS setting".to_owned(),
@@ -2414,7 +2159,6 @@ unsafe fn finish_work(hwnd: HWND, state: &mut Window, work: Work) {
     for message in [source_status, patch_status, fps_status].into_iter().flatten() {
         append_log(hwnd, state, &message);
     }
-    sync_graphics_controls(hwnd, &state.model);
     update_view(hwnd, &state.model);
     if automatic_prepare {
         match install::game_running() {
@@ -2429,7 +2173,7 @@ unsafe fn finish_work(hwnd: HWND, state: &mut Window, work: Work) {
 }
 
 unsafe fn update_view(hwnd: HWND, model: &Arc<Mutex<Model>>) {
-    let (update_available, runtime, stopping, busy, can_restore, can_launch, game, status_line) = {
+    let (update_available, runtime, stopping, busy, can_restore, can_launch, status_line) = {
         let m = model.lock().unwrap();
         (
             m.update_available,
@@ -2438,7 +2182,6 @@ unsafe fn update_view(hwnd: HWND, model: &Arc<Mutex<Model>>) {
             m.busy,
             m.settings.selected_game.is_some(),
             can_play(&m).is_ok(),
-            m.settings.selected_game.clone(),
             status_line(&m),
         )
     };
@@ -2457,24 +2200,6 @@ unsafe fn update_view(hwnd: HWND, model: &Arc<Mutex<Model>>) {
     set_enabled(hwnd, ID_RERUN_SETUP, !busy && !services);
     set_enabled(hwnd, ID_RESTORE, !busy && !stopping && can_restore);
     set_enabled(hwnd, ID_PLAY, !busy && can_launch);
-    let ini = game.as_deref().map(graphics_ini::read);
-    set_text(
-        hwnd,
-        ID_FPS_STATUS,
-        &match &ini {
-            None => "Stored in the client folder: select a game first".to_owned(),
-            Some(Ok(options)) => match options.fps {
-                Some(value) => format!("In {}: {value} FPS", graphics_ini::FILE),
-                None => format!("In {}: off", graphics_ini::FILE),
-            },
-            Some(Err(e)) => local::summarized_error("read the graphics ini", e),
-        },
-    );
-    let editable = !busy && game.is_some();
-    set_enabled(hwnd, ID_FPS_ENABLED, editable);
-    set_enabled(hwnd, ID_FPS_VALUE, editable);
-    set_enabled(hwnd, ID_FPS_ACTION, editable);
-    set_enabled(hwnd, ID_NOFADE, editable);
     let home_text = if busy {
         "WORKING…"
     } else if stopping {
@@ -2715,9 +2440,6 @@ unsafe fn set_busy(hwnd: HWND, busy: bool, _text: &str) {
         ID_RERUN_SETUP,
         ID_PLAY,
         ID_HOME_ACTION,
-        ID_FPS_ENABLED,
-        ID_FPS_VALUE,
-        ID_FPS_ACTION,
     ] {
         if busy || matches!(id, ID_PATH | ID_BROWSE | ID_CHECK) {
             set_enabled(hwnd, id, !busy)
@@ -2731,15 +2453,6 @@ unsafe fn set_busy(hwnd: HWND, busy: bool, _text: &str) {
     }
     let _ = SetWindowLongPtrW(progress, GWLP_USERDATA, busy as isize);
     let _ = InvalidateRect(progress, None, false);
-}
-unsafe fn fps_checked(hwnd: HWND) -> bool {
-    SendMessageW(
-        GetDlgItem(hwnd, ID_FPS_ENABLED),
-        BM_GETCHECK,
-        WPARAM(0),
-        LPARAM(0),
-    )
-    .0 == BST_CHECKED.0 as isize
 }
 
 fn wide(s: &str) -> Vec<u16> {

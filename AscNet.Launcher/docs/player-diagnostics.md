@@ -124,16 +124,17 @@ its own cache under `%APPDATA%\KR_G148\A1393\` (agreement, `KRSDKCache.json`) an
 ## FPS unlock and no camera fade
 
 Both are plain keys of `ascnet-graphics.ini` (see the table below): `fps = <n>` and `nofade = on`. There are no
-environment variables and no extra threads; the graphics worker applies them. Three ways to set them, all editing the
-same file:
+environment variables and no extra threads; the graphics worker applies them. The launcher has no controls for them.
+Two ways to set them, both editing the same file:
 
-- Launcher > Settings > **FPS unlock** + frame-rate field + **Apply** (off by default, 240 FPS suggested) and
-  **No camera fade** write or remove only those two keys in `ascnet-graphics.ini`; every other line (renderscale,
-  overrides, comments) is kept as is. The launcher shows what the file currently says.
 - The in-game overlay (`overlay = on`, Ctrl+Shift+G): **Unlock FPS** + target field (enabling uses the last value, else
   240; values below 1 are refused inline) and **No camera fade** apply live within 0.5 s; **Save to ascnet-graphics.ini**
   rewrites the whole file.
 - Editing the file by hand (read at game start).
+
+One-time migration: values saved by older launchers (FPS unlock, frame-rate field, no camera fade) are copied once into
+the selected client's `ascnet-graphics.ini`, only for keys the file does not have yet, and then dropped from the
+launcher's settings.
 
 Same on EN/TW/KR/JP.
 

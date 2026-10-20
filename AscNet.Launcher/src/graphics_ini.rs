@@ -1,43 +1,14 @@
-//! The two launcher-owned keys (`fps`, `nofade`) of `ascnet-graphics.ini` beside PGR.exe.
-//! lucia owns the rest of the file; every other line is preserved verbatim.
+//! Launcher-side editing of `fps` / `nofade` in `ascnet-graphics.ini` beside PGR.exe, used only by the
+//! one-time legacy migrations. lucia and its overlay own the file; every other line is preserved verbatim.
 use anyhow::{Context, Result};
 use std::{fs, io, path::Path};
 
 pub const FILE: &str = "ascnet-graphics.ini";
 
-#[derive(Debug, Default, PartialEq, Eq)]
-pub struct Options {
-    pub fps: Option<i32>,
-    pub nofade: bool,
-}
-
 /// `(key, value)` of a setting line; same comment/case rules as lucia's parser.
 fn setting(line: &str) -> Option<(String, &str)> {
     let (key, value) = line.split(['#', ';']).next()?.split_once('=')?;
     Some((key.trim().to_ascii_lowercase(), value.trim()))
-}
-
-fn flag(value: &str) -> Option<bool> {
-    match value.to_ascii_lowercase().as_str() {
-        "1" | "true" | "on" => Some(true),
-        "0" | "false" | "off" => Some(false),
-        _ => None,
-    }
-}
-
-/// Last valid occurrence wins; invalid values are ignored (lucia reports them).
-pub fn parse(text: &str) -> Options {
-    let mut options = Options::default();
-    for (key, value) in text.lines().filter_map(setting) {
-        match key.as_str() {
-            "fps" if !value.is_empty() && value.bytes().all(|b| b.is_ascii_digit()) => {
-                options.fps = value.parse().ok().filter(|n| *n > 0).or(options.fps)
-            }
-            "nofade" => options.nofade = flag(value).unwrap_or(options.nofade),
-            _ => {}
-        }
-    }
-    options
 }
 
 /// Sets (`Some`) or removes (`None`) `key`: the last occurrence is replaced in place,
@@ -84,18 +55,9 @@ fn write_text(client: &Path, text: &str) -> Result<()> {
     fs::rename(&temp, &path).with_context(|| format!("replace {FILE}"))
 }
 
-pub fn read(client: &Path) -> Result<Options> {
-    Ok(parse(&read_text(client)?))
-}
-
-/// `Some(n)` writes `fps = n`; `None` removes the line (the game keeps its own frame rate).
-pub fn set_fps(client: &Path, fps: Option<i32>) -> Result<()> {
-    write_text(client, &edit(&read_text(client)?, "fps", fps.map(|n| n.to_string()).as_deref()))
-}
-
-/// On writes `nofade = on`; off removes the line (absent means off).
-pub fn set_nofade(client: &Path, on: bool) -> Result<()> {
-    write_text(client, &edit(&read_text(client)?, "nofade", on.then_some("on")))
+/// Writes `fps = n`, replacing any existing value.
+pub fn set_fps(client: &Path, fps: i32) -> Result<()> {
+    write_text(client, &edit(&read_text(client)?, "fps", Some(&fps.to_string())))
 }
 
 /// Writes legacy launcher-JSON values only for keys the ini does not have yet.
@@ -124,14 +86,6 @@ mod tests {
     const SAMPLE: &str = "# header\nrenderscale = 1.5\nfps = 60 # old\n\n; note\nOverlay = on\nfps = 120\nGfx.Field = 3\n";
 
     #[test]
-    fn last_occurrence_wins_when_reading() {
-        assert_eq!(parse(SAMPLE), Options { fps: Some(120), nofade: false });
-        assert_eq!(parse("nofade = on\nnofade = off\n").nofade, false);
-        assert_eq!(parse("fps = 60\nfps = abc\nfps = -5\n").fps, Some(60));
-        assert_eq!(parse("NoFade = TRUE").nofade, true);
-    }
-
-    #[test]
     fn edit_replaces_last_drops_duplicates_keeps_the_rest() {
         let out = edit(SAMPLE, "fps", Some("144"));
         assert_eq!(out, "# header\nrenderscale = 1.5\n\n; note\nOverlay = on\nfps = 144\nGfx.Field = 3\n");
@@ -146,27 +100,23 @@ mod tests {
     }
 
     #[test]
-    fn files_round_trip_and_migration_only_fills_absent_keys() {
+    fn migration_only_fills_absent_keys_and_set_fps_replaces() {
         let dir = std::env::temp_dir().join(format!("ascnet-ini-test-{}", std::process::id()));
         fs::create_dir_all(&dir).unwrap();
         let _ = fs::remove_file(dir.join(FILE));
-        assert_eq!(read(&dir).unwrap(), Options::default());
+        let text = |d: &Path| fs::read_to_string(d.join(FILE)).unwrap();
 
         assert_eq!(migrate(&dir, Some(90), true).unwrap(), ["fps", "nofade"]);
-        assert_eq!(read(&dir).unwrap(), Options { fps: Some(90), nofade: true });
+        assert_eq!(text(&dir), "fps = 90\nnofade = on\n");
         // Present keys are never overwritten.
         assert!(migrate(&dir, Some(30), true).unwrap().is_empty());
-        assert_eq!(read(&dir).unwrap().fps, Some(90));
 
         fs::write(dir.join(FILE), "# keep\nnofade = off\n").unwrap();
         assert_eq!(migrate(&dir, Some(75), true).unwrap(), ["fps"]);
-        assert_eq!(fs::read_to_string(dir.join(FILE)).unwrap(), "# keep\nnofade = off\nfps = 75\n");
+        assert_eq!(text(&dir), "# keep\nnofade = off\nfps = 75\n");
 
-        set_fps(&dir, None).unwrap();
-        set_nofade(&dir, true).unwrap();
-        assert_eq!(fs::read_to_string(dir.join(FILE)).unwrap(), "# keep\nnofade = on\n");
-        set_nofade(&dir, false).unwrap();
-        assert_eq!(fs::read_to_string(dir.join(FILE)).unwrap(), "# keep\n");
+        set_fps(&dir, 144).unwrap();
+        assert_eq!(text(&dir), "# keep\nnofade = off\nfps = 144\n");
         fs::remove_dir_all(dir).unwrap();
     }
 }
