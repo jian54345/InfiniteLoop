@@ -1,0 +1,474 @@
+//! Main-thread Lua bridge for the graphics worker, plus the `ultrawide` feature built on it.
+//!
+//! Lua must run on Unity's main thread, so the worker only queues chunks. A detour on `XLuaEngine.Update()` drains
+//! the queue and runs each chunk through `XLua.LuaEnv.DoString(string chunk, string chunkName, LuaTable env)` on
+//! `XLuaEngine.Env` (the game's one LuaEnv: public static field, read fresh every call because `Reload` replaces it).
+//!
+//! Why `XLuaEngine.Update` (RVA 0x17CEDA0, verified in GameAssembly.dll 4.8):
+//! - It is `static void Update()` with no arguments, so the JmpBack detour needs no argument handling.
+//! - Callers: `XGame.Update` (0x2377E00) calls it once per frame right after `XGraphicManager.Update`, and
+//!   `XGame.Update` is called only by `XApplication.Update` (0x2371FC0, a MonoBehaviour `Update`, i.e. the Unity
+//!   main thread, once per frame).
+//! - Its body only ticks `Env` once a second; it is the Lua engine's own pump, the one place the game itself
+//!   re-enters the LuaEnv from C#.
+//!
+//! A chunk that returns the string `pending` is not finished: it is retried every 0.5 s (its way to say "the game's
+//! Lua is not initialised yet"). Any other first return value is the outcome message; a managed exception (Lua
+//! error) is the failure message. Both are kept per chunk name for the worker (`LuaBridge::outcome`).
+//!
+//! The detour never blocks the game thread: queue and outcome locks are `try_lock`ed (a missed lock is retried next
+//! frame) and nothing runs once `QUITTING` is set.
+use std::{
+    cell::RefCell,
+    ffi::{c_void, CString},
+    ptr::null_mut,
+    sync::{atomic::{AtomicI32, AtomicU64, AtomicUsize, Ordering::Relaxed}, Mutex, OnceLock, PoisonError},
+    time::{Duration, Instant},
+};
+
+use anyhow::{anyhow, bail, Result};
+use ilhook::x64::Registers;
+
+use super::graphics_tweaks::{code, QUITTING};
+use super::ok;
+use crate::interceptor::Interceptor;
+use crate::modules::il2cpp::{self, export, Il2cpp};
+use crate::util::{c_string, read_csharp_string, readable};
+
+/// The screen is re-read every this many frames (about a quarter second at 60 fps).
+const SCREEN_EVERY: u64 = 15;
+const RETRY: Duration = Duration::from_millis(500);
+const PENDING: &str = "pending";
+/// `Il2CppArray`: klass, monitor, bounds, max_length (8 bytes each), then the elements.
+const ARRAY_VECTOR: usize = 0x20;
+const MESSAGE_LIMIT: usize = 400;
+
+type StringNew = unsafe extern "system" fn(*const i8) -> *mut c_void;
+type FormatException = unsafe extern "system" fn(*mut c_void, *mut i8, i32);
+type ArrayLength = unsafe extern "system" fn(*mut c_void) -> u32;
+type ObjectClass = unsafe extern "system" fn(*mut c_void) -> *mut c_void;
+type ClassName = unsafe extern "system" fn(*mut c_void) -> *const i8;
+type ClassMethods = unsafe extern "system" fn(*mut c_void, *mut *mut c_void) -> *mut c_void;
+type MethodName = unsafe extern "system" fn(*mut c_void) -> *const i8;
+
+/// Everything the detour needs, resolved once in `install`.
+struct Ctx {
+    il: Il2cpp,
+    string_new: StringNew,
+    format_exception: FormatException,
+    array_length: ArrayLength,
+    object_class: ObjectClass,
+    class_name: ClassName,
+    do_string: *mut c_void,
+    env_field: *mut c_void,
+    /// `Screen.get_width`, `get_height`, `get_fullScreen`.
+    screen: [*mut c_void; 3],
+}
+
+// The raw pointers are IL2CPP metadata (MethodInfo/FieldInfo), immutable and valid for the process lifetime.
+unsafe impl Send for Ctx {}
+unsafe impl Sync for Ctx {}
+
+static CTX: OnceLock<Ctx> = OnceLock::new();
+
+struct Job {
+    name: String,
+    source: String,
+    due: Instant,
+}
+
+#[derive(Clone)]
+struct Outcome {
+    name: String,
+    seq: u64,
+    result: Result<String, String>,
+}
+
+static INBOX: Mutex<Vec<Job>> = Mutex::new(Vec::new());
+static INBOX_LEN: AtomicUsize = AtomicUsize::new(0);
+static OUTCOMES: Mutex<Vec<Outcome>> = Mutex::new(Vec::new());
+static SEQ: AtomicU64 = AtomicU64::new(0);
+/// 0 = not read yet.
+static SCREEN_W: AtomicI32 = AtomicI32::new(0);
+static SCREEN_H: AtomicI32 = AtomicI32::new(0);
+/// -1 = not read yet.
+static SCREEN_FULL: AtomicI32 = AtomicI32::new(-1);
+
+/// State owned by the main thread (only the detour touches it).
+#[derive(Default)]
+struct Local {
+    jobs: Vec<Job>,
+    frame: u64,
+    /// Outcomes whose `OUTCOMES` lock was busy; published on a later frame.
+    late: Vec<Outcome>,
+    /// Chunk names already logged as waiting for the game's Lua.
+    waiting: Vec<String>,
+}
+
+thread_local! {
+    static LOCAL: RefCell<Local> = RefCell::new(Local::default());
+}
+
+/// Owns the `XLuaEngine.Update` detour; keep it alive as long as the worker runs (dropping unhooks).
+pub(super) struct LuaBridge {
+    _hook: Interceptor,
+}
+
+impl LuaBridge {
+    pub(super) unsafe fn install(il: &Il2cpp, assemblies: &[*mut c_void]) -> Result<Self> {
+        let (engine, _) = il.find_class(assemblies, "", "XLuaEngine").ok_or_else(|| anyhow!("class `XLuaEngine` not found in any of {} loaded assemblies", assemblies.len()))?;
+        let env_name = CString::new("Env")?;
+        let env_field = (il.class_field)(engine, env_name.as_ptr());
+        if env_field.is_null() {
+            bail!("`XLuaEngine.Env` field not found in this build")
+        }
+        let update = il.static_method(engine, "XLuaEngine", "Update", &[])?;
+        let (lua_env, _) = il.find_class(assemblies, "XLua", "LuaEnv").ok_or_else(|| anyhow!("class `XLua.LuaEnv` not found in any of {} loaded assemblies", assemblies.len()))?;
+        let class_methods: ClassMethods = export("il2cpp_class_get_methods")?;
+        let method_name: MethodName = export("il2cpp_method_get_name")?;
+        let do_string = find_do_string(il, lua_env, class_methods, method_name)?;
+        let (screen, _) = il.find_class(assemblies, "UnityEngine", "Screen").ok_or_else(|| anyhow!("class `UnityEngine.Screen` not found"))?;
+        let screen = [
+            il.static_method(screen, "Screen", "get_width", &[])?,
+            il.static_method(screen, "Screen", "get_height", &[])?,
+            il.static_method(screen, "Screen", "get_fullScreen", &[])?,
+        ];
+        let ctx = Ctx {
+            il: *il,
+            string_new: export("il2cpp_string_new")?,
+            format_exception: export("il2cpp_format_exception")?,
+            array_length: export("il2cpp_array_length")?,
+            object_class: export("il2cpp_object_get_class")?,
+            class_name: export("il2cpp_class_get_name")?,
+            do_string,
+            env_field,
+            screen,
+        };
+        CTX.set(ctx).map_err(|_| anyhow!("the Lua bridge is already installed"))?;
+        let at = code(update, "XLuaEngine.Update")?;
+        let mut hook = Interceptor::new();
+        hook.attach(at, on_update)?;
+        ok("Lua bridge", &format!("XLuaEngine.Update at 0x{at:X} runs queued chunks through LuaEnv.DoString on the main thread"));
+        Ok(Self { _hook: hook })
+    }
+
+    /// Queues `source` to run on the main thread under `chunk_name`; a chunk still queued or waiting under the same
+    /// name is replaced. Never calls IL2CPP, so any thread may use it.
+    pub(super) fn queue(&self, chunk_name: &str, source: String) {
+        let mut inbox = INBOX.lock().unwrap_or_else(PoisonError::into_inner);
+        inbox.retain(|job| job.name != chunk_name);
+        inbox.push(Job { name: chunk_name.to_owned(), source, due: Instant::now() });
+        INBOX_LEN.store(inbox.len(), Relaxed);
+    }
+
+    /// The latest finished run of `chunk_name`: a sequence number (new for every run) and the returned message or
+    /// the error text.
+    pub(super) fn outcome(&self, chunk_name: &str) -> Option<(u64, Result<String, String>)> {
+        let outcomes = OUTCOMES.lock().unwrap_or_else(PoisonError::into_inner);
+        outcomes.iter().find(|o| o.name == chunk_name).map(|o| (o.seq, o.result.clone()))
+    }
+
+    /// `Screen.width/height` as the main thread last read them.
+    pub(super) fn screen() -> Option<(i32, i32)> {
+        let (w, h) = (SCREEN_W.load(Relaxed), SCREEN_H.load(Relaxed));
+        (w > 0 && h > 0).then_some((w, h))
+    }
+
+    /// `Screen.fullScreen` as the main thread last read it.
+    pub(super) fn fullscreen() -> Option<bool> {
+        match SCREEN_FULL.load(Relaxed) {
+            -1 => None,
+            value => Some(value != 0),
+        }
+    }
+}
+
+/// `LuaEnv` has two `DoString(x, string chunkName, LuaTable env)` overloads (`byte[]` and `string`); the
+/// name-and-count lookup would pick either, so the first parameter type decides.
+unsafe fn find_do_string(il: &Il2cpp, class: *mut c_void, methods: ClassMethods, name: MethodName) -> Result<*mut c_void> {
+    let mut iterator = null_mut();
+    loop {
+        let method = methods(class, &mut iterator);
+        if method.is_null() {
+            bail!("`LuaEnv.DoString(string, string, LuaTable)` not found in this build")
+        }
+        if c_string(name(method)).as_deref() == Some("DoString") && (il.param_count)(method) == 3 && il.type_name_of((il.param)(method, 0)) == "System.String" {
+            return Ok(method);
+        }
+    }
+}
+
+unsafe extern "win64" fn on_update(_: *mut Registers, _: usize) {
+    if QUITTING.load(Relaxed) {
+        return;
+    }
+    let Some(ctx) = CTX.get() else { return };
+    // try_borrow: a chunk that somehow re-enters `XLuaEngine.Update` must not panic across the hook.
+    LOCAL.with(|local| {
+        if let Ok(mut local) = local.try_borrow_mut() {
+            tick(ctx, &mut local);
+        }
+    });
+}
+
+unsafe fn tick(ctx: &Ctx, local: &mut Local) {
+    local.frame += 1;
+    if local.frame % SCREEN_EVERY == 1 {
+        read_screen(ctx);
+    }
+    if !local.late.is_empty() {
+        for outcome in std::mem::take(&mut local.late) {
+            publish(local, outcome);
+        }
+    }
+    if INBOX_LEN.load(Relaxed) != 0 {
+        if let Ok(mut inbox) = INBOX.try_lock() {
+            for job in inbox.drain(..) {
+                local.jobs.retain(|queued| queued.name != job.name);
+                local.jobs.push(job);
+            }
+            INBOX_LEN.store(0, Relaxed);
+        }
+    }
+    if local.jobs.is_empty() {
+        return;
+    }
+    let mut env = null_mut::<c_void>();
+    (ctx.il.static_get)(ctx.env_field, (&mut env as *mut *mut c_void).cast());
+    if env.is_null() {
+        return; // the Lua engine has not created its environment yet; chunks wait
+    }
+    let now = Instant::now();
+    let mut index = 0;
+    while index < local.jobs.len() {
+        if local.jobs[index].due > now {
+            index += 1;
+            continue;
+        }
+        let mut job = local.jobs.remove(index);
+        let result = run(ctx, env, &job);
+        if matches!(&result, Ok(Some(message)) if message == PENDING) {
+            if !local.waiting.contains(&job.name) {
+                local.waiting.push(job.name.clone());
+                ok(&format!("lua {}", job.name), "the game's Lua is not initialised yet; retrying every 0.5 s");
+            }
+            job.due = now + RETRY;
+            local.jobs.insert(index, job);
+            index += 1;
+            continue;
+        }
+        local.waiting.retain(|name| *name != job.name);
+        let result = result.map(Option::unwrap_or_default);
+        if let Err(message) = &result {
+            il2cpp::failed(&format!("lua {}", job.name), message, "effects of the chunk before the error are not rolled back");
+        }
+        let outcome = Outcome { name: job.name, seq: SEQ.fetch_add(1, Relaxed) + 1, result };
+        publish(local, outcome);
+    }
+}
+
+fn publish(local: &mut Local, outcome: Outcome) {
+    match OUTCOMES.try_lock() {
+        Ok(mut outcomes) => match outcomes.iter_mut().find(|o| o.name == outcome.name) {
+            Some(existing) => *existing = outcome,
+            None => outcomes.push(outcome),
+        },
+        Err(_) => local.late.push(outcome),
+    }
+}
+
+unsafe fn read_screen(ctx: &Ctx) {
+    let [width, height, full] = ctx.screen;
+    if let (Some(w), Some(h)) = (ctx.il.call_get_int(width), ctx.il.call_get_int(height)) {
+        SCREEN_W.store(w, Relaxed);
+        SCREEN_H.store(h, Relaxed);
+    }
+    if let Some(full) = ctx.il.call_get_bool(full) {
+        SCREEN_FULL.store(i32::from(full), Relaxed);
+    }
+}
+
+/// `Ok(None)` = the chunk finished without a string result.
+unsafe fn run(ctx: &Ctx, env: *mut c_void, job: &Job) -> Result<Option<String>, String> {
+    let chunk = CString::new(job.source.as_str()).map_err(|_| "the Lua source contains a NUL byte".to_owned())?;
+    let name = CString::new(format!("={}", job.name)).map_err(|_| "the chunk name contains a NUL byte".to_owned())?;
+    // The string objects stay referenced from this stack frame, which the GC scans, until the call returns.
+    let mut args = [(ctx.string_new)(chunk.as_ptr()), (ctx.string_new)(name.as_ptr()), null_mut()];
+    let mut exception = null_mut();
+    let results = (ctx.il.invoke)(ctx.do_string, env, args.as_mut_ptr(), &mut exception);
+    if !exception.is_null() {
+        let mut buffer = [0i8; 2048];
+        (ctx.format_exception)(exception, buffer.as_mut_ptr(), buffer.len() as i32 - 1);
+        let text = c_string(buffer.as_ptr()).unwrap_or_else(|| "managed exception (message unreadable)".into());
+        return Err(text.split_whitespace().collect::<Vec<_>>().join(" ").chars().take(MESSAGE_LIMIT).collect());
+    }
+    Ok(first_string(ctx, results))
+}
+
+/// The first element of the returned `object[]` when it is a string.
+unsafe fn first_string(ctx: &Ctx, array: *mut c_void) -> Option<String> {
+    if array.is_null() || (ctx.array_length)(array) == 0 {
+        return None;
+    }
+    let slot = array as usize + ARRAY_VECTOR;
+    if !readable(slot, std::mem::size_of::<usize>()) {
+        return None;
+    }
+    let element = *(slot as *const *mut c_void);
+    if element.is_null() || c_string((ctx.class_name)((ctx.object_class)(element))).as_deref() != Some("String") {
+        return None;
+    }
+    read_csharp_string(element as usize)
+}
+
+/// Lua for the `ultrawide` option. The game decides fullscreen eligibility in Lua (`XUiPcManager.FullScreenableCheck`
+/// compares the device resolution with the largest row of `UiPcScreenResolution.json`, max 2560x2048, and forces a
+/// window above it), so it is lifted by adding rows to the cached table `XUiPcConfig.GetTabUiPcResolution()` and
+/// clearing `XSettingHelper.ForceWindow`. Fullscreen then goes through the game's own `XUiPcManager.SetResolution`
+/// (`XSettingHelper.SetResolution`, then the saved-preference writes), so its settings stay consistent.
+///
+/// Native side, disassembled in GameAssembly.dll 4.8, has no clamp: `XSettingHelper.SetResolution` (0x23AECB0) calls
+/// `Screen.SetResolution(w, h, mode, 0)`; `XResolutionManager.SetResImpl` (0x242FC50) stores Width/Height/Aspect and
+/// calls `Screen.SetResolution(w, h, Screen.fullScreen)` (or `SetupExtraRenderScale`); `XResolutionManager.Init`
+/// (0x242F370) copies `Screen.width/height` into OriginWidth/OriginHeight; `XResolutionManager.Update` (0x2430520)
+/// re-runs Init when `Screen.width/height` differ from them; `XDriver.ForceFullScreenable` (0x2372720) only applies
+/// a configured resolution. None of them compares against a maximum or an aspect ratio.
+///
+/// `ascnet = true` marks the rows we add, so turning the option off removes exactly those. Both chunks wait
+/// (`pending`) until `XDataCenter.UiPcManager` exists; it is created in `XDataCenter.InitDependency`, which
+/// `XGame.Start2` runs right before its own `FullScreenableCheck()`, so ours always runs after the game's.
+/// `rawget` because the game locks `_G` (reading an unknown global logs an error).
+const LUA_PREAMBLE: &str = r#"
+local data = rawget(_G, "XDataCenter")
+local config = rawget(_G, "XUiPcConfig")
+local pc = data and rawget(data, "UiPcManager")
+if not (pc and config) then return "pending" end
+local screen = CS.UnityEngine.Screen
+local before = string.format("%dx%d %s, ForceWindow=%s", screen.width, screen.height,
+    screen.fullScreen and "fullscreen" or "windowed", tostring(CS.XSettingHelper.ForceWindow))
+local list = config.GetTabUiPcResolution()
+local prefs = CS.UnityEngine.PlayerPrefs
+-- The window size before ultrawide, kept in PlayerPrefs so it survives restarts: switching on saves the game's
+-- "last screen" as the monitor size, and the game's own fallback then picks an unrelated table size.
+local KEY_W, KEY_H = "AscNetUltrawideWindowW", "AscNetUltrawideWindowH"
+"#;
+
+const LUA_ON: &str = r#"
+-- The game's gate measures the whole desktop (two stacked monitors read 5120x2520); fullscreen must target the
+-- monitor the window is on, which is Screen.currentResolution.
+local width, height = pc.GetDeviceScreenResolution()
+width, height = math.floor(width), math.floor(height)
+local current = screen.currentResolution
+local target_w, target_h = current.width, current.height
+local function has(x, y)
+    for _, size in ipairs(list) do
+        if size.x == x and size.y == y then return true end
+    end
+    return false
+end
+local added = {}
+for _, size in ipairs({ { width, height }, { 2560, 1080 }, { 3440, 1440 }, { 5120, 1440 } }) do
+    if size[1] <= width and size[2] <= height and not has(size[1], size[2]) then
+        list[#list + 1] = { x = size[1], y = size[2], ascnet = true }
+        added[#added + 1] = string.format("%dx%d", size[1], size[2])
+    end
+end
+table.sort(list, function(a, b)
+    if a.x == b.x then return a.y < b.y end
+    return a.x < b.x
+end)
+if not screen.fullScreen then
+    prefs.SetInt(KEY_W, screen.width)
+    prefs.SetInt(KEY_H, screen.height)
+    prefs.Save()
+end
+CS.XSettingHelper.ForceWindow = false
+pc.SetResolution(target_w, target_h, CS.UnityEngine.FullScreenMode.FullScreenWindow)
+return string.format("was %s; desktop %dx%d; monitor %dx%d; resolution table +[%s]; requested fullscreen window", before, width, height, target_w, target_h, table.concat(added, ", "))
+"#;
+
+const LUA_OFF: &str = r#"
+local removed = {}
+for i = #list, 1, -1 do
+    if list[i].ascnet then
+        removed[#removed + 1] = string.format("%dx%d", list[i].x, list[i].y)
+        table.remove(list, i)
+    end
+end
+pc.FullScreenableCheck()
+local current = screen.currentResolution
+local width, height = current.width, current.height
+local w, h = prefs.GetInt(KEY_W, 0), prefs.GetInt(KEY_H, 0)
+local restored = "none saved"
+if w > 0 and h > 0 and w <= width and h <= height then
+    pc.SetResolution(w, h, CS.UnityEngine.FullScreenMode.Windowed)
+    restored = string.format("%dx%d windowed", w, h)
+end
+return string.format("was %s; resolution table -[%s]; the game's own windowed fallback re-checked; restored window %s", before, table.concat(removed, ", "), restored)
+"#;
+
+const ULTRAWIDE: &str = "ultrawide";
+/// Ticks (0.5 s) to wait for the screen to change after a run before reporting the resolution anyway.
+const WATCH_TICKS: u8 = 8;
+
+/// `ultrawide = on|off`: applies the option on every change of the wish (and once at start when on).
+#[derive(Default)]
+pub(super) struct Ultrawide {
+    applied: bool,
+    /// Sequence number of the last outcome already reported.
+    seen: u64,
+    /// Screen/fullscreen at the last finished run, and ticks waited for a change.
+    watch: Option<(Option<(i32, i32)>, Option<bool>, u8)>,
+}
+
+impl Ultrawide {
+    /// Called every worker tick; problems are appended to `errors` under `ultrawide`.
+    pub(super) fn update(&mut self, bridge: &Result<LuaBridge, String>, want: bool, errors: &mut Vec<(String, String)>) {
+        let bridge = match bridge {
+            Ok(bridge) => bridge,
+            Err(message) => {
+                if want {
+                    errors.push((ULTRAWIDE.into(), message.clone()));
+                }
+                return;
+            }
+        };
+        if want != self.applied {
+            self.applied = want;
+            bridge.queue(ULTRAWIDE, format!("{LUA_PREAMBLE}{}", if want { LUA_ON } else { LUA_OFF }));
+        }
+        if let Some((seq, result)) = bridge.outcome(ULTRAWIDE) {
+            if seq != self.seen {
+                self.seen = seq;
+                if let Ok(message) = &result {
+                    ok(ULTRAWIDE, message);
+                    self.watch = Some((LuaBridge::screen(), LuaBridge::fullscreen(), 0));
+                }
+            }
+            if let Err(message) = result {
+                errors.push((ULTRAWIDE.into(), message));
+            }
+        }
+        if let Some((screen, fullscreen, ticks)) = &mut self.watch {
+            *ticks += 1;
+            let now = (LuaBridge::screen(), LuaBridge::fullscreen());
+            if now != (*screen, *fullscreen) || *ticks >= WATCH_TICKS {
+                let size = now.0.map_or("?".to_owned(), |(w, h)| format!("{w}x{h}"));
+                let mode = now.1.map_or("?", |full| if full { "fullscreen" } else { "windowed" });
+                ok(ULTRAWIDE, &format!("screen now {size} {mode}"));
+                self.watch = None;
+            }
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn chunks_keep_the_pending_contract() {
+        assert!(LUA_PREAMBLE.contains(&format!("return \"{PENDING}\"")));
+        assert!(LUA_ON.contains("ascnet = true") && LUA_OFF.contains("list[i].ascnet"));
+    }
+}

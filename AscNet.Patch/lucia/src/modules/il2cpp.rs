@@ -46,6 +46,7 @@ pub fn failed(what: &str, reason: &str, consequence: &str) {
     diag::log(&diag::failed_line("lucia", what, &format!("{reason}; {consequence}")));
 }
 
+#[derive(Clone, Copy)]
 pub struct Il2cpp {
     domain_get: DomainGet,
     domain_assemblies: DomainGetAssemblies,
@@ -182,5 +183,12 @@ impl Il2cpp {
         let mut exception = std::ptr::null_mut();
         let boxed = (self.invoke)(method, std::ptr::null_mut(), std::ptr::null_mut(), &mut exception);
         (exception.is_null() && !boxed.is_null()).then(|| *((self.unbox)(boxed) as *const i32))
+    }
+
+    /// Calls a static `bool m()`; `None` if the call threw or returned null.
+    pub unsafe fn call_get_bool(&self, method: *mut c_void) -> Option<bool> {
+        let mut exception = std::ptr::null_mut();
+        let boxed = (self.invoke)(method, std::ptr::null_mut(), std::ptr::null_mut(), &mut exception);
+        (exception.is_null() && !boxed.is_null()).then(|| *((self.unbox)(boxed) as *const u8) != 0)
     }
 }

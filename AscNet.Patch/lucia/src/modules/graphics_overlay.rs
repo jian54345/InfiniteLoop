@@ -86,6 +86,7 @@ impl Overlay {
             ui.text_colored(RED, message);
         }
         self.draw_extras(ui, desired, status);
+        draw_display(ui, desired, status);
         ui.separator();
         let mut save = None;
         if ui.button("Save to ascnet-graphics.ini") {
@@ -98,6 +99,7 @@ impl Overlay {
             self.buffers.clear();
             desired.fps = None;
             desired.nofade = false;
+            desired.ultrawide = false;
         }
         if !self.save_result.is_empty() {
             ui.text_wrapped(&self.save_result);
@@ -213,6 +215,19 @@ impl Overlay {
         if let Some((_, message)) = status.errors.iter().find(|(key, _)| key == "nofade") {
             ui.text_colored(RED, message);
         }
+    }
+}
+
+/// Ultrawide fullscreen toggle and the screen as the game's main thread last read it.
+fn draw_display(ui: &Ui, desired: &mut Desired, status: &Status) {
+    ui.separator();
+    ui.text("Display");
+    ui.checkbox("Ultrawide fullscreen", &mut desired.ultrawide);
+    let size = status.screen.map_or("-".to_owned(), |(w, h)| format!("{w}x{h}"));
+    let mode = status.fullscreen.map_or("-", |full| if full { "fullscreen" } else { "windowed" });
+    ui.text(format!("screen: {size} {mode}"));
+    if let Some((_, message)) = status.errors.iter().find(|(key, _)| key == "ultrawide") {
+        ui.text_colored(RED, message);
     }
 }
 

@@ -17,6 +17,8 @@ pub(crate) struct Desired {
     pub fps: Option<i32>,
     /// `nofade = on`: camera/character proximity fade disabled while true.
     pub nofade: bool,
+    /// `ultrawide = on`: fullscreen at the monitor's own resolution, past the game's 2560x2048 cap.
+    pub ultrawide: bool,
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -56,12 +58,15 @@ pub(crate) struct Status {
     pub game_render_scale: Option<f32>,
     /// `GetRenderScale()` as the pipeline reports it.
     pub effective_render_scale: Option<f32>,
-    /// Latest problem per override key (`Setting.Field`), `renderscale`, `fps` or `nofade`; cleared when the key
+    /// Latest problem per override key (`Setting.Field`), `renderscale`, `fps`, `nofade` or `ultrawide`; cleared when the key
     /// applies cleanly.
     pub errors: Vec<(String, String)>,
     /// `Application.targetFrameRate` and `QualitySettings.vSyncCount` as last read (None until read).
     pub target_frame_rate: Option<i32>,
     pub vsync_count: Option<i32>,
+    /// `Screen.width/height` and `Screen.fullScreen` as the main thread last read them (None until read).
+    pub screen: Option<(i32, i32)>,
+    pub fullscreen: Option<bool>,
 }
 
 #[derive(Debug, Default)]

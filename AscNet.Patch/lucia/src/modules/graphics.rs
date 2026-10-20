@@ -8,12 +8,16 @@
 //!   only the values that changed, tagged with the active Unity scene. Read-only.
 //! - `fps` / `nofade`: frame-rate unlock and camera-fade removal, applied each tick on this same thread
 //!   (`graphics_extras.rs`); switching either off restores the game's own values.
+//! - `ultrawide`: fullscreen at the monitor's own resolution past the game's 2560x2048 cap. Needs Lua run on the main
+//!   thread, so a detour on `XLuaEngine.Update` drains queued chunks (`graphics_lua.rs`).
 //!
 //! Dump roots: `UnityEngine.Rendering.Universal.RenderPIplineQualityManger` (statics, `GetRuntimeData()`, `Is*()`
 //! flags), `XQualityManager.Instance`, `XResolutionManager` statics and the managed `UnityEngine.QualitySettings`
 //! getters that survived stripping. Objects are followed only into quality/pipeline classes (see `followed`).
 #[path = "graphics_extras.rs"]
 mod graphics_extras;
+#[path = "graphics_lua.rs"]
+mod graphics_lua;
 #[path = "graphics_live.rs"]
 mod graphics_live;
 #[path = "graphics_overlay.rs"]
@@ -34,6 +38,7 @@ use crate::util::{c_string, read_csharp_string};
 use graphics_live::{Live, Status, LIVE};
 use graphics_params::{Config, CONFIG_FILE};
 use graphics_extras::{Fps, NoFade};
+use graphics_lua::{LuaBridge, Ultrawide};
 use graphics_tweaks::{Overrides, RenderScale, QUITTING};
 
 const URP_NAMESPACE: &str = "UnityEngine.Rendering.Universal";
@@ -110,6 +115,9 @@ pub fn spawn_if_enabled() {
     }
     if config.nofade {
         requested.push("nofade = on".into());
+    }
+    if config.ultrawide {
+        requested.push("ultrawide = on".into());
     }
     if config.overlay {
         requested.push("overlay = on".into());
@@ -465,6 +473,11 @@ unsafe fn run() -> Result<()> {
     let assemblies = il.wait_attach()?;
     let mut fps = Fps::new(&il, &assemblies);
     let mut nofade = NoFade::new(&il, &assemblies);
+    let bridge = LuaBridge::install(&il, &assemblies).map_err(|error| format!("{error:#}"));
+    if let Err(message) = &bridge {
+        failed("Lua bridge", &format!("{message}; ultrawide is unavailable"));
+    }
+    let mut ultrawide = Ultrawide::default();
     if live().desired.overlay {
         graphics_overlay::start();
     }
@@ -504,6 +517,7 @@ unsafe fn run() -> Result<()> {
         }
         let (target_frame_rate, vsync_count) = fps.update(&il, desired.fps, &mut errors);
         nofade.update(&il, desired.nofade, &mut errors);
+        ultrawide.update(&bridge, desired.ultrawide, &mut errors);
         let catalogue = if runtime_data.is_null() { Vec::new() } else { graphics_tweaks::catalogue(&walker, runtime_data, &overrides) };
         if quitting() {
             park(&il);
@@ -518,6 +532,8 @@ unsafe fn run() -> Result<()> {
                 errors,
                 target_frame_rate,
                 vsync_count,
+                screen: LuaBridge::screen(),
+                fullscreen: LuaBridge::fullscreen(),
             };
         }
         if desired.dump && tick % DUMP_EVERY == 0 {

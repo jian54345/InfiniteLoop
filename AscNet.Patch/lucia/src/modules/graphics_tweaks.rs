@@ -72,7 +72,7 @@ unsafe extern "win64" fn on_enable_extra_render_scale(registers: *mut Registers,
     }
 }
 
-unsafe fn code(method: *mut c_void, name: &str) -> Result<usize> {
+pub(super) unsafe fn code(method: *mut c_void, name: &str) -> Result<usize> {
     if !readable(method as usize, std::mem::size_of::<usize>()) {
         bail!("MethodInfo of `{name}` is not readable memory")
     }
