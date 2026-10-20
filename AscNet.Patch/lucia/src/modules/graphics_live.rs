@@ -19,6 +19,8 @@ pub(crate) struct Desired {
     pub nofade: bool,
     /// `ultrawide = on`: fullscreen at the monitor's own resolution, past the game's 2560x2048 cap.
     pub ultrawide: bool,
+    /// `ui16x9 = on`: on screens wider than 16:9, UI cameras draw into a centred 16:9 viewport.
+    pub ui16x9: bool,
 }
 
 #[derive(Clone, Debug, PartialEq)]

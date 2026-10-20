@@ -8,6 +8,8 @@
 /// - `nofade = on`: disable the camera / character proximity fade.
 /// - `ultrawide = on`: run fullscreen at the monitor's own resolution (21:9, 32:9, ...) instead of the game's
 ///   2560x2048 cap (see `graphics_lua.rs`); off restores the game's own window fallback.
+/// - `ui16x9 = on`: on screens wider than 16:9, draw the UI (menus, HUD, UI-scene model cameras) in a centred 16:9
+///   viewport while the 3D world keeps the full width (see `graphics_lua.rs`).
 /// - `renderscale = 2.0`: internal render scale in every scene (0.25-4.0).
 /// - `<Setting>.<Field> = value`: override one field of a render-pipeline quality setting object, e.g.
 ///   `ShadowSetting.CascadeSize = 4096`. Names are the game's own (case-sensitive) and are checked in-game;
@@ -31,6 +33,7 @@ pub(crate) struct Config {
     pub fps: Option<i32>,
     pub nofade: bool,
     pub ultrawide: bool,
+    pub ui16x9: bool,
     pub render_scale: Option<f32>,
     /// In file order; a repeated key keeps its first position and takes the last value.
     pub overrides: Vec<Override>,
@@ -39,7 +42,7 @@ pub(crate) struct Config {
 
 impl From<Config> for Desired {
     fn from(config: Config) -> Self {
-        Desired { render_scale: config.render_scale, overrides: config.overrides, dump: config.dump, overlay: config.overlay, fps: config.fps, nofade: config.nofade, ultrawide: config.ultrawide }
+        Desired { render_scale: config.render_scale, overrides: config.overrides, dump: config.dump, overlay: config.overlay, fps: config.fps, nofade: config.nofade, ultrawide: config.ultrawide, ui16x9: config.ui16x9 }
     }
 }
 
@@ -49,7 +52,7 @@ pub(crate) fn render(desired: &Desired) -> String {
     if let Some(scale) = desired.render_scale {
         text.push_str(&format!("renderscale = {scale}\n"));
     }
-    for (key, on) in [("dump", desired.dump), ("overlay", desired.overlay), ("ultrawide", desired.ultrawide)] {
+    for (key, on) in [("dump", desired.dump), ("overlay", desired.overlay), ("ultrawide", desired.ultrawide), ("ui16x9", desired.ui16x9)] {
         if on {
             text.push_str(&format!("{key} = on\n"));
         }
@@ -101,6 +104,10 @@ impl Config {
                     Some(on) => config.ultrawide = on,
                     None => config.problems.push(format!("line {number}: `ultrawide` must be 1/0, true/false or on/off, got `{value}`")),
                 },
+                "ui16x9" => match flag(value) {
+                    Some(on) => config.ui16x9 = on,
+                    None => config.problems.push(format!("line {number}: `ui16x9` must be 1/0, true/false or on/off, got `{value}`")),
+                },
                 "renderscale" => match value.parse::<f32>().ok().filter(|s| (RENDER_SCALE_RANGE.0..=RENDER_SCALE_RANGE.1).contains(s)) {
                     Some(scale) => config.render_scale = Some(scale),
                     None => config.problems.push(format!(
@@ -114,7 +121,7 @@ impl Config {
                         }
                     }
                     Some(_) if value.is_empty() => config.problems.push(format!("line {number}: `{key}` has no value")),
-                    _ => config.problems.push(format!("line {number}: unknown key `{key}` (expected dump, overlay, renderscale, fps, nofade, ultrawide or Setting.Field)")),
+                    _ => config.problems.push(format!("line {number}: unknown key `{key}` (expected dump, overlay, renderscale, fps, nofade, ultrawide, ui16x9 or Setting.Field)")),
                 },
             }
         }
@@ -122,7 +129,7 @@ impl Config {
     }
 
     pub(crate) fn active(&self) -> bool {
-        self.dump || self.overlay || self.nofade || self.ultrawide || self.fps.is_some() || self.render_scale.is_some() || !self.overrides.is_empty()
+        self.dump || self.overlay || self.nofade || self.ultrawide || self.ui16x9 || self.fps.is_some() || self.render_scale.is_some() || !self.overrides.is_empty()
     }
 }
 
@@ -238,10 +245,10 @@ mod tests {
         assert_eq!(config.problems, [
             "line 1: `dump` must be 1/0, true/false or on/off, got `yes`",
             "line 2: expected `key = value`, got `renderscale 2`",
-            "line 3: unknown key `shadows` (expected dump, overlay, renderscale, fps, nofade, ultrawide or Setting.Field)",
-            "line 4: unknown key `A.B.C` (expected dump, overlay, renderscale, fps, nofade, ultrawide or Setting.Field)",
+            "line 3: unknown key `shadows` (expected dump, overlay, renderscale, fps, nofade, ultrawide, ui16x9 or Setting.Field)",
+            "line 4: unknown key `A.B.C` (expected dump, overlay, renderscale, fps, nofade, ultrawide, ui16x9 or Setting.Field)",
             "line 5: `ShadowSetting.CascadeSize` has no value",
-            "line 6: unknown key `9a.b` (expected dump, overlay, renderscale, fps, nofade, ultrawide or Setting.Field)",
+            "line 6: unknown key `9a.b` (expected dump, overlay, renderscale, fps, nofade, ultrawide, ui16x9 or Setting.Field)",
         ]);
     }
 
@@ -303,6 +310,14 @@ mod tests {
     }
 
     #[test]
+    fn ui16x9_flag() {
+        let config = Config::parse("UI16x9 = on");
+        assert!(config.ui16x9 && config.active() && config.problems.is_empty());
+        assert!(!Config::parse("ui16x9 = off").ui16x9);
+        assert_eq!(Config::parse("ui16x9 = yes").problems, ["line 1: `ui16x9` must be 1/0, true/false or on/off, got `yes`"]);
+    }
+
+    #[test]
     fn nofade_flag() {
         let config = Config::parse("nofade = On");
         assert!(config.nofade && config.active() && config.problems.is_empty());
@@ -326,6 +341,7 @@ mod tests {
             fps: Some(240),
             nofade: true,
             ultrawide: true,
+            ui16x9: true,
         };
         let config = Config::parse(&render(&desired));
         assert!(config.problems.is_empty());

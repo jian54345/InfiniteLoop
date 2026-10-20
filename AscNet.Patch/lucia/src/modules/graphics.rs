@@ -38,7 +38,7 @@ use crate::util::{c_string, read_csharp_string};
 use graphics_live::{Live, Status, LIVE};
 use graphics_params::{Config, CONFIG_FILE};
 use graphics_extras::{Fps, NoFade};
-use graphics_lua::{LuaBridge, Ultrawide};
+use graphics_lua::{LuaBridge, UiFit, Ultrawide};
 use graphics_tweaks::{Overrides, RenderScale, QUITTING};
 
 const URP_NAMESPACE: &str = "UnityEngine.Rendering.Universal";
@@ -118,6 +118,9 @@ pub fn spawn_if_enabled() {
     }
     if config.ultrawide {
         requested.push("ultrawide = on".into());
+    }
+    if config.ui16x9 {
+        requested.push("ui16x9 = on".into());
     }
     if config.overlay {
         requested.push("overlay = on".into());
@@ -478,6 +481,7 @@ unsafe fn run() -> Result<()> {
         failed("Lua bridge", &format!("{message}; ultrawide is unavailable"));
     }
     let mut ultrawide = Ultrawide::default();
+    let mut ui_fit = UiFit::default();
     if live().desired.overlay {
         graphics_overlay::start();
     }
@@ -518,6 +522,7 @@ unsafe fn run() -> Result<()> {
         let (target_frame_rate, vsync_count) = fps.update(&il, desired.fps, &mut errors);
         nofade.update(&il, desired.nofade, &mut errors);
         ultrawide.update(&bridge, desired.ultrawide, &mut errors);
+        ui_fit.update(&bridge, desired.ui16x9, &mut errors);
         let catalogue = if runtime_data.is_null() { Vec::new() } else { graphics_tweaks::catalogue(&walker, runtime_data, &overrides) };
         if quitting() {
             park(&il);

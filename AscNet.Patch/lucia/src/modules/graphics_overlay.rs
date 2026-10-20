@@ -100,6 +100,7 @@ impl Overlay {
             desired.fps = None;
             desired.nofade = false;
             desired.ultrawide = false;
+            desired.ui16x9 = false;
         }
         if !self.save_result.is_empty() {
             ui.text_wrapped(&self.save_result);
@@ -226,8 +227,11 @@ fn draw_display(ui: &Ui, desired: &mut Desired, status: &Status) {
     let size = status.screen.map_or("-".to_owned(), |(w, h)| format!("{w}x{h}"));
     let mode = status.fullscreen.map_or("-", |full| if full { "fullscreen" } else { "windowed" });
     ui.text(format!("screen: {size} {mode}"));
-    if let Some((_, message)) = status.errors.iter().find(|(key, _)| key == "ultrawide") {
-        ui.text_colored(RED, message);
+    ui.checkbox("UI in centred 16:9", &mut desired.ui16x9);
+    for key in ["ultrawide", "ui16x9"] {
+        if let Some((_, message)) = status.errors.iter().find(|(k, _)| k == key) {
+            ui.text_colored(RED, message);
+        }
     }
 }
 

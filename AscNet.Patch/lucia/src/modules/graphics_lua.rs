@@ -462,6 +462,83 @@ impl Ultrawide {
     }
 }
 
+/// Lua for `ui16x9`, through the game's own safe area (disassembled, 4.8). Every UI canvas scales 1920x1080 with
+/// `Expand`, so at 32:9 it is 3840x1080 and edge-anchored content spreads. Moving the UI cameras' viewport does not
+/// work: the canvases keep sizing from `Screen` and clicks map wrongly. Instead:
+/// - `XResolutionManager.SetSafeArea(Rect px)` stores `CustomSafeArea`; `RefreshResolution()` re-runs `Init`, which
+///   copies it into `OriginSafeArea` (it falls back to `Screen.safeArea` when the custom rect is `Rect.zero`).
+/// - `XAppPlatBridge.GetNotchSize()` is `(OriginWidth - OriginSafeArea.width) / 2`; `XUiSafeAreaAdapter.SetRectTransform`
+///   insets every `SafeAreaContentPane` by that (converted to canvas units) plus the player's `SpecialScreenOff`.
+///   `SetSpecialScreenOff` (via `XSetManager.SetScreenOff()`, the saved slider) notifies all live adapters.
+/// - `XCustomUi.RefreshResolution()` recomputes the fight HUD's `SafeScreenArea` from `OriginSafeArea` (1920x1080
+///   instead of 3840x1080) and re-adapts the HUD layout.
+/// Full-screen backgrounds outside the safe panes stay full width by design. Returns "" when nothing changed, so it
+/// can run every tick; `XResolutionManager.Update` keeps the custom rect across resolution changes.
+fn ui_fit_chunk(want: bool) -> String {
+    format!(r#"
+local CS = rawget(_G, "CS")
+local data = rawget(_G, "XDataCenter")
+if not (CS and data and rawget(data, "SetManager")) then return "{PENDING}" end
+local U = CS.UnityEngine
+local res = CS.XResolutionManager
+local sw, sh = U.Screen.width, U.Screen.height
+local wide = {want} and sw * 9 > sh * 16 + 9
+local w = wide and math.floor(sh * 16 / 9 + 0.5) or sw
+local x = wide and math.floor((sw - w) / 2) or 0
+local cur = res.OriginSafeArea
+if math.abs(cur.x - x) < 1 and math.abs(cur.width - w) < 1 and math.abs(cur.height - sh) < 1 then return "" end
+res.SetSafeArea(wide and U.Rect(x, 0, w, sh) or U.Rect(0, 0, 0, 0))
+res.RefreshResolution()
+local hud = CS.XCustomUi.Instance
+if hud then hud:RefreshResolution() end
+data.SetManager.SetScreenOff()
+local now = res.OriginSafeArea
+return string.format("safe area %.0f,%.0f %.0fx%.0f on %dx%d (was %.0f,%.0f %.0fx%.0f)", now.x, now.y, now.width, now.height, sw, sh, cur.x, cur.y, cur.width, cur.height)
+"#)
+}
+
+const UI16X9: &str = "ui16x9";
+
+/// `ui16x9 = on|off`: checked every tick while on (the safe area must follow resolution changes, e.g. ultrawide on and
+/// off), once more when switched off to give the game back its own safe area.
+#[derive(Default)]
+pub(super) struct UiFit {
+    applied: bool,
+    seen: u64,
+}
+
+impl UiFit {
+    /// Called every worker tick; problems are appended to `errors` under `ui16x9`.
+    pub(super) fn update(&mut self, bridge: &Result<LuaBridge, String>, want: bool, errors: &mut Vec<(String, String)>) {
+        let bridge = match bridge {
+            Ok(bridge) => bridge,
+            Err(message) => {
+                if want {
+                    errors.push((UI16X9.into(), message.clone()));
+                }
+                return;
+            }
+        };
+        if want || self.applied {
+            bridge.queue(UI16X9, ui_fit_chunk(want));
+        }
+        self.applied = want;
+        if let Some((seq, result)) = bridge.outcome(UI16X9) {
+            if seq != self.seen {
+                self.seen = seq;
+                if let Ok(message) = &result {
+                    if !message.is_empty() {
+                        ok(UI16X9, message);
+                    }
+                }
+            }
+            if let Err(message) = result {
+                errors.push((UI16X9.into(), message));
+            }
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
