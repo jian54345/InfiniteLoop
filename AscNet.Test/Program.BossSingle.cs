@@ -424,7 +424,7 @@ internal partial class Program
                 int coefficientIndex = (stageType == 4 ? 8 : 4) - 1;
                 double timeCoefficient = scoreRule.LeftTimeScore[coefficientIndex];
                 int expectedTimeScore = Math.Min(stage.LeftTimeScore, checked((int)Math.Floor(
-                    (stage.PassTimeLimit - fightSeconds) * timeCoefficient * stage.PassTimeLimit)));
+                    (stage.PassTimeLimit - fightSeconds) * (double)(stage.PassTimeLimit - fightSeconds) * timeCoefficient)));
                 AssertEqual(expectedTimeScore, result.TimeScore,
                     $"Pain Cage {(bestiary ? "bestiary" : "trial")} table-derived remaining-time score");
                 auxiliaryTimeScores.Add((result.TimeLeft, result.TimeScore, stage.LeftTimeScore));
@@ -1359,7 +1359,7 @@ internal partial class Program
                     * normalRule.BossLoseHpScore[coefficientIndex])));
             double timeCoefficient = normalRule.LeftTimeScore[coefficientIndex];
             int expectedTimeScore = Math.Min(normalStage.LeftTimeScore,
-                checked((int)Math.Floor((normalStage.PassTimeLimit - normalFightSeconds) * timeCoefficient * normalStage.PassTimeLimit)));
+                checked((int)Math.Floor((normalStage.PassTimeLimit - normalFightSeconds) * (double)(normalStage.PassTimeLimit - normalFightSeconds) * timeCoefficient)));
             double hpCoefficient = normalRule.CharLeftHpSocre[coefficientIndex];
             int expectedHpScore = normalRule.BaseScore
                 + Math.Min(normalStage.LeftHpScore, checked((int)Math.Floor(100 * hpCoefficient)));
@@ -1913,14 +1913,13 @@ internal partial class Program
             int expectedUltimateTimeLeft = ultimateStage.PassTimeLimit - ultimateFightSeconds;
             AssertEqual(expectedUltimateTimeLeft, ultimateResult.TimeLeft,
                 "Pain Cage Ultimate Zone remaining time from fight input");
-            int expectedUltimateTimeScore = Math.Min(
-                ultimateStage.LeftTimeScore,
-                checked((int)Math.Floor(
-                    expectedUltimateTimeLeft * ultimateTimeCoefficient * ultimateStage.PassTimeLimit)));
+            // Retail Chiko Chaos (coefficient 1.0): 4:48 left (288 s) scored +82944/90000 = 288² × 1.0, so the
+            // remaining-time score is seconds left squared times the rule coefficient (cap = limit² × coefficient).
+            const int expectedUltimateTimeScore = 281 * 281 * 2;
             AssertEqual(true, expectedUltimateTimeScore < ultimateStage.LeftTimeScore,
                 "Pain Cage Ultimate Zone 19-second fight remains below table time-score cap");
             AssertEqual(expectedUltimateTimeScore, ultimateResult.TimeScore,
-                "Pain Cage Ultimate Zone table-derived remaining-time score");
+                "Pain Cage Ultimate Zone remaining-time score follows seconds left squared");
 
             player.SimulatedBattlefield.BossStageRecords.Add(new AscNet.Common.Database.BossSingleStageRecordState
             {

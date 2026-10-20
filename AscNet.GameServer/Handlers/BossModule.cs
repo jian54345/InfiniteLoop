@@ -1303,8 +1303,13 @@ namespace AscNet.GameServer.Handlers
             int bossScore = ScoreBySteps(bossLostRatio, bossStep, bossPoints, stage.BossLoseHpScore);
             int passTime = Math.Max(1, stage.PassTimeLimit);
             int timeLeft = Math.Clamp(checked((int)settle.LeftTime), 0, passTime);
-            int timeScore = Math.Min(stage.LeftTimeScore,
-                checked((int)Math.Floor(timeLeft * timeCoefficient * passTime)));
+            // Retail: Chiko Chaos (coefficient 1.0, cap 90000, limit 300) with 288 s left scored 82944 = 288² × 1.0.
+            // In the 4.8 tables every stage's LeftTimeScore cap equals either limit² × coefficient (tiers 4, 8, 9) or
+            // limit × coefficient (the other tiers). The squared law is retail-observed; using the linear law where
+            // the cap fits it is AscNet policy until a retail result for those tiers is available.
+            bool squaredLaw = Math.Abs((double)passTime * passTime * timeCoefficient - stage.LeftTimeScore) < 0.5;
+            double timeUnits = squaredLaw ? (double)timeLeft * timeLeft : timeLeft;
+            int timeScore = Math.Min(stage.LeftTimeScore, checked((int)Math.Floor(timeUnits * timeCoefficient)));
 
             List<double> characterHp = settle.NpcHpInfo?.Values
                 .Where(npc => npc.Type == 1)
