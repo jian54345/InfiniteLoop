@@ -23,11 +23,6 @@ fn alpha(p: PlayerSelfDither, distance: f32, angle: f32) -> f32 {
         .min((angle - p.angle_degree_min) / (p.angle_degree_max - p.angle_degree_min))
 }
 
-/// `ASCNET_PATCH_NOFADE` is opt-in: only the exact value `1` enables it.
-pub(crate) fn enabled(value: Option<&str>) -> bool {
-    value == Some("1")
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -46,13 +41,5 @@ mod tests {
     fn vanilla_like_parameters_do_fade() {
         let vanilla = PlayerSelfDither { max_distance: 1.5, min_distance: 0.5, angle_degree_max: 60.0, angle_degree_min: 30.0 };
         assert!(alpha(vanilla, 0.6, 90.0) < 1.0);
-    }
-
-    #[test]
-    fn only_exact_one_enables() {
-        assert!(enabled(Some("1")));
-        for value in [None, Some(""), Some("0"), Some("true"), Some(" 1")] {
-            assert!(!enabled(value));
-        }
     }
 }

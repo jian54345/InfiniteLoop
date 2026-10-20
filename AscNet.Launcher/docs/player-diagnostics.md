@@ -121,68 +121,94 @@ No `routed ... /sdkcom/...` line after the login window opens means the SDK neve
 its own cache under `%APPDATA%\KR_G148\A1393\` (agreement, `KRSDKCache.json`) and logs/cache under
 `%USERPROFILE%\AppData\LocalLow\kurogame\战双帕弥什` (per the real player log); include them when reporting a CN login problem.
 
-## No camera fade option
+## FPS unlock and no camera fade
 
-Launcher > Settings > **No camera fade** (off by default, saved in the launcher settings) starts `PGR.exe` with
-`ASCNET_PATCH_NOFADE=1`. `lucia` then disables the character/camera proximity fade natively (no game bundle is
-edited): `XCameraDitherDetector.UseCameraDither=false` and `XNpcDither.SetPlayerSelfDitherParameter` with opaque
-values, re-applied every 2 s. Dying-enemy dissolves (`XDitherHelper`) are not touched. It supersedes
-`tools/apply_pgr_nofade.py`; both set the same values, so having both active is harmless. Same on EN/TW/KR/JP
-(all four `GameAssembly.dll` export every `il2cpp_*` function it needs).
+Both are plain keys of `ascnet-graphics.ini` (see the table below): `fps = <n>` and `nofade = on`. There are no
+environment variables and no extra threads; the graphics worker applies them. Three ways to set them, all editing the
+same file:
 
-Healthy lines (option on):
+- Launcher > Settings > **FPS unlock** + frame-rate field + **Apply** (off by default, 240 FPS suggested) and
+  **No camera fade** write or remove only those two keys in `ascnet-graphics.ini`; every other line (renderscale,
+  overrides, comments) is kept as is. The launcher shows what the file currently says.
+- The in-game overlay (`overlay = on`, Ctrl+Shift+G): **Unlock FPS** + target field (enabling uses the last value, else
+  240; values below 1 are refused inline) and **No camera fade** apply live within 0.5 s; **Save to ascnet-graphics.ini**
+  rewrites the whole file.
+- Editing the file by hand (read at game start).
 
-```
-[lucia] OK no camera fade requested: ASCNET_PATCH_NOFADE=1; applying natively once IL2CPP is ready
-[lucia] OK il2cpp exports (no camera fade): ...
-[lucia] OK lookup XCameraDitherDetector: assembly=Assembly-CSharp.dll
-[lucia] OK lookup XCameraDitherDetector.UseCameraDither: static System.Boolean
-[lucia] OK lookup XNpcDither: assembly=Assembly-CSharp.dll
-[lucia] OK lookup XNpcDither.SetPlayerSelfDitherParameter(...PlayerSelfDitherParameter): static, 1 parameter
-[lucia] OK class init: XCameraDitherDetector, XNpcDither
-[lucia] OK write XCameraDitherDetector.UseCameraDither=false: re-applied every 2 s
-[lucia] OK apply XNpcDither.SetPlayerSelfDitherParameter(opaque): re-applied every 2 s
-```
-
-With the option off none of these lines appear. Every failure is a `[lucia] FAILED no camera fade` /
-`lookup XCameraDitherDetector...` / `lookup XNpcDither...` / `write ...` / `apply ...` line naming the missing
-class, field or method (client build differs from 4.8.0); the game keeps its default fade and routing is unaffected.
-If only the `XNpcDither` lines fail, the camera fade is still disabled. `write`/`apply` lines are logged on the first
-result and on every later change, not every 2 s.
-
-## FPS unlock option
-
-Launcher > Settings > **FPS unlock** + frame-rate field + **Apply** (off by default, 240 FPS suggested; saved in the
-launcher settings) starts `PGR.exe` with `ASCNET_PATCH_FPS=<n>` (any positive whole number; absent = the game's own
-frame rate). `lucia` then calls `UnityEngine.Application.set_targetFrameRate(n)` natively every 2 s (the game may
-reset it). No game bundle is edited. Unity ignores `targetFrameRate` while `QualitySettings.vSyncCount > 0` (the game's
-own VSync option sets it), so with the unlock on `lucia` sets `vSyncCount=0` and logs the change. The status text in the
-launcher shows the saved setting (`At launch: ...`); a change takes effect at the next game launch. Same on EN/TW/KR/JP.
+Same on EN/TW/KR/JP.
 
 **Migration from the old bundle patch.** Earlier launchers injected a Lua hook (`PgrNativeFpsTimer`) into
 `matrix.ab`'s `XUiMain.lua`. On every Check/startup the launcher looks for that hook; if found, and PGR.exe is not
-running, it removes it (the usual same-size rewrite, original kept under `.ascnet-launcher/fps-backups/`), turns the
-native FPS unlock on with the hook's old value, and logs `Removed the old bundle FPS patch ...`. While PGR.exe is
-running it logs `the old bundle FPS patch (N FPS) is still installed; close PGR.exe and press Check to remove it`
+running, it removes it (the usual same-size rewrite, original kept under `.ascnet-launcher/fps-backups/`), writes
+`fps = <the hook's old value>` to `ascnet-graphics.ini`, and logs `Removed the old bundle FPS patch ...`. While PGR.exe
+is running it logs `the old bundle FPS patch (N FPS) is still installed; close PGR.exe and press Check to remove it`
 (the hook keeps working until then). Afterwards only the native path exists; the launcher never writes the bundle again.
 
-Healthy lines (option on):
+Healthy lines (`fps = 240`, `nofade = on`):
 
 ```
-[lucia] OK FPS unlock requested: ASCNET_PATCH_FPS=240; applying natively once IL2CPP is ready
-[lucia] OK il2cpp exports (FPS unlock): ...
+[lucia] OK graphics options requested: fps = 240, nofade = on in ascnet-graphics.ini; applying once IL2CPP is ready
 [lucia] OK lookup UnityEngine.Application: assembly=UnityEngine.CoreModule.dll
 [lucia] OK lookup Application.set_targetFrameRate(Int32)/get_targetFrameRate(): static property accessors
 [lucia] OK lookup UnityEngine.QualitySettings.vSyncCount: assembly=UnityEngine.CoreModule.dll
-[lucia] OK read QualitySettings.vSyncCount: 0 (vsync off)          (or: OK write QualitySettings.vSyncCount=0: the game had vSyncCount=1, ...)
-[lucia] OK apply Application.targetFrameRate=240: re-applied every 2 s
+[lucia] OK lookup XCameraDitherDetector: assembly=Assembly-CSharp.dll
+[lucia] OK lookup XCameraDitherDetector.UseCameraDither: static System.Boolean
+[lucia] OK lookup XNpcDither: assembly=Assembly-CSharp.dll
+[lucia] OK lookup XNpcDither.SetPlayerSelfDitherParameter(...PlayerSelfDitherParameter): static, 1 parameter; game value read from playerSelfDitherParameter
+[lucia] OK FPS unlock: targetFrameRate=240, vSyncCount=0; the game's own values are targetFrameRate=-1, vSyncCount=1
+[lucia] OK apply FPS unlock: targetFrameRate=240, vSyncCount=0 held every 0.5 s
+[lucia] OK no camera fade: applied; the game's own values are UseCameraDither=true, playerSelfDitherParameter=PlayerSelfDither { ... }
+[lucia] OK FPS unlock: removed, restored targetFrameRate=-1, vSyncCount=1        (option switched off in the overlay)
+[lucia] OK no camera fade: removed, restored UseCameraDither=true, playerSelfDitherParameter=...
 ```
 
-With the option off none of these lines appear. Failures are `[lucia] FAILED FPS unlock` (bad `ASCNET_PATCH_FPS`, missing
-export, class or method: client differs from 4.8.0), `lookup ...`, `read/write QualitySettings.vSyncCount` (the unlock
-may then be capped by vsync) or `apply Application.targetFrameRate=...` (call threw, or the value read back differently);
-the game keeps its own frame rate and routing is unaffected. Lines are logged on the first result and on every later
-change, not every 2 s.
+Failures only affect their own option; the game keeps its own value and routing is unaffected:
+`FAILED ascnet-graphics.ini: line N: ...` (`fps` not a positive whole number, `nofade` not a flag),
+`FAILED lookup FPS unlock` / `lookup QualitySettings.vSyncCount` (the unlock may then be capped by vsync) /
+`FAILED lookup no camera fade` / `lookup XNpcDither...` (only the camera fade is disabled), and
+`FAILED apply FPS unlock` / `write XCameraDitherDetector.UseCameraDither=false` / `apply XNpcDither...` (call threw, or
+the value read back differently). The overlay shows the same problems in red under the option. Lines are logged on the
+first result and on every later change, not every 0.5 s.
+
+## Graphics options (`ascnet-graphics.ini`)
+
+`ascnet-graphics.ini` beside `PGR.exe` is read by `lucia` at game start, however the game is launched (launcher,
+CrossOver shortcut, script). One `key = value` per line, `#`/`;` comments. Absent file = off, no lines.
+
+| Key | Effect |
+|---|---|
+| `renderscale = 2.0` | Internal render scale in every scene (0.25–4.0). The game itself sets 1.333 in menus/Babylonia and 1.0 in fights through `RenderPIplineQualityManger.SetupExtraRenderScale`; `lucia` detours that call (and `EnableExtraRenderScale`, which Babylonia switches off) so the chosen scale holds everywhere with no reset window. |
+| `fps = 240` | Frame-rate unlock: a plain positive whole number (anything else is a `FAILED ascnet-graphics.ini: line N` and ignored; absent = the game's own frame rate). `lucia` holds `UnityEngine.Application.targetFrameRate = n` and `QualitySettings.vSyncCount = 0` (Unity ignores `targetFrameRate` while vsync paces the frame, and the game's own VSync option sets it) every 0.5 s. Removing the key restores the game's `targetFrameRate` and `vSyncCount`, recorded before the first write and again whenever the game changes them. The overlay shows `target <n>, vsync <v>` as read from the game. |
+| `nofade = on` | Disables the character/camera proximity fade natively (`on`/`off`, `1`/`0`, `true`/`false`; absent = off): `XCameraDitherDetector.UseCameraDither = false` and `XNpcDither.SetPlayerSelfDitherParameter` with opaque values, re-applied every 0.5 s. Dying-enemy dissolves (`XDitherHelper`) are untouched. Turning it off restores `UseCameraDither` and the game's own `XNpcDither.playerSelfDitherParameter`, both read before the first write. Supersedes `tools/apply_pgr_nofade.py`. |
+| `<Setting>.<Field> = value` | Overrides one field of the render pipeline's runtime quality objects (`UniversalRenderPipelineAsset.RenderPipelineDefaultQualityData`, read as managed memory, never through Unity calls), e.g. `ShadowSetting.CascadeSize = 4096`. Names are the game's own and case-sensitive (see the overlay or dump). Values: `on`/`off`, numbers, enum names or numbers (`AntiAliasingSetting.DeferredAAMethod = SubpixelMorphologicalAntiAliasing`), comma lists for arrays (`ShadowSetting.CascadeFrameUpdate = 0,0,1,2`). Re-applied every 0.5 s; the game resets them on scene and quality changes. Removing an override restores the game's value. |
+| `overlay = on` | In-game Dear ImGui window (hudhook D3D11 `Present` hook), toggled with **Ctrl+Shift+G**; the game gets no keyboard/mouse input while it is open. Shows scene, game-requested and effective render scale; edits render scale and every quality field live (changes apply within 0.5 s), marks overridden fields with the game's value and a Reset, shows each key's error in red, and **Save to ascnet-graphics.ini** writes the current options. Not all fields have a visible effect: `ForwardAAMethod` is ignored by deferred-rendered cameras (`DeferredAAMethod` applies), `ActiveRealTimeAreaLight` only matters in scenes with area lights, and no renderer reader was found for `AdditionalCharacterLighting`. |
+| `dump = 1` | Read-only: every render-pipeline quality object (`RenderPIplineQualityManger` statics, `GetRuntimeData()` and its `Quality_*` settings, `Is*()` flags), `XQualityManager.Instance`, `XResolutionManager` statics and the managed `UnityEngine.QualitySettings` getters, every 2 s; all values once, then only changes, tagged with the active Unity scene (`XGame` = menus, `FightScene`, `NormalScene` = Babylonia). |
+
+Healthy lines:
+
+```
+[lucia] OK graphics options requested: renderscale = 2, 5 setting override(s) in ascnet-graphics.ini; applying once IL2CPP is ready
+[lucia] OK render scale detours: RenderPIplineQualityManger.SetupExtraRenderScale at 0x..., EnableExtraRenderScale at 0x...
+[lucia] OK render scale: RenderPIplineQualityManger.GetRenderScale() = 2
+[lucia] OK graphics override ShadowSetting.CascadeSize: 2048 -> 4096 (scene="XGame"; re-applied whenever the game resets it)
+[lucia] OK render scale: the game asked for 1 (scene="FightScene"); using 2
+[lucia] OK render scale: the game switched the extra render scale off (scene="NormalScene"); kept on
+[lucia] OK overlay: D3D11 Present hook installed; Ctrl+Shift+G toggles
+[lucia] OK graphics options: the game is quitting; detached from IL2CPP and stopped touching the game
+```
+
+Every problem is a `FAILED` line and only that line is skipped; the game keeps its own value:
+`FAILED ascnet-graphics.ini: line N: ...` (syntax, unknown key, `renderscale` out of range),
+`FAILED graphics override X.Y: ... has no field ...; it has: ...` (lists the real names), `... is not a valid ...`,
+`... is a divisor (1 = full resolution, 2 = half); 0 would crash the renderer` (any `*Downsample*` field below 1: the
+SSAO pass divides the screen width by `SSAOSetting.Downsample`), `FAILED render scale ...` (detour or method missing),
+`FAILED overlay ...` (the game runs without the overlay), `FAILED ... exit detection unavailable ...`. On quit `lucia`
+catches `UnityEngine.Application.Internal_ApplicationQuit`, stops touching the game and detaches its thread from
+IL2CPP; `il2cpp_shutdown` waits for attached threads, so without the detach the game would hang on exit.
+Overrides change what the renderer is asked to do; a value the game never ships (e.g. huge shadow maps) can still cost
+GPU time or render oddly, so change one key at a time. In the dump, `<threw>` means a getter is not ready yet (early
+passes) and `<Name>` is an object that is named, not walked. Unity's `lodBias`, `maximumLODLevel`, texture limit,
+anisotropic filtering and `maxQueuedFrames` accessors are stripped from the 4.8 build and cannot be read or set.
 
 ## Optional trace (developers)
 

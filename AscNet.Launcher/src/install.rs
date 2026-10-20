@@ -1008,7 +1008,7 @@ pub fn game_running() -> Result<bool> {
     }
 }
 
-pub fn launch(client: &Path, origin: &str, no_camera_fade: bool, fps: Option<i32>) -> Result<()> {
+pub fn launch(client: &Path, origin: &str) -> Result<()> {
     let _lock = OperationLock::acquire()?;
     if game_running()? {
         bail!("PGR.exe is already running");
@@ -1019,7 +1019,7 @@ pub fn launch(client: &Path, origin: &str, no_camera_fade: bool, fps: Option<i32
     if !executable.is_file() {
         bail!("PGR.exe is missing");
     }
-    let mut command = launch_command(&client, executable, origin, no_camera_fade, fps);
+    let mut command = launch_command(&client, executable, origin);
     if running_under_wine() {
         let old = std::env::var("WINEDLLOVERRIDES").unwrap_or_default();
         command.env("WINEDLLOVERRIDES", merge_version_dll_override(&old));
@@ -1029,20 +1029,10 @@ pub fn launch(client: &Path, origin: &str, no_camera_fade: bool, fps: Option<i32
 }
 
 /// Region-neutral: every supported client (EN/TW/KR/JP/CN) gets the same environment (CN's gate path comes from AscNet's config.tab).
-/// `ASCNET_PATCH_NOFADE=1` (lucia disables the camera/character proximity fade) and
-/// `ASCNET_PATCH_FPS=<n>` (lucia sets Application.targetFrameRate) are set only on request.
-fn launch_command(client: &Path, executable: PathBuf, origin: String, no_camera_fade: bool, fps: Option<i32>) -> Command {
+/// FPS / no-camera-fade live in `ascnet-graphics.ini`, not in the environment.
+fn launch_command(client: &Path, executable: PathBuf, origin: String) -> Command {
     let mut command = Command::new(executable);
     command.current_dir(client).env("ASCNET_PATCH_ORIGIN", origin);
-    if no_camera_fade {
-        command.env("ASCNET_PATCH_NOFADE", "1");
-    } else {
-        command.env_remove("ASCNET_PATCH_NOFADE");
-    }
-    match fps {
-        Some(fps) => command.env("ASCNET_PATCH_FPS", fps.to_string()),
-        None => command.env_remove("ASCNET_PATCH_FPS"),
-    };
     for key in [
         "ASCNET_PATCH_TRACE",
         "ASCNET_PATCH_PROBE",
@@ -1808,11 +1798,9 @@ mod tests {
         for (key, value) in [("ASCNET_PATCH_TRACE", "1"), ("HTTPS_PROXY", "http://proxy"), ("KEEP_ME", "x")] {
             std::env::set_var(key, value);
         }
-        std::env::set_var("ASCNET_PATCH_NOFADE", "1");
-        std::env::set_var("ASCNET_PATCH_FPS", "30");
         for region in ["kr", "jp", "cn"] {
             let dir = client.join(region);
-            let command = launch_command(&dir, dir.join("PGR.exe"), "http://127.0.0.1:5000".into(), false, None);
+            let command = launch_command(&dir, dir.join("PGR.exe"), "http://127.0.0.1:5000".into());
             let envs: BTreeMap<_, _> = command.get_envs().collect();
             assert_eq!(command.get_program(), dir.join("PGR.exe").as_os_str());
             assert_eq!(command.get_current_dir(), Some(dir.as_path()));
@@ -1820,12 +1808,6 @@ mod tests {
             assert_eq!(envs["ASCNET_PATCH_ORIGIN".as_ref() as &std::ffi::OsStr], Some("http://127.0.0.1:5000".as_ref()));
             assert_eq!(envs["ASCNET_PATCH_TRACE".as_ref() as &std::ffi::OsStr], None);
             assert_eq!(envs["HTTPS_PROXY".as_ref() as &std::ffi::OsStr], None);
-            // Off by default, and never inherited from the launcher's own environment.
-            assert_eq!(envs["ASCNET_PATCH_NOFADE".as_ref() as &std::ffi::OsStr], None);
-            assert_eq!(envs["ASCNET_PATCH_FPS".as_ref() as &std::ffi::OsStr], None);
-            let enabled = launch_command(&dir, dir.join("PGR.exe"), "http://127.0.0.1:5000".into(), true, Some(144));
-            assert_eq!(enabled.get_envs().find(|(k, _)| *k == "ASCNET_PATCH_NOFADE").unwrap().1, Some("1".as_ref()));
-            assert_eq!(enabled.get_envs().find(|(k, _)| *k == "ASCNET_PATCH_FPS").unwrap().1, Some("144".as_ref()));
             assert!(!envs.contains_key("KEEP_ME".as_ref() as &std::ffi::OsStr));
         }
         fs::remove_dir_all(client).unwrap();

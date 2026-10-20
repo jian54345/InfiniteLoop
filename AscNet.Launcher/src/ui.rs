@@ -2,6 +2,7 @@ use anyhow::{Context, Result};
 use ascnet_launcher::{
     download,
     fps,
+    graphics_ini,
     install::{self, PatchState},
     local::{self, LocalBuild, LocalRuntime},
     package::{self, PatchPackage},
@@ -90,15 +91,16 @@ struct DistributorConfig {
 #[serde(rename_all = "camelCase")]
 struct Settings {
     selected_game: Option<PathBuf>,
+    /// Last FPS the user applied: only the field's default while the unlock is off (the ini holds `fps` only while on).
     #[serde(default = "default_fps")]
     fps_value: i32,
-    /// Opt-in: lucia sets Application.targetFrameRate to `fps_value` (ASCNET_PATCH_FPS at launch).
-    #[serde(default)]
-    fps_enabled: bool,
     #[serde(default)]
     music_muted: bool,
-    /// Opt-in: lucia disables the camera/character proximity fade (ASCNET_PATCH_NOFADE=1 at launch).
-    #[serde(default)]
+    /// Pre-ini launcher versions kept these here; `migrate_legacy_graphics` moves them into the
+    /// client's `ascnet-graphics.ini`. Written back only while still pending (no client folder yet).
+    #[serde(default, skip_serializing_if = "is_false")]
+    fps_enabled: bool,
+    #[serde(default, skip_serializing_if = "is_false")]
     no_camera_fade: bool,
     /// Client language (edition) chosen in the Get game view; defaults from the Windows UI language.
     #[serde(default)]
@@ -109,8 +111,8 @@ impl Default for Settings {
         Self {
             selected_game: None,
             fps_value: default_fps(),
-            fps_enabled: false,
             music_muted: false,
+            fps_enabled: false,
             no_camera_fade: false,
             region: None,
         }
@@ -118,6 +120,27 @@ impl Default for Settings {
 }
 const fn default_fps() -> i32 {
     240
+}
+fn is_false(value: &bool) -> bool {
+    !*value
+}
+
+/// One-time: moves legacy `fps_enabled` / `no_camera_fade` into the selected client's ini (absent keys only).
+fn migrate_legacy_graphics(settings: &mut Settings) {
+    let Some(game) = settings.selected_game.as_deref() else { return };
+    if !settings.fps_enabled && !settings.no_camera_fade {
+        return;
+    }
+    let fps = settings.fps_enabled.then_some(settings.fps_value);
+    let line = match graphics_ini::migrate(game, fps, settings.no_camera_fade) {
+        Ok(written) => {
+            settings.fps_enabled = false;
+            settings.no_camera_fade = false;
+            format!("Moved launcher settings into {}: {}", graphics_ini::FILE, if written.is_empty() { "nothing (keys already present)".to_owned() } else { written.join(", ") })
+        }
+        Err(e) => local::summarized_error("move FPS/no-camera-fade settings into the graphics ini", &e),
+    };
+    let _ = local::launcher_log(&line);
 }
 
 #[allow(dead_code)]
@@ -267,6 +290,7 @@ unsafe fn run_inner() -> Result<()> {
     if settings.selected_game.is_none() {
         settings.selected_game = crate::steam::discover_game()?;
     }
+    migrate_legacy_graphics(&mut settings);
     save_settings(&settings)?;
 
     let instance = GetModuleHandleW(None)?;
@@ -470,7 +494,7 @@ unsafe extern "system" fn wndproc(hwnd: HWND, msg: u32, wp: WPARAM, lp: LPARAM) 
         WM_CREATE => {
             if !ptr.is_null() {
                 create_controls(hwnd, &*ptr);
-                let (path, fps_value, fps_enabled, music_muted, no_fade) = {
+                let (path, music_muted) = {
                     let m = (*ptr).model.lock().unwrap();
                     (
                         m.settings
@@ -478,14 +502,11 @@ unsafe extern "system" fn wndproc(hwnd: HWND, msg: u32, wp: WPARAM, lp: LPARAM) 
                             .as_deref()
                             .map(|p| p.display().to_string())
                             .unwrap_or_default(),
-                        m.settings.fps_value,
-                        m.settings.fps_enabled,
                         m.settings.music_muted,
-                        m.settings.no_camera_fade,
                     )
                 };
                 set_text(hwnd, ID_PATH, &path);
-                set_text(hwnd, ID_FPS_VALUE, &fps_value.to_string());
+                sync_graphics_controls(hwnd, &(*ptr).model);
                 let _ = SendMessageW(
                     GetDlgItem(hwnd, ID_MUSIC_MUTED),
                     BM_SETCHECK,
@@ -494,18 +515,6 @@ unsafe extern "system" fn wndproc(hwnd: HWND, msg: u32, wp: WPARAM, lp: LPARAM) 
                     } else {
                         BST_UNCHECKED.0 as usize
                     }),
-                    LPARAM(0),
-                );
-                let _ = SendMessageW(
-                    GetDlgItem(hwnd, ID_NOFADE),
-                    BM_SETCHECK,
-                    WPARAM(if no_fade { BST_CHECKED.0 as usize } else { BST_UNCHECKED.0 as usize }),
-                    LPARAM(0),
-                );
-                let _ = SendMessageW(
-                    GetDlgItem(hwnd, ID_FPS_ENABLED),
-                    BM_SETCHECK,
-                    WPARAM(if fps_enabled { BST_CHECKED.0 as usize } else { BST_UNCHECKED.0 as usize }),
                     LPARAM(0),
                 );
                 append_log(hwnd, &mut *ptr, "Launcher ready");
@@ -1831,9 +1840,8 @@ unsafe fn command(hwnd: HWND, state: &mut Window, id: i32, notification: u16) {
     if notification == BN_CLICKED as u16 && id == ID_NOFADE {
         let checked = SendMessageW(GetDlgItem(hwnd, ID_NOFADE), BM_GETCHECK, WPARAM(0), LPARAM(0)).0
             == BST_CHECKED.0 as isize;
-        let mut m = state.model.lock().unwrap();
-        m.settings.no_camera_fade = checked;
-        if let Err(e) = save_settings(&m.settings) {
+        let game = state.model.lock().unwrap().settings.selected_game.clone();
+        if let Some(Err(e)) = game.as_deref().map(|g| graphics_ini::set_nofade(g, checked)) {
             show_fatal(&format!("{e:#}"));
         }
         return;
@@ -2056,33 +2064,50 @@ fn save_fps_setting(hwnd: HWND, state: &mut Window) {
             return;
         }
     };
-    {
+    let game = {
         let mut m = state.model.lock().unwrap();
-        m.settings.fps_enabled = enabled;
+        let Some(game) = m.settings.selected_game.clone() else {
+            show_fatal("Select a game folder first; the FPS unlock is stored in it.");
+            return;
+        };
+        // The ini only holds the value while the unlock is on; keep the last one as the field's default.
         if let Some(value) = value {
             m.settings.fps_value = value;
+            if let Err(e) = save_settings(&m.settings) {
+                show_fatal(&format!("{e:#}"));
+                return;
+            }
         }
-        if let Err(e) = save_settings(&m.settings) {
-            show_fatal(&format!("{e:#}"));
-            return;
-        }
+        game
+    };
+    if let Err(e) = graphics_ini::set_fps(&game, value.filter(|_| enabled)) {
+        show_fatal(&format!("{e:#}"));
+        return;
     }
     let message = match value.filter(|_| enabled) {
-        Some(value) => format!("FPS unlock set to {value}; applied by the patch at the next game launch"),
+        Some(value) => format!("FPS unlock set to {value}; applied by the patch at the next game launch (live in the overlay)"),
         None => "FPS unlock off; the game keeps its own frame rate at the next launch".to_owned(),
     };
     unsafe { append_log(hwnd, state, &message) };
     unsafe { update_view(hwnd, &state.model) };
 }
 
-unsafe fn show_fps_setting(hwnd: HWND, enabled: bool, value: i32) {
-    set_text(hwnd, ID_FPS_VALUE, &value.to_string());
-    let _ = SendMessageW(
-        GetDlgItem(hwnd, ID_FPS_ENABLED),
-        BM_SETCHECK,
-        WPARAM(if enabled { BST_CHECKED.0 as usize } else { BST_UNCHECKED.0 as usize }),
-        LPARAM(0),
-    );
+/// Loads the FPS/no-fade controls from the selected client's ini (the only place they are stored).
+unsafe fn sync_graphics_controls(hwnd: HWND, model: &Arc<Mutex<Model>>) {
+    let (game, remembered) = {
+        let m = model.lock().unwrap();
+        (m.settings.selected_game.clone(), m.settings.fps_value)
+    };
+    let options = game.as_deref().and_then(|g| graphics_ini::read(g).ok()).unwrap_or_default();
+    set_text(hwnd, ID_FPS_VALUE, &options.fps.unwrap_or(remembered).to_string());
+    for (id, on) in [(ID_FPS_ENABLED, options.fps.is_some()), (ID_NOFADE, options.nofade)] {
+        let _ = SendMessageW(
+            GetDlgItem(hwnd, id),
+            BM_SETCHECK,
+            WPARAM(if on { BST_CHECKED.0 as usize } else { BST_UNCHECKED.0 as usize }),
+            LPARAM(0),
+        );
+    }
 }
 
 fn start_prepare(hwnd: HWND, state: &mut Window) {
@@ -2203,13 +2228,11 @@ fn start_play(hwnd: HWND, state: &mut Window) {
                     m.settings.selected_game.clone().unwrap(),
                     m.build.clone().unwrap(),
                     m.package.clone().unwrap(),
-                    m.settings.no_camera_fade,
-                    m.settings.fps_enabled.then_some(m.settings.fps_value),
                 ))
             }
         }
     };
-    let (generation, events, game, build, package, no_camera_fade, fps) = match prepared {
+    let (generation, events, game, build, package) = match prepared {
         Ok(values) => values,
         Err(e) => {
             show_fatal(&e.to_string());
@@ -2239,7 +2262,7 @@ fn start_play(hwnd: HWND, state: &mut Window) {
                     return Err(e);
                 }
             };
-            install::launch(&game, &origin, no_camera_fade, fps)?;
+            install::launch(&game, &origin)?;
             Ok(WorkResult::Launched {
                 build,
                 package,
@@ -2265,7 +2288,6 @@ unsafe fn finish_work(hwnd: HWND, state: &mut Window, work: Work) {
     let mut source_status = None;
     let mut patch_status = None;
     let mut fps_status = None;
-    let mut migrated = None;
     let log = match &work.result {
         Ok(WorkResult::LauncherChecked(_)) => "Launcher check complete",
         Ok(WorkResult::Refresh { .. }) => "Check complete",
@@ -2320,12 +2342,10 @@ unsafe fn finish_work(hwnd: HWND, state: &mut Window, work: Work) {
             m.patch = patch;
             match fps_migration {
                 Ok(Some(value)) => {
-                    m.settings.fps_enabled = true;
-                    m.settings.fps_value = value;
-                    migrated = Some(value);
-                    fps_status = Some(match save_settings(&m.settings) {
-                        Ok(()) => format!("Removed the old bundle FPS patch (backup kept); FPS unlock is now native, set to {value} FPS from the next launch"),
-                        Err(e) => format!("Removed the old bundle FPS patch, but saving the FPS setting failed: {e:#}"),
+                    fps_status = Some(match m.settings.selected_game.as_deref().map(|g| graphics_ini::set_fps(g, Some(value))) {
+                        Some(Ok(())) => format!("Removed the old bundle FPS patch (backup kept); FPS unlock is now native, `fps = {value}` written to {}", graphics_ini::FILE),
+                        Some(Err(e)) => local::summarized_error("save the FPS setting after removing the old bundle FPS patch", &e),
+                        None => "Removed the old bundle FPS patch, but no game folder is selected to store the FPS setting".to_owned(),
                     });
                 }
                 Ok(None) => {}
@@ -2394,9 +2414,7 @@ unsafe fn finish_work(hwnd: HWND, state: &mut Window, work: Work) {
     for message in [source_status, patch_status, fps_status].into_iter().flatten() {
         append_log(hwnd, state, &message);
     }
-    if let Some(value) = migrated {
-        show_fps_setting(hwnd, true, value);
-    }
+    sync_graphics_controls(hwnd, &state.model);
     update_view(hwnd, &state.model);
     if automatic_prepare {
         match install::game_running() {
@@ -2411,7 +2429,7 @@ unsafe fn finish_work(hwnd: HWND, state: &mut Window, work: Work) {
 }
 
 unsafe fn update_view(hwnd: HWND, model: &Arc<Mutex<Model>>) {
-    let (update_available, runtime, stopping, busy, can_restore, can_launch, fps_setting, status_line) = {
+    let (update_available, runtime, stopping, busy, can_restore, can_launch, game, status_line) = {
         let m = model.lock().unwrap();
         (
             m.update_available,
@@ -2420,7 +2438,7 @@ unsafe fn update_view(hwnd: HWND, model: &Arc<Mutex<Model>>) {
             m.busy,
             m.settings.selected_game.is_some(),
             can_play(&m).is_ok(),
-            m.settings.fps_enabled.then_some(m.settings.fps_value),
+            m.settings.selected_game.clone(),
             status_line(&m),
         )
     };
@@ -2439,17 +2457,24 @@ unsafe fn update_view(hwnd: HWND, model: &Arc<Mutex<Model>>) {
     set_enabled(hwnd, ID_RERUN_SETUP, !busy && !services);
     set_enabled(hwnd, ID_RESTORE, !busy && !stopping && can_restore);
     set_enabled(hwnd, ID_PLAY, !busy && can_launch);
+    let ini = game.as_deref().map(graphics_ini::read);
     set_text(
         hwnd,
         ID_FPS_STATUS,
-        &match fps_setting {
-            Some(value) => format!("At launch: {value} FPS"),
-            None => "At launch: off".to_owned(),
+        &match &ini {
+            None => "Stored in the client folder: select a game first".to_owned(),
+            Some(Ok(options)) => match options.fps {
+                Some(value) => format!("In {}: {value} FPS", graphics_ini::FILE),
+                None => format!("In {}: off", graphics_ini::FILE),
+            },
+            Some(Err(e)) => local::summarized_error("read the graphics ini", e),
         },
     );
-    set_enabled(hwnd, ID_FPS_ENABLED, !busy);
-    set_enabled(hwnd, ID_FPS_VALUE, !busy);
-    set_enabled(hwnd, ID_FPS_ACTION, !busy);
+    let editable = !busy && game.is_some();
+    set_enabled(hwnd, ID_FPS_ENABLED, editable);
+    set_enabled(hwnd, ID_FPS_VALUE, editable);
+    set_enabled(hwnd, ID_FPS_ACTION, editable);
+    set_enabled(hwnd, ID_NOFADE, editable);
     let home_text = if busy {
         "WORKING…"
     } else if stopping {
