@@ -5,6 +5,7 @@ using AscNet.Common.Util;
 using AscNet.Table.V2.share.fuben.stronghold;
 using AscNet.GameServer.Game;
 using AscNet.Table.V2.share.reward;
+using AscNet.Table.V2.share.robot;
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization;
 
@@ -17,6 +18,26 @@ internal static class StrongholdModule
     private static StrongholdState State(Session s) => s.player.Stronghold;
     private static void Save(Session s) => s.player.Save();
     private static bool Own(Session s, int id) => id > 0 && s.character.Characters.Any(c => c.Id == (uint)id);
+
+    // The client always sends three slots per team (GenerateOriginalTeamInfos): empty slots carry Id 0 and RobotId 0,
+    // trial robots carry their RobotId and its CharacterId. Trial robots are the mode-wide StrongholdRobotGroup list.
+    private static bool ValidMembers(Session s, List<StrongholdCharacterInfo> members, bool requireMember)
+    {
+        if (members.Count > 3) return false;
+        List<StrongholdCharacterInfo> filled = members.Where(member => member.Id > 0 || member.RobotId > 0).ToList();
+        if (requireMember && filled.Count == 0) return false;
+        HashSet<int> robots = Rows<StrongholdRobotGroupTable>().SelectMany(row => row.RobotId).Where(id => id > 0).ToHashSet();
+        foreach (StrongholdCharacterInfo member in filled)
+        {
+            if (member.PlayerId != 0 && member.PlayerId != s.player.PlayerData.Id) return false;
+            bool valid = member.RobotId > 0
+                ? robots.Contains(member.RobotId)
+                    && Rows<RobotTable>().FirstOrDefault(row => row.Id == member.RobotId)?.CharacterId == member.Id
+                : Own(s, member.Id);
+            if (!valid) return false;
+        }
+        return filled.Select(member => member.Id).Distinct().Count() == filled.Count;
+    }
     private static int First(string? value) =>
         int.TryParse((value ?? string.Empty).Trim('[', ']').Split('|')[0], out int result) ? result : 0;
     private static int Config(string key) => Rows<StrongholdCfgTable>().FirstOrDefault(row => row.Key == key)?.Value ?? 0;
@@ -539,10 +560,7 @@ internal static class StrongholdModule
             && request.TeamInfos.Count > 0
             && request.TeamInfos.Count <= Config("MaxPreTeamCount")
             && request.TeamInfos.Select(team => team.Id).Distinct().Count() == request.TeamInfos.Count
-            && request.TeamInfos.All(team => team.CharacterInfos.Count > 0
-                && team.CharacterInfos.Count <= 3
-                && team.CharacterInfos.Select(character => character.Id).Distinct().Count() == team.CharacterInfos.Count
-                && team.CharacterInfos.All(character => Own(s, character.Id)));
+            && request.TeamInfos.All(team => ValidMembers(s, team.CharacterInfos, requireMember: true));
         if (valid)
         {
             state.FightTeamInfos[request.Id] = request.TeamInfos;
@@ -559,9 +577,7 @@ internal static class StrongholdModule
         bool valid = request.TeamInfos.Count > 0
             && request.TeamInfos.Count <= Config("MaxPreTeamCount")
             && request.TeamInfos.Select(team => team.Id).Distinct().Count() == request.TeamInfos.Count
-            && request.TeamInfos.All(team => team.CharacterInfos.Count <= 3
-                && team.CharacterInfos.Select(character => character.Id).Distinct().Count() == team.CharacterInfos.Count
-                && team.CharacterInfos.All(character => Own(s, character.Id)));
+            && request.TeamInfos.All(team => ValidMembers(s, team.CharacterInfos, requireMember: false));
         if (valid)
         {
             State(s).TeamInfos = request.TeamInfos.ToDictionary(team => team.Id);
