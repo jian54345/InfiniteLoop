@@ -413,22 +413,28 @@ namespace AscNet.GameServer.Handlers
             ArenaGroupFightEventTable? group = selectedAreaIndex < groupIds.Count
                 ? FightEventGroups.Value.FirstOrDefault(candidate => candidate.Id == groupIds[selectedAreaIndex])
                 : null;
+            // Client XArenaAgency: ArenaSelectIndex = SelectBuffIndex-1 indexes AreaStage.BuffIds/DistributeTypes (zone tab); group events are all shown, none selectable.
+            int zoneIndex = request.ArenaSelectIndex;
             if (group is null
-                || request.ArenaSelectIndex < 0
-                || request.ArenaSelectIndex >= group.FightEvents.Count)
+                || zoneIndex < 0
+                || zoneIndex >= area.BuffIds.Count
+                || zoneIndex >= area.DistributeTypes.Count
+                || area.BuffIds[zoneIndex] <= 0)
             {
                 return false;
             }
 
-            response.FightData.EventIds = area.BuffIds
-                .Where(eventId => eventId > 0)
-                .Cast<dynamic>()
-                .Append(group.FightEvents[request.ArenaSelectIndex])
+            response.FightData.EventIds = new List<dynamic> { area.BuffIds[zoneIndex] }
+                .Concat(group.FightEvents.Where(eventId => eventId > 0).Cast<dynamic>())
                 .ToList();
             response.FightData.FightEventsWithLevel = new List<dynamic>();
             if (!ArenaStageDataset.TryHydrate(request.SelectAreaId, request.StageId, area.MarkId, area.Desc, response.FightData))
                 return false;
-            int distributionType = area.DistributeTypes.FirstOrDefault();
+            ChallengeAreaTable reference = Challenges.Value.Single(row => row.ChallengeId == ArenaStageDataset.LevelReferenceChallengeId(
+                request.SelectAreaId, request.StageId, area.MarkId, area.Desc));
+            // AscNet policy (no retail tier->level source exists): NPC levels are the captured ones scaled by ChallengeArea.AvgScore(current)/AvgScore(captured challenge).
+            ArenaStageDataset.ScaleLevels(response.FightData, (double)challenge.AvgScore / reference.AvgScore);
+            int distributionType = area.DistributeTypes[zoneIndex];
             int distributionMaximum = state.ArenaDistributeMaxPoints.GetValueOrDefault(distributionType);
             Dictionary<string, object?> stageParams = response.FightData.StageParams as Dictionary<string, object?>
                 ?? new Dictionary<string, object?>();

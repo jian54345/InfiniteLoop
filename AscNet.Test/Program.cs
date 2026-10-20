@@ -24420,9 +24420,9 @@ namespace AscNet.Test
                 || Directory.EnumerateFiles(Path.GetDirectoryName(arenaDatasetPath)!, "*PreFightResponse*", SearchOption.AllDirectories).Any())
                 throw new InvalidDataException("War Zone resources must not contain a copied PreFightResponse snapshot.");
             AssertIntegerList(
-                selectedAreaStage.BuffIds.Select(Convert.ToInt64).Append(selectedFightEvent).ToList(),
+                new List<long> { selectedAreaStage.BuffIds[arenaSelectIndex] }.Concat(selectedGroup.FightEvents.Select(Convert.ToInt64)).ToList(),
                 arenaPreFight.FightData.EventIds.Select(Convert.ToInt64).ToList(),
-                "War Zone preflight AreaStage buffs and selected group event");
+                "War Zone preflight selected zone buff and group events");
 
             FightSettleResult arenaSettle = new()
             {
@@ -24521,6 +24521,78 @@ namespace AscNet.Test
             AssertEqual(0, scored.OldPoint, "War Zone captured OldPoint");
             AssertEqual(0, scored.OldArenaMaxPoint, "War Zone captured OldArenaMaxPoint");
             AssertEqual(3_779_317, scored.ArenaMaxPoint, "War Zone captured ArenaMaxPoint");
+
+            // Bug regressions: zone buff keyed by ArenaSelectIndex (not all BuffIds), distinct zones/tabs, tier-scaled NPC levels.
+            int savedWzLevel = player.SimulatedBattlefield.ArenaLevel;
+            int savedWzChallengeId = player.SimulatedBattlefield.ArenaChallengeId;
+            int wzPacketId = 81_300;
+            List<int> WzSelectTier(int tier)
+            {
+                ChallengeAreaTable tierChallenge = challenges
+                    .Where(row => row.ArenaLv == tier && player.PlayerData.Level >= row.MinLv && player.PlayerData.Level <= row.MaxLv)
+                    .OrderBy(row => row.ChallengeId).First();
+                player.SimulatedBattlefield.ArenaLevel = tier;
+                player.SimulatedBattlefield.ArenaChallengeId = tierChallenge.ChallengeId;
+                int id = wzPacketId++;
+                InvokeRegisteredRequestHandler("AreaDataRequest", harness.Session, id, new Dictionary<string, object>());
+                AreaDataResponse tierAreas = ReadResponsePayload<AreaDataResponse>(harness, id, nameof(AreaDataResponse), $"War Zone tier {tier} AreaDataResponse");
+                return JArray.FromObject(tierAreas.AreaList!).Select(area => area.Value<int>("AreaId")).ToList();
+            }
+            PreFightResponse WzPreFight(int areaId, int index)
+            {
+                int id = wzPacketId++;
+                InvokeRegisteredRequestHandler(nameof(PreFightRequest), harness.Session, id, new PreFightRequest
+                {
+                    PreFightData = new PreFightRequest.PreFightRequestPreFightData
+                    {
+                        ChallengeCount = 1, StageId = checked((uint)areaStages[areaId].StageId[0]), SelectAreaId = areaId,
+                        ArenaSelectIndex = index, CardIds = [], RobotIds = []
+                    }
+                });
+                return ReadResponsePayload<PreFightResponse>(harness, id, nameof(PreFightResponse), $"War Zone area {areaId} index {index} PreFightResponse");
+            }
+            long[] WzEvents(PreFightResponse response) => response.FightData.EventIds.Select(Convert.ToInt64).ToArray();
+            int WzFirstNpcLevel(PreFightResponse response) =>
+                JArray.FromObject(response.FightData.NpcGroupList)[0]!["NpcList"]![0]!.Value<int>("Level");
+
+            List<int> legendAreas = WzSelectTier(7);
+            AreaStageTable zoneA = areaStages[legendAreas[0]];
+            AreaStageTable zoneB = areaStages[legendAreas[1]];
+            AreaStageTable entropic = areaStages[legendAreas[^1]];
+            AssertEqual(2, entropic.BuffIds.Count, "War Zone Entropic Distortion offers two zone tabs");
+            player.SimulatedBattlefield.ArenaDistributeMaxPoints[entropic.DistributeTypes[0]] = 1_111;
+            player.SimulatedBattlefield.ArenaDistributeMaxPoints[entropic.DistributeTypes[1]] = 2_222;
+            PreFightResponse zoneAFight = WzPreFight(zoneA.Id, 0);
+            PreFightResponse zoneBFight = WzPreFight(zoneB.Id, 0);
+            PreFightResponse entropicTab0 = WzPreFight(entropic.Id, 0);
+            PreFightResponse entropicTab1 = WzPreFight(entropic.Id, 1);
+            AssertEqual(zoneA.BuffIds[0], (int)WzEvents(zoneAFight)[0], "War Zone first zone buff is its own element buff");
+            AssertEqual(zoneB.BuffIds[0], (int)WzEvents(zoneBFight)[0], "War Zone second zone buff is its own element buff");
+            AssertEqual(true, WzEvents(zoneAFight)[0] != WzEvents(zoneBFight)[0], "War Zone two zones get different buffs");
+            AssertEqual(true, WzEvents(zoneAFight).Length >= 1, "War Zone zone buff present");
+            AssertEqual(entropic.BuffIds[0], (int)WzEvents(entropicTab0)[0], "War Zone Entropic tab 1 buff");
+            AssertEqual(entropic.BuffIds[1], (int)WzEvents(entropicTab1)[0], "War Zone Entropic tab 2 buff");
+            AssertEqual(false, WzEvents(entropicTab0).Take(1).Concat(WzEvents(entropicTab1).Take(1)).Distinct().Count() == 1, "War Zone Entropic tabs differ");
+            AssertEqual(false, WzEvents(entropicTab0).Skip(1).Any(eventId => entropic.BuffIds.Contains((int)eventId)), "War Zone Entropic tab 1 excludes the other tab's buff");
+            AssertEqual("1111", JObject.FromObject(entropicTab0.FightData.StageParams).Value<string>("DistributeMaxScore"), "War Zone Entropic tab 1 distribution maximum");
+            AssertEqual("2222", JObject.FromObject(entropicTab1.FightData.StageParams).Value<string>("DistributeMaxScore"), "War Zone Entropic tab 2 distribution maximum");
+            AssertEqual(20044029, WzPreFight(zoneA.Id, zoneA.BuffIds.Count).Code, "War Zone out-of-range zone tab is rejected");
+
+            ChallengeAreaTable legendChallenge = challenges.Single(row => row.ChallengeId == player.SimulatedBattlefield.ArenaChallengeId);
+            int legendLevel = WzFirstNpcLevel(zoneAFight);
+            int vanguardLevel = WzFirstNpcLevel(WzPreFight(WzSelectTier(3)[0], 0));
+            ChallengeAreaTable vanguardChallenge = challenges.Single(row => row.ChallengeId == player.SimulatedBattlefield.ArenaChallengeId);
+            int leaderLevel = WzFirstNpcLevel(WzPreFight(WzSelectTier(5)[0], 0));
+            ChallengeAreaTable leaderChallenge = challenges.Single(row => row.ChallengeId == 14);
+            AssertEqual(14, player.SimulatedBattlefield.ArenaChallengeId, "War Zone captured tier probe uses the captured challenge");
+            AssertEqual(520, leaderLevel, "War Zone captured tier keeps the captured NPC level");
+            AssertEqual((int)Math.Round(520d * legendChallenge.AvgScore / leaderChallenge.AvgScore), legendLevel, "War Zone Legend NPC level scales with the tier's AvgScore");
+            AssertEqual((int)Math.Round(520d * vanguardChallenge.AvgScore / leaderChallenge.AvgScore), vanguardLevel, "War Zone Vanguard NPC level scales with the tier's AvgScore");
+            AssertEqual(true, legendLevel > vanguardLevel, "War Zone Legend monsters are stronger than Vanguard");
+            player.SimulatedBattlefield.ArenaLevel = savedWzLevel;
+            player.SimulatedBattlefield.ArenaChallengeId = savedWzChallengeId;
+            player.SimulatedBattlefield.ArenaDistributeMaxPoints.Remove(entropic.DistributeTypes[0]);
+            player.SimulatedBattlefield.ArenaDistributeMaxPoints.Remove(entropic.DistributeTypes[1]);
             foreach (CurrentConditionTable scoreCondition in arenaTaskConditions.Values.Where(condition => condition.Type is 28003 or 28006))
             {
                 AssertEqual(scored.Point, player.MissionProgress.ConditionCounters.GetValueOrDefault(scoreCondition.Id),

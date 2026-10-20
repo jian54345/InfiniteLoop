@@ -24,6 +24,17 @@ internal static class ArenaStageDataset
     public static int? PassTimeLimit(int areaId, uint stageId, int markId, string archetype) =>
         Resolve(areaId, stageId, markId, archetype)?.PassTimeLimit;
 
+    public static int? LevelReferenceChallengeId(int areaId, uint stageId, int markId, string archetype) =>
+        Resolve(areaId, stageId, markId, archetype)?.LevelReferenceChallengeId;
+
+    // Scales every hydrated NPC level; levels are stored for the captured challenge, so callers pass target/reference.
+    public static void ScaleLevels(PreFightResponse.PreFightResponseFightData fightData, double factor)
+    {
+        foreach (Dictionary<string, object> group in (List<Dictionary<string, object>>)fightData.NpcGroupList)
+            foreach (Dictionary<string, object?> npc in (List<object?>)group["NpcList"])
+                npc["Level"] = Math.Max(1L, (long)Math.Round(Convert.ToInt64(npc["Level"]) * factor));
+    }
+
     public static bool TryHydrate(int areaId, uint stageId, int markId, string archetype, PreFightResponse.PreFightResponseFightData fightData)
     {
         Stage? stage = Resolve(areaId, stageId, markId, archetype);
@@ -79,6 +90,8 @@ internal static class ArenaStageDataset
             throw new InvalidDataException("Arena reusable MarkId/archetype profiles must be unique");
         if (data.Stages.Any(stage => string.IsNullOrWhiteSpace(stage.Archetype)))
             throw new InvalidDataException("Arena stages must identify a source archetype");
+        if (data.Stages.Any(stage => stage.LevelReferenceChallengeId <= 0))
+            throw new InvalidDataException("Arena stages must name the captured ChallengeId their NPC levels belong to");
         if (data.Stages.Any(stage => !ConfiguredStages.Value.Contains(
                 (stage.AreaId, stage.StageId, stage.MarkId, stage.Archetype))))
             throw new InvalidDataException("Arena dataset contains a stage profile absent from nonabandoned AreaStage configuration");
@@ -110,6 +123,7 @@ internal static class ArenaStageDataset
         public int AreaId { get; set; }
         public int MarkId { get; set; }
         public bool ReusableArchetype { get; set; }
+        public int LevelReferenceChallengeId { get; set; }
         public List<int> NpcGroupRefs { get; set; } = new();
         public string Archetype { get; set; } = string.Empty;
         public int PassTimeLimit { get; set; }
