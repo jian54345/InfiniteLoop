@@ -539,6 +539,135 @@ impl UiFit {
     }
 }
 
+/// Lua for `uifov`: widens the vertical field of view of the UI-scene cameras of the War Zone map
+/// (`UiArenaNew3d`) and team select (`UiNewRoomSingle`) only; the lobby and character screens use the same camera
+/// names (`UiNearCamera`, `UiFarCamera`, `UiCamera`) under other scene prefabs and are left alone, so cameras are
+/// matched by the scene prefab they sit under. The game keeps their vertical FOV fixed at every aspect
+/// (runtime probe, 4.8: 22.62 on the War Zone map, 26.99 on team select at both 16:9 and 32:9). Cameras with a
+/// `CinemachineBrain` are driven by the active virtual camera every frame, so its `m_Lens.FieldOfView` is changed
+/// instead of the camera's. The game's own value is remembered per camera / virtual camera and re-read whenever the
+/// game changes it, so animated FOV changes keep working and nothing compounds; `scale = nil` restores the originals.
+/// The widening keeps the projection consistent: `2 atan(tan(fov/2) * scale)`. Returns "" when nothing changed.
+fn ui_fov_chunk(scale: Option<f32>) -> String {
+    let scale = scale.map_or("nil".to_owned(), |s| format!("{s}"));
+    format!(r#"
+local CS = rawget(_G, "CS")
+local pkg = rawget(_G, "package")
+local typeof = rawget(_G, "typeof")
+if not (CS and pkg and typeof) then return "{PENDING}" end
+local st = pkg.loaded.ascnet_uifov
+if not st then st = {{ orig = {{}}, set = {{}} }}; pkg.loaded.ascnet_uifov = st end
+local scale = {scale}
+local U = CS.UnityEngine
+local ok_b, brainT = pcall(function() return typeof(CS.Cinemachine.CinemachineBrain) end)
+local ok_v, vcamT = pcall(function() return typeof(CS.Cinemachine.CinemachineVirtualCamera) end)
+if not (ok_b and ok_v) then brainT, vcamT = nil, nil end
+local names = {{ UiNearCamera = true, UiFarCamera = true, UiCamera = true }}
+-- Scene prefabs (under `.../UiRoots/`) whose cameras are widened: War Zone map and team select.
+local scenes = {{ "^UiArenaNew3d", "^UiNewRoomSingle" }}
+local function targeted(t)
+    for _ = 1, 6 do
+        if not t then return false end
+        for _, pattern in ipairs(scenes) do
+            if string.find(t.name, pattern) then return true end
+        end
+        t = t.parent
+    end
+    return false
+end
+-- `put` keeps a setter per widened camera: screens disable their cameras when closed but reuse them when reopened,
+-- so switching off must also restore cameras that are not active right now.
+st.put = st.put or {{}}
+local changed = {{}}
+local seen = {{}}
+local function apply(key, label, s, get, put)
+    seen[key] = true
+    local cur = get()
+    local last = st.set[key]
+    if last == nil or math.abs(cur - last) > 0.01 then st.orig[key] = cur end
+    local target = s and math.deg(2 * math.atan(math.tan(math.rad(st.orig[key]) / 2) * s)) or st.orig[key]
+    if math.abs(cur - target) > 0.01 then
+        put(target)
+        changed[#changed + 1] = string.format("%s %.2f->%.2f", label, cur, target)
+    end
+    st.set[key] = s and target or nil
+    st.put[key] = s and put or nil
+end
+local cams = U.Camera.allCameras
+for i = 0, cams.Length - 1 do
+    local cam = cams[i]
+    if names[cam.name] and not cam.orthographic then
+        local s = targeted(cam.transform) and scale or nil
+        local brain = brainT and cam:GetComponent(brainT)
+        local active = brain and brain.ActiveVirtualCamera
+        local go = active and active.VirtualCameraGameObject
+        local vcam = go and go:GetComponent(vcamT)
+        if vcam then
+            apply("v" .. vcam:GetInstanceID(), cam.name .. "/" .. go.name, s,
+                function() return vcam.m_Lens.FieldOfView end,
+                function(x) local lens = vcam.m_Lens; lens.FieldOfView = x; vcam.m_Lens = lens end)
+        elseif not brain then
+            apply("c" .. cam:GetInstanceID(), cam.name, s,
+                function() return cam.fieldOfView end,
+                function(x) cam.fieldOfView = x end)
+        end
+    end
+end
+if not scale then
+    for key, put in pairs(st.put) do
+        if not seen[key] and st.orig[key] and pcall(put, st.orig[key]) then
+            changed[#changed + 1] = string.format("%s (inactive) ->%.2f", key, st.orig[key])
+        end
+    end
+    st.orig, st.set, st.put = {{}}, {{}}, {{}}
+end
+if #changed == 0 then return "" end
+return table.concat(changed, ", ")
+"#)
+}
+
+const UIFOV: &str = "uifov";
+
+/// `uifov = <scale>`: checked every tick while set (UI-scene cameras are created per screen), once more when cleared
+/// to give the cameras their own field of view back.
+#[derive(Default)]
+pub(super) struct UiFov {
+    applied: bool,
+    seen: u64,
+}
+
+impl UiFov {
+    /// Called every worker tick; problems are appended to `errors` under `uifov`.
+    pub(super) fn update(&mut self, bridge: &Result<LuaBridge, String>, scale: Option<f32>, errors: &mut Vec<(String, String)>) {
+        let bridge = match bridge {
+            Ok(bridge) => bridge,
+            Err(message) => {
+                if scale.is_some() {
+                    errors.push((UIFOV.into(), message.clone()));
+                }
+                return;
+            }
+        };
+        if scale.is_some() || self.applied {
+            bridge.queue(UIFOV, ui_fov_chunk(scale));
+        }
+        self.applied = scale.is_some();
+        if let Some((seq, result)) = bridge.outcome(UIFOV) {
+            if seq != self.seen {
+                self.seen = seq;
+                if let Ok(message) = &result {
+                    if !message.is_empty() {
+                        ok(UIFOV, message);
+                    }
+                }
+            }
+            if let Err(message) = result {
+                errors.push((UIFOV.into(), message));
+            }
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

@@ -19,8 +19,10 @@ pub(crate) struct Desired {
     pub nofade: bool,
     /// `ultrawide = on`: fullscreen at the monitor's own resolution, past the game's 2560x2048 cap.
     pub ultrawide: bool,
-    /// `ui16x9 = on`: on screens wider than 16:9, UI cameras draw into a centred 16:9 viewport.
+    /// `ui16x9 = on`: on screens wider than 16:9, menus and the fight HUD keep to a centred 16:9 safe area.
     pub ui16x9: bool,
+    /// `uifov = <scale>`: UI-scene cameras' vertical field of view widened by this factor (on tan(fov/2)).
+    pub ui_fov: Option<f32>,
 }
 
 #[derive(Clone, Debug, PartialEq)]

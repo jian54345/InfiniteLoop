@@ -8,7 +8,7 @@ use hudhook::windows::Win32::Foundation::HINSTANCE;
 use hudhook::{Hudhook, ImguiRenderLoop, MessageFilter};
 
 use super::graphics_live::{Desired, FieldInfo, FieldKind, Live, Status, LIVE};
-use super::graphics_params::{render, Override, CONFIG_FILE, RENDER_SCALE_RANGE};
+use super::graphics_params::{render, Override, CONFIG_FILE, RENDER_SCALE_RANGE, UI_FOV_RANGE};
 use super::il2cpp;
 
 const RED: [f32; 4] = [1.0, 0.35, 0.35, 1.0];
@@ -101,6 +101,7 @@ impl Overlay {
             desired.nofade = false;
             desired.ultrawide = false;
             desired.ui16x9 = false;
+            desired.ui_fov = None;
         }
         if !self.save_result.is_empty() {
             ui.text_wrapped(&self.save_result);
@@ -228,7 +229,14 @@ fn draw_display(ui: &Ui, desired: &mut Desired, status: &Status) {
     let mode = status.fullscreen.map_or("-", |full| if full { "fullscreen" } else { "windowed" });
     ui.text(format!("screen: {size} {mode}"));
     ui.checkbox("UI in centred 16:9", &mut desired.ui16x9);
-    for key in ["ultrawide", "ui16x9"] {
+    let mut fov_on = desired.ui_fov.is_some();
+    if ui.checkbox("Widen UI-scene FOV (map, team select)", &mut fov_on) {
+        desired.ui_fov = fov_on.then_some(1.3);
+    }
+    if let Some(scale) = desired.ui_fov.as_mut() {
+        ui.slider("UI-scene FOV factor", UI_FOV_RANGE.0, UI_FOV_RANGE.1, scale);
+    }
+    for key in ["ultrawide", "ui16x9", "uifov"] {
         if let Some((_, message)) = status.errors.iter().find(|(k, _)| k == key) {
             ui.text_colored(RED, message);
         }
