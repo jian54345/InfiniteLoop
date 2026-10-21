@@ -8853,6 +8853,21 @@
       "transformation": [
         "all authored rows and fields in source order; lists expanded to one-based indexed columns; omitted values remain blank; the Id-less first event row is written as Id 0"
       ]
+    },
+    {
+      "path": "client/fuben/arena/ArenaAreaBuffDetails.tsv",
+      "rows": 53,
+      "columns": 5,
+      "naturalKey": "Id",
+      "filter": "all",
+      "contentSha256": "8f2a98f8381b4e4198805afbe2db6d202586df2021684afb6029e9b55b1578bd",
+      "source": [
+        "/Volumes/Lucia/PGR-native-research/PGR_DATA/en/bytes/client/fuben/arena/ArenaAreaBuffDetails.json (sha256:72897588a95ee35f2fcd1060d7919218539607dc212439b233ead8854ea18a8c)",
+        "Scripts/import_arena_buff_details_4_8.py"
+      ],
+      "transformation": [
+        "all authored rows and fields in source order; omitted values remain blank"
+      ]
     }
   ],
   "validationNotes": [

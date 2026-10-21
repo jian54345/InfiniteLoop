@@ -24303,6 +24303,19 @@ namespace AscNet.Test
             if (selectedAreaIds.Distinct().Count() != selectedAreaIds.Length
                 || selectedAreaIds.Any(id => !areaStages.ContainsKey(id)))
                 throw new InvalidDataException("War Zone selected areas must be distinct valid table AreaStage IDs.");
+            // Support buffs match the zone's element (retail: Laser Alloy -> 4174 Thunderstrike, both LeiDian affixes).
+            Dictionary<int, string> supportAffix = TableReaderV2.Parse<ArenaAreaBuffDetailsTable>().ToDictionary(row => row.Id,
+                row => Path.GetFileNameWithoutExtension(row.Icon ?? "").Replace("IconAffix", "").Replace("Up", ""));
+            string[] elementAffix = ["", "Wuli", "Bingshuang", "Huoyan", "LeiDian", "Anneng", "Nihility", "Dianshu", "Zhanji", "Fubing", "Fenshao", "Anyan"];
+            for (int index = 0; index < selectedAreaIds.Length; index++)
+            {
+                HashSet<string> zoneAffixes = areaStages[selectedAreaIds[index]].DistributeTypes
+                    .Where(type => type > 0 && type < elementAffix.Length).Select(type => elementAffix[type]).ToHashSet();
+                if (zoneAffixes.Count == 0) continue;
+                AssertEqual(true, arenaGroupFightEvents[selectedGroupIds[index]].FightEvents.Where(id => id > 0)
+                    .All(id => supportAffix.TryGetValue(id, out string? affix) && zoneAffixes.Contains(affix)),
+                    $"War Zone area {selectedAreaIds[index]} support buffs match its element");
+            }
             if (availableAreaGroups.Count > 0 && selectedAreaIds.Any(id => availableAreaGroups.Count(group => group.Areas.Contains(id)) != 1))
                 throw new InvalidDataException("War Zone selected areas must each originate from one distinct ChallengeArea.AreaIdGroup.");
             foreach (JObject area in selectedAreas)

@@ -473,6 +473,32 @@ namespace AscNet.GameServer.Handlers
                 selected);
             return new AreaDataResponse { Code = 0, TotalPoint = state.ArenaPoint, AreaList = areas, AreaDistributeMaxPointDict = maxima, GroupFightEvents = events };
         }
+        // Retail pairs each zone with support buffs of its element (capture: Laser Alloy -> 4174 Thunderstrike,
+        // Nihil Floating Platform -> 4185 Raven's Dirge). No table links them, so as AscNet policy a group is eligible
+        // when every event's ArenaAreaBuffDetails affix icon matches the zone's AreaDistributeType element; the key
+        // names below translate AreaDistributeType.Desc into those icon names. Zones with no eligible group
+        // (Chaos: no Chaos support buff exists) draw from all groups as before.
+        private static readonly Dictionary<int, string> DistributeTypeAffix = new()
+        {
+            [1] = "Wuli", [2] = "Bingshuang", [3] = "Huoyan", [4] = "LeiDian", [5] = "Anneng", [6] = "Nihility",
+            [7] = "Dianshu", [8] = "Zhanji", [9] = "Fubing", [10] = "Fenshao", [11] = "Anyan"
+        };
+        private static readonly Lazy<Dictionary<int, string>> SupportBuffAffix = new(() =>
+            TableReaderV2.Parse<ArenaAreaBuffDetailsTable>().ToDictionary(row => row.Id,
+                row => Path.GetFileNameWithoutExtension(row.Icon ?? string.Empty).Replace("IconAffix", "").Replace("Up", "")));
+
+        private static List<ArenaGroupFightEventTable> SupportGroupsFor(int areaId)
+        {
+            HashSet<string> affixes = (AreaStages.Value.GetValueOrDefault(areaId)?.DistributeTypes ?? [])
+                .Where(DistributeTypeAffix.ContainsKey).Select(type => DistributeTypeAffix[type]).ToHashSet();
+            List<ArenaGroupFightEventTable> eligible = FightEventGroups.Value.Where(group =>
+                group.FightEvents.Any(eventId => eventId > 0)
+                && group.FightEvents.Where(eventId => eventId > 0)
+                    .All(eventId => SupportBuffAffix.Value.TryGetValue(eventId, out string? affix) && affixes.Contains(affix)))
+                .ToList();
+            return eligible.Count > 0 ? eligible : FightEventGroups.Value;
+        }
+
         private static List<int> SelectedGroupFightEventIds(int activityNo, long playerId, IReadOnlyList<int> selectedAreas)
         {
             if (FightEventGroups.Value.Count == 0)
@@ -480,8 +506,8 @@ namespace AscNet.GameServer.Handlers
 
             return selectedAreas.Select(areaId =>
             {
-                int index = (int)(StableAreaHash(activityNo, playerId, areaId) % (uint)FightEventGroups.Value.Count);
-                return FightEventGroups.Value[index].Id;
+                List<ArenaGroupFightEventTable> groups = SupportGroupsFor(areaId);
+                return groups[(int)(StableAreaHash(activityNo, playerId, areaId) % (uint)groups.Count)].Id;
             }).ToList();
         }
 

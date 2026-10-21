@@ -55,3 +55,7 @@ Special "Honey Cake" (`97007`) and Movie Film: Cerberus (`97008`) remain invento
 ## War Zone monster levels
 
 No 4.8 table maps War Zone tiers (Backup through Legend) to monster levels. As maintainer-authorized AscNet policy (see `AGENTS.MD`), NPC levels are the curated levels in `Resources/Configs/arena_stage_data.json` scaled by `ChallengeArea.AvgScore` of the current challenge over that of the captured reference challenge (`LevelReferenceChallengeId`): Legend ×2, Hero ×1.5, Leader ×1, and Backup/Elite/Vanguard ×0.75 (those tiers share one `AvgScore`, so the table cannot separate them). Retail per-tier levels are unconfirmed; replace this when they are available.
+
+## War Zone support buffs
+
+No table links a zone to its support-buff group (`ArenaGroupFightEvent`). Retail pairs them by element (captured: Laser Alloy with 4174 Thunderstrike, Nihil Floating Platform with 4185 Raven's Dirge). As AscNet policy, a group is eligible for a zone when every event's `ArenaAreaBuffDetails` affix icon matches the zone's `AreaDistributeType` element, and a stable per-player draw picks among eligible groups. Chaos zones have no Chaos support buff, so they still draw from all groups.
