@@ -24303,18 +24303,26 @@ namespace AscNet.Test
             if (selectedAreaIds.Distinct().Count() != selectedAreaIds.Length
                 || selectedAreaIds.Any(id => !areaStages.ContainsKey(id)))
                 throw new InvalidDataException("War Zone selected areas must be distinct valid table AreaStage IDs.");
-            // Support buffs match the zone's element (retail: Laser Alloy -> 4174 Thunderstrike, both LeiDian affixes).
+            // Each zone tab gets one support buff of its element (retail: Laser Alloy -> 4174 Thunderstrike, both
+            // LeiDian affixes); an effect zone's two tabs get two. A Chaos tab has no Chaos support buff.
             Dictionary<int, string> supportAffix = TableReaderV2.Parse<ArenaAreaBuffDetailsTable>().ToDictionary(row => row.Id,
                 row => Path.GetFileNameWithoutExtension(row.Icon ?? "").Replace("IconAffix", "").Replace("Up", ""));
             string[] elementAffix = ["", "Wuli", "Bingshuang", "Huoyan", "LeiDian", "Anneng", "Nihility", "Dianshu", "Zhanji", "Fubing", "Fenshao", "Anyan"];
+            bool TabMatches(int type, long eventId) => type >= elementAffix.Length
+                || (supportAffix.TryGetValue((int)eventId, out string? affix) && affix == elementAffix[type]);
             for (int index = 0; index < selectedAreaIds.Length; index++)
             {
-                HashSet<string> zoneAffixes = areaStages[selectedAreaIds[index]].DistributeTypes
-                    .Where(type => type > 0 && type < elementAffix.Length).Select(type => elementAffix[type]).ToHashSet();
-                if (zoneAffixes.Count == 0) continue;
-                AssertEqual(true, arenaGroupFightEvents[selectedGroupIds[index]].FightEvents.Where(id => id > 0)
-                    .All(id => supportAffix.TryGetValue(id, out string? affix) && zoneAffixes.Contains(affix)),
-                    $"War Zone area {selectedAreaIds[index]} support buffs match its element");
+                int[] tabs = areaStages[selectedAreaIds[index]].DistributeTypes.Where(type => type > 0).ToArray();
+                int[] support = arenaGroupFightEvents[selectedGroupIds[index]].FightEvents.Where(id => id > 0).ToArray();
+                AssertEqual(tabs.Length, support.Length, $"War Zone area {selectedAreaIds[index]} has one support buff per tab");
+                AssertEqual(true, tabs.Length switch
+                    {
+                        1 => TabMatches(tabs[0], support[0]),
+                        2 => (TabMatches(tabs[0], support[0]) && TabMatches(tabs[1], support[1]))
+                            || (TabMatches(tabs[0], support[1]) && TabMatches(tabs[1], support[0])),
+                        _ => true
+                    },
+                    $"War Zone area {selectedAreaIds[index]} support buffs match its elements");
             }
             if (availableAreaGroups.Count > 0 && selectedAreaIds.Any(id => availableAreaGroups.Count(group => group.Areas.Contains(id)) != 1))
                 throw new InvalidDataException("War Zone selected areas must each originate from one distinct ChallengeArea.AreaIdGroup.");
@@ -24433,9 +24441,9 @@ namespace AscNet.Test
                 || Directory.EnumerateFiles(Path.GetDirectoryName(arenaDatasetPath)!, "*PreFightResponse*", SearchOption.AllDirectories).Any())
                 throw new InvalidDataException("War Zone resources must not contain a copied PreFightResponse snapshot.");
             AssertIntegerList(
-                new List<long> { selectedAreaStage.BuffIds[arenaSelectIndex] }.Concat(selectedGroup.FightEvents.Select(Convert.ToInt64)).ToList(),
+                new List<long> { selectedAreaStage.BuffIds[arenaSelectIndex] }.Concat(selectedGroup.FightEvents.Where(id => id > 0).Take(1).Select(Convert.ToInt64)).ToList(),
                 arenaPreFight.FightData.EventIds.Select(Convert.ToInt64).ToList(),
-                "War Zone preflight selected zone buff and group events");
+                "War Zone preflight selected zone buff and its support buff");
 
             FightSettleResult arenaSettle = new()
             {
@@ -24587,6 +24595,9 @@ namespace AscNet.Test
             AssertEqual(entropic.BuffIds[1], (int)WzEvents(entropicTab1)[0], "War Zone Entropic tab 2 buff");
             AssertEqual(false, WzEvents(entropicTab0).Take(1).Concat(WzEvents(entropicTab1).Take(1)).Distinct().Count() == 1, "War Zone Entropic tabs differ");
             AssertEqual(false, WzEvents(entropicTab0).Skip(1).Any(eventId => entropic.BuffIds.Contains((int)eventId)), "War Zone Entropic tab 1 excludes the other tab's buff");
+            AssertEqual(2, WzEvents(entropicTab0).Length, "War Zone Entropic tab 1 carries one support buff");
+            AssertEqual(2, WzEvents(entropicTab1).Length, "War Zone Entropic tab 2 carries one support buff");
+            AssertEqual(true, WzEvents(entropicTab0)[1] != WzEvents(entropicTab1)[1], "War Zone Entropic tabs get different support buffs");
             AssertEqual("1111", JObject.FromObject(entropicTab0.FightData.StageParams).Value<string>("DistributeMaxScore"), "War Zone Entropic tab 1 distribution maximum");
             AssertEqual("2222", JObject.FromObject(entropicTab1.FightData.StageParams).Value<string>("DistributeMaxScore"), "War Zone Entropic tab 2 distribution maximum");
             AssertEqual(20044029, WzPreFight(zoneA.Id, zoneA.BuffIds.Count).Code, "War Zone out-of-range zone tab is rejected");

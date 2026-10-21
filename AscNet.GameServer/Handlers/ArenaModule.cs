@@ -413,7 +413,7 @@ namespace AscNet.GameServer.Handlers
             ArenaGroupFightEventTable? group = selectedAreaIndex < groupIds.Count
                 ? FightEventGroups.Value.FirstOrDefault(candidate => candidate.Id == groupIds[selectedAreaIndex])
                 : null;
-            // Client XArenaAgency: ArenaSelectIndex = SelectBuffIndex-1 indexes AreaStage.BuffIds/DistributeTypes (zone tab); group events are all shown, none selectable.
+            // Client XArenaAgency: ArenaSelectIndex = SelectBuffIndex-1 indexes AreaStage.BuffIds/DistributeTypes (zone tab); each tab carries its own support event.
             int zoneIndex = request.ArenaSelectIndex;
             if (group is null
                 || zoneIndex < 0
@@ -424,8 +424,9 @@ namespace AscNet.GameServer.Handlers
                 return false;
             }
 
+            int supportEvent = TabSupportEvent(area, group, zoneIndex);
             response.FightData.EventIds = new List<dynamic> { area.BuffIds[zoneIndex] }
-                .Concat(group.FightEvents.Where(eventId => eventId > 0).Cast<dynamic>())
+                .Concat(supportEvent > 0 ? [supportEvent] : Array.Empty<dynamic>())
                 .ToList();
             response.FightData.FightEventsWithLevel = new List<dynamic>();
             if (!ArenaStageDataset.TryHydrate(request.SelectAreaId, request.StageId, area.MarkId, area.Desc, response.FightData))
@@ -474,10 +475,11 @@ namespace AscNet.GameServer.Handlers
             return new AreaDataResponse { Code = 0, TotalPoint = state.ArenaPoint, AreaList = areas, AreaDistributeMaxPointDict = maxima, GroupFightEvents = events };
         }
         // Retail pairs each zone with support buffs of its element (capture: Laser Alloy -> 4174 Thunderstrike,
-        // Nihil Floating Platform -> 4185 Raven's Dirge). No table links them, so as AscNet policy a group is eligible
-        // when every event's ArenaAreaBuffDetails affix icon matches the zone's AreaDistributeType element; the key
-        // names below translate AreaDistributeType.Desc into those icon names. Zones with no eligible group
-        // (Chaos: no Chaos support buff exists) draw from all groups as before.
+        // Nihil Floating Platform -> 4185 Raven's Dirge), one buff per zone tab: an effect zone's two tabs each get
+        // their own. No table links them, so as AscNet policy a group is eligible when it has one event per tab and
+        // each tab (AreaDistributeType) has an event whose ArenaAreaBuffDetails affix icon is that tab's element; a
+        // Chaos tab (no Chaos support buff exists) accepts any event. When no group matches, any group with one event
+        // per tab is used. The key names below translate AreaDistributeType.Desc into those icon names.
         private static readonly Dictionary<int, string> DistributeTypeAffix = new()
         {
             [1] = "Wuli", [2] = "Bingshuang", [3] = "Huoyan", [4] = "LeiDian", [5] = "Anneng", [6] = "Nihility",
@@ -487,16 +489,34 @@ namespace AscNet.GameServer.Handlers
             TableReaderV2.Parse<ArenaAreaBuffDetailsTable>().ToDictionary(row => row.Id,
                 row => Path.GetFileNameWithoutExtension(row.Icon ?? string.Empty).Replace("IconAffix", "").Replace("Up", "")));
 
+        private static bool MatchesTab(int distributeType, int eventId) =>
+            !DistributeTypeAffix.TryGetValue(distributeType, out string? element)
+            || (SupportBuffAffix.Value.TryGetValue(eventId, out string? affix) && affix == element);
+
+        // Assigns each tab a distinct event that matches it, or null when the group cannot cover every tab.
+        private static int[]? AssignTabEvents(IReadOnlyList<int> tabs, IReadOnlyList<int> events)
+        {
+            if (events.Count != tabs.Count) return null;
+            IEnumerable<IReadOnlyList<int>> orders = events.Count == 2 ? [events, [events[1], events[0]]] : [events];
+            return orders.FirstOrDefault(order => tabs.Select((tab, index) => MatchesTab(tab, order[index])).All(ok => ok))?.ToArray();
+        }
+
+        private static List<int> GroupEvents(ArenaGroupFightEventTable group) => group.FightEvents.Where(eventId => eventId > 0).ToList();
+
         private static List<ArenaGroupFightEventTable> SupportGroupsFor(int areaId)
         {
-            HashSet<string> affixes = (AreaStages.Value.GetValueOrDefault(areaId)?.DistributeTypes ?? [])
-                .Where(DistributeTypeAffix.ContainsKey).Select(type => DistributeTypeAffix[type]).ToHashSet();
-            List<ArenaGroupFightEventTable> eligible = FightEventGroups.Value.Where(group =>
-                group.FightEvents.Any(eventId => eventId > 0)
-                && group.FightEvents.Where(eventId => eventId > 0)
-                    .All(eventId => SupportBuffAffix.Value.TryGetValue(eventId, out string? affix) && affixes.Contains(affix)))
-                .ToList();
-            return eligible.Count > 0 ? eligible : FightEventGroups.Value;
+            List<int> tabs = AreaStages.Value.GetValueOrDefault(areaId)?.DistributeTypes.Where(type => type > 0).ToList() ?? [];
+            List<ArenaGroupFightEventTable> sized = FightEventGroups.Value.Where(group => GroupEvents(group).Count == tabs.Count).ToList();
+            List<ArenaGroupFightEventTable> eligible = sized.Where(group => AssignTabEvents(tabs, GroupEvents(group)) is not null).ToList();
+            return eligible.Count > 0 ? eligible : sized.Count > 0 ? sized : FightEventGroups.Value;
+        }
+
+        // The support event applied in a fight for the selected tab: the group event matched to that tab.
+        private static int TabSupportEvent(AreaStageTable area, ArenaGroupFightEventTable group, int tabIndex)
+        {
+            List<int> events = GroupEvents(group);
+            int[]? assigned = AssignTabEvents(area.DistributeTypes.Where(type => type > 0).ToList(), events);
+            return assigned is not null ? assigned[tabIndex] : events.ElementAtOrDefault(tabIndex);
         }
 
         private static List<int> SelectedGroupFightEventIds(int activityNo, long playerId, IReadOnlyList<int> selectedAreas)
