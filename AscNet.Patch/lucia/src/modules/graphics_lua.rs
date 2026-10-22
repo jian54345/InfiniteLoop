@@ -75,6 +75,8 @@ struct Job {
     name: String,
     source: String,
     due: Instant,
+    console_seq: Option<u64>,
+    console_line: Option<String>,
 }
 
 #[derive(Clone)]
@@ -88,6 +90,46 @@ static INBOX: Mutex<Vec<Job>> = Mutex::new(Vec::new());
 static INBOX_LEN: AtomicUsize = AtomicUsize::new(0);
 static OUTCOMES: Mutex<Vec<Outcome>> = Mutex::new(Vec::new());
 static SEQ: AtomicU64 = AtomicU64::new(0);
+static CONSOLE_SEQ: AtomicU64 = AtomicU64::new(0);
+static BRIDGE_ERROR: Mutex<Option<String>> = Mutex::new(None);
+
+/// Overlay-facing APIs only touch Rust state; Lua executes in the main-thread detour.
+pub(super) fn queue_console(source: &str) -> u64 {
+    let mut inbox = INBOX.lock().unwrap_or_else(PoisonError::into_inner);
+    let seq = CONSOLE_SEQ.fetch_add(1, Relaxed) + 1;
+    inbox.retain(|job| job.name != "console");
+    if let Some(message) = console_error() {
+        INBOX_LEN.store(inbox.len(), Relaxed);
+        let mut outcomes = OUTCOMES.lock().unwrap_or_else(PoisonError::into_inner);
+        outcomes.retain(|outcome| outcome.name != "console");
+        outcomes.push(Outcome { name: "console".into(), seq, result: Err(message) });
+        ok("lua console", source.lines().next().unwrap_or_default());
+        return seq;
+    }
+    let console_line = Some(source.lines().next().unwrap_or_default().to_owned());
+    let source = format!(r##"
+local function stringify(...)
+    local values = {{}}
+    for i = 1, select("#", ...) do values[i] = tostring(select(i, ...)) end
+    return table.concat(values, "\t")
+end
+return stringify((function()
+{source}
+end)())
+"##);
+    inbox.push(Job { name: "console".into(), source, due: Instant::now(), console_seq: Some(seq), console_line });
+    INBOX_LEN.store(inbox.len(), Relaxed);
+    seq
+}
+
+pub(super) fn console_outcome() -> Option<(u64, Result<String, String>)> {
+    OUTCOMES.lock().unwrap_or_else(PoisonError::into_inner).iter()
+        .find(|o| o.name == "console").map(|o| (o.seq, o.result.clone()))
+}
+
+pub(super) fn console_error() -> Option<String> {
+    BRIDGE_ERROR.lock().unwrap_or_else(PoisonError::into_inner).clone()
+}
 /// 0 = not read yet.
 static SCREEN_W: AtomicI32 = AtomicI32::new(0);
 static SCREEN_H: AtomicI32 = AtomicI32::new(0);
@@ -116,6 +158,13 @@ pub(super) struct LuaBridge {
 
 impl LuaBridge {
     pub(super) unsafe fn install(il: &Il2cpp, assemblies: &[*mut c_void]) -> Result<Self> {
+        let result = Self::install_inner(il, assemblies);
+        *BRIDGE_ERROR.lock().unwrap_or_else(PoisonError::into_inner) =
+            result.as_ref().err().map(|error| format!("{error:#}"));
+        result
+    }
+
+    unsafe fn install_inner(il: &Il2cpp, assemblies: &[*mut c_void]) -> Result<Self> {
         let (engine, _) = il.find_class(assemblies, "", "XLuaEngine").ok_or_else(|| anyhow!("class `XLuaEngine` not found in any of {} loaded assemblies", assemblies.len()))?;
         let env_name = CString::new("Env")?;
         let env_field = (il.class_field)(engine, env_name.as_ptr());
@@ -157,7 +206,7 @@ impl LuaBridge {
     pub(super) fn queue(&self, chunk_name: &str, source: String) {
         let mut inbox = INBOX.lock().unwrap_or_else(PoisonError::into_inner);
         inbox.retain(|job| job.name != chunk_name);
-        inbox.push(Job { name: chunk_name.to_owned(), source, due: Instant::now() });
+        inbox.push(Job { name: chunk_name.to_owned(), source, due: Instant::now(), console_seq: None, console_line: None });
         INBOX_LEN.store(inbox.len(), Relaxed);
     }
 
@@ -246,8 +295,11 @@ unsafe fn tick(ctx: &Ctx, local: &mut Local) {
             continue;
         }
         let mut job = local.jobs.remove(index);
+        if job.console_seq.is_some_and(|seq| seq != CONSOLE_SEQ.load(Relaxed)) {
+            continue;
+        }
         let result = run(ctx, env, &job);
-        if matches!(&result, Ok(Some(message)) if message == PENDING) {
+        if job.console_seq.is_none() && matches!(&result, Ok(Some(message)) if message == PENDING) {
             if !local.waiting.contains(&job.name) {
                 local.waiting.push(job.name.clone());
                 ok(&format!("lua {}", job.name), "the game's Lua is not initialised yet; retrying every 0.5 s");
@@ -259,10 +311,15 @@ unsafe fn tick(ctx: &Ctx, local: &mut Local) {
         }
         local.waiting.retain(|name| *name != job.name);
         let result = result.map(Option::unwrap_or_default);
-        if let Err(message) = &result {
-            il2cpp::failed(&format!("lua {}", job.name), message, "effects of the chunk before the error are not rolled back");
+        if let Some(line) = &job.console_line {
+            ok("lua console", line);
         }
-        let outcome = Outcome { name: job.name, seq: SEQ.fetch_add(1, Relaxed) + 1, result };
+        if job.console_seq.is_none() {
+            if let Err(message) = &result {
+                il2cpp::failed(&format!("lua {}", job.name), message, "effects of the chunk before the error are not rolled back");
+            }
+        }
+        let outcome = Outcome { name: job.name, seq: job.console_seq.unwrap_or_else(|| SEQ.fetch_add(1, Relaxed) + 1), result };
         publish(local, outcome);
     }
 }
@@ -300,6 +357,9 @@ unsafe fn run(ctx: &Ctx, env: *mut c_void, job: &Job) -> Result<Option<String>, 
         let mut buffer = [0i8; 2048];
         (ctx.format_exception)(exception, buffer.as_mut_ptr(), buffer.len() as i32 - 1);
         let text = c_string(buffer.as_ptr()).unwrap_or_else(|| "managed exception (message unreadable)".into());
+        if job.console_seq.is_some() {
+            return Err(text);
+        }
         return Err(text.split_whitespace().collect::<Vec<_>>().join(" ").chars().take(MESSAGE_LIMIT).collect());
     }
     Ok(first_string(ctx, results))
@@ -474,7 +534,8 @@ impl Ultrawide {
 ///   instead of 3840x1080) and re-adapts the HUD layout.
 /// Full-screen backgrounds outside the safe panes stay full width by design. Returns "" when nothing changed, so it
 /// can run every tick; `XResolutionManager.Update` keeps the custom rect across resolution changes.
-fn ui_fit_chunk(want: bool) -> String {
+fn ui_fit_chunk(want: bool, ui_scale: Option<f32>) -> String {
+    let scale = ui_scale.unwrap_or(1.0);
     format!(r#"
 local CS = rawget(_G, "CS")
 local data = rawget(_G, "XDataCenter")
@@ -486,12 +547,52 @@ local wide = {want} and sw * 9 > sh * 16 + 9
 local w = wide and math.floor(sh * 16 / 9 + 0.5) or sw
 local x = wide and math.floor((sw - w) / 2) or 0
 local cur = res.OriginSafeArea
-if math.abs(cur.x - x) < 1 and math.abs(cur.width - w) < 1 and math.abs(cur.height - sh) < 1 then return "" end
-res.SetSafeArea(wide and U.Rect(x, 0, w, sh) or U.Rect(0, 0, 0, 0))
-res.RefreshResolution()
-local hud = CS.XCustomUi.Instance
-if hud then hud:RefreshResolution() end
-data.SetManager.SetScreenOff()
+local changed = math.abs(cur.x - x) >= 1 or math.abs(cur.width - w) >= 1 or math.abs(cur.height - sh) >= 1
+if changed then
+    -- Keep a real physical safe area: scaling this rect can make its width negative.
+    -- The fight HUD and other consumers use it directly, unlike the 1080-based adapter.
+    res.SetSafeArea(wide and U.Rect(x, 0, w, sh) or U.Rect(0, 0, 0, 0))
+    res.RefreshResolution()
+    local hud = CS.XCustomUi.Instance
+    if hud then hud:RefreshResolution() end
+    data.SetManager.SetScreenOff()
+end
+local typeof = rawget(_G, "typeof")
+if not typeof then return "{PENDING}" end
+local adapters = U.Resources.FindObjectsOfTypeAll(typeof(CS.XUiSafeAreaAdapter))
+local seen = {{}}
+for i = 0, adapters.Length - 1 do
+    local adapter = adapters[i]
+    local t = adapter.transform
+    local root = false
+    while t do
+        if t.name == "UiRoot" then root = true; break end
+        t = t.parent
+    end
+    if root and adapter.gameObject.scene:IsValid() then
+        local rect = adapter:GetComponent(typeof(U.RectTransform))
+        local id = rect and rect:GetInstanceID()
+        if id and not seen[id] then
+            seen[id] = true
+            -- Reset the game's notch + saved SpecialScreenOff first: never compound.
+            adapter:UpdateSpecialScreenOff()
+            local canvas = adapter:GetComponentInParent(typeof(U.Canvas))
+            local scaler = canvas and canvas.rootCanvas:GetComponent(typeof(U.UI.CanvasScaler))
+            if wide and scaler and scaler.uiScaleMode == U.UI.CanvasScaler.ScaleMode.ScaleWithScreenSize then
+                local ref = scaler.referenceResolution
+                if math.abs(ref.x - 1920 / {scale}) < 0.1 and math.abs(ref.y - 1080 / {scale}) < 0.1 then
+                    -- Adapter uses notchPx * 1080 / screenHeight; actual reference is
+                    -- 1080/f, so add notchCanvas*(1/f-1), leaving saved slider off intact.
+                    local delta = CS.XAppPlatBridge.GetNotchSize() * 1080 / sh * (1 / {scale} - 1)
+                    local lo, hi = rect.offsetMin, rect.offsetMax
+                    rect.offsetMin = U.Vector2(lo.x + delta, lo.y)
+                    rect.offsetMax = U.Vector2(hi.x - delta, hi.y)
+                end
+            end
+        end
+    end
+end
+if not changed then return "" end
 local now = res.OriginSafeArea
 return string.format("safe area %.0f,%.0f %.0fx%.0f on %dx%d (was %.0f,%.0f %.0fx%.0f)", now.x, now.y, now.width, now.height, sw, sh, cur.x, cur.y, cur.width, cur.height)
 "#)
@@ -505,11 +606,12 @@ const UI16X9: &str = "ui16x9";
 pub(super) struct UiFit {
     applied: bool,
     seen: u64,
+    scale: Option<f32>,
 }
 
 impl UiFit {
     /// Called every worker tick; problems are appended to `errors` under `ui16x9`.
-    pub(super) fn update(&mut self, bridge: &Result<LuaBridge, String>, want: bool, errors: &mut Vec<(String, String)>) {
+    pub(super) fn update(&mut self, bridge: &Result<LuaBridge, String>, want: bool, ui_scale: Option<f32>, errors: &mut Vec<(String, String)>) {
         let bridge = match bridge {
             Ok(bridge) => bridge,
             Err(message) => {
@@ -519,10 +621,11 @@ impl UiFit {
                 return;
             }
         };
-        if want || self.applied {
-            bridge.queue(UI16X9, ui_fit_chunk(want));
+        if want || self.applied || ui_scale != self.scale {
+            bridge.queue(UI16X9, ui_fit_chunk(want, ui_scale));
         }
         self.applied = want;
+        self.scale = ui_scale;
         if let Some((seq, result)) = bridge.outcome(UI16X9) {
             if seq != self.seen {
                 self.seen = seq;
@@ -668,6 +771,80 @@ impl UiFov {
     }
 }
 
+fn ui_scale_chunk(scale: Option<f32>) -> String {
+    let scale = scale.unwrap_or(1.0);
+    format!(r#"
+local CS, pkg, typeof = rawget(_G, "CS"), rawget(_G, "package"), rawget(_G, "typeof")
+if not (CS and pkg and typeof) then return "{PENDING}" end
+local U = CS.UnityEngine
+local st = pkg.loaded.ascnet_uiscale
+if not st then st = {{ canvases = {{}} }}; pkg.loaded.ascnet_uiscale = st end
+local scalers = U.Resources.FindObjectsOfTypeAll(typeof(U.UI.CanvasScaler))
+local changed = 0
+for i = 0, scalers.Length - 1 do
+    local scaler = scalers[i]
+    local canvas = scaler:GetComponent(typeof(U.Canvas))
+    local t = scaler.transform
+    local root = false
+    while t do
+        if t.name == "UiRoot" then root = true; break end
+        t = t.parent
+    end
+    if root and canvas and canvas.isRootCanvas and scaler.gameObject.scene:IsValid()
+        and scaler.uiScaleMode == U.UI.CanvasScaler.ScaleMode.ScaleWithScreenSize then
+        local id = scaler:GetInstanceID()
+        local ref = scaler.referenceResolution
+        if st.canvases[id] or (math.abs(ref.x - 1920) < 0.1 and math.abs(ref.y - 1080) < 0.1) then
+            st.canvases[id] = scaler
+            local x, y = 1920 / {scale}, 1080 / {scale}
+            if math.abs(ref.x - x) > 0.1 or math.abs(ref.y - y) > 0.1 then
+                scaler.referenceResolution = U.Vector2(x, y)
+                changed = changed + 1
+            end
+        end
+    end
+end
+if {scale} == 1 then
+    for id, scaler in pairs(st.canvases) do
+        pcall(function() scaler.referenceResolution = U.Vector2(1920, 1080) end)
+        st.canvases[id] = nil
+    end
+end
+return changed > 0 and string.format("%d root canvases, scale %.3f", changed, {scale}) or ""
+"#)
+}
+
+#[derive(Default)]
+pub(super) struct UiScale {
+    applied: bool,
+    seen: u64,
+}
+
+impl UiScale {
+    pub(super) fn update(&mut self, bridge: &Result<LuaBridge, String>, scale: Option<f32>, errors: &mut Vec<(String, String)>) {
+        let bridge = match bridge {
+            Ok(bridge) => bridge,
+            Err(message) => {
+                if scale.is_some() { errors.push(("uiscale".into(), message.clone())); }
+                return;
+            }
+        };
+        if scale.is_some() || self.applied {
+            bridge.queue("uiscale", ui_scale_chunk(scale));
+        }
+        self.applied = scale.is_some();
+        if let Some((seq, result)) = bridge.outcome("uiscale") {
+            if seq != self.seen {
+                self.seen = seq;
+                if let Ok(message) = &result {
+                    if !message.is_empty() { ok("uiscale", message); }
+                }
+            }
+            if let Err(message) = result { errors.push(("uiscale".into(), message)); }
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -676,5 +853,8 @@ mod tests {
     fn chunks_keep_the_pending_contract() {
         assert!(LUA_PREAMBLE.contains(&format!("return \"{PENDING}\"")));
         assert!(LUA_ON.contains("ascnet = true") && LUA_OFF.contains("list[i].ascnet"));
+        assert!(ui_fit_chunk(true, Some(1.25)).contains("(1 / 1.25 - 1)"));
+        assert!(ui_scale_chunk(Some(1.25)).contains("1920 / 1.25"));
+        assert!(ui_scale_chunk(None).contains("1920 / 1"));
     }
 }

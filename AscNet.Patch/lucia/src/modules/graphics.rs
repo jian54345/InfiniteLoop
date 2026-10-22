@@ -10,12 +10,17 @@
 //!   (`graphics_extras.rs`); switching either off restores the game's own values.
 //! - `ultrawide`: fullscreen at the monitor's own resolution past the game's 2560x2048 cap. Needs Lua run on the main
 //!   thread, so a detour on `XLuaEngine.Update` drains queued chunks (`graphics_lua.rs`).
+//! - `ui16x9`, `uifov`, `uiscale` and the overlay console share that main-thread Lua bridge.
+//! - `fightfov`: scales the game's per-frame fight-camera FOV input without changing the source lens
+//!   (`graphics_fight_fov.rs`), including StatusSyncFight/Babylonia cameras.
 //!
 //! Dump roots: `UnityEngine.Rendering.Universal.RenderPIplineQualityManger` (statics, `GetRuntimeData()`, `Is*()`
 //! flags), `XQualityManager.Instance`, `XResolutionManager` statics and the managed `UnityEngine.QualitySettings`
 //! getters that survived stripping. Objects are followed only into quality/pipeline classes (see `followed`).
 #[path = "graphics_extras.rs"]
 mod graphics_extras;
+#[path = "graphics_fight_fov.rs"]
+mod graphics_fight_fov;
 #[path = "graphics_lua.rs"]
 mod graphics_lua;
 #[path = "graphics_live.rs"]
@@ -38,7 +43,8 @@ use crate::util::{c_string, read_csharp_string};
 use graphics_live::{Live, Status, LIVE};
 use graphics_params::{Config, CONFIG_FILE};
 use graphics_extras::{Fps, NoFade};
-use graphics_lua::{LuaBridge, UiFit, UiFov, Ultrawide};
+use graphics_fight_fov::FightFov;
+use graphics_lua::{LuaBridge, UiFit, UiFov, UiScale, Ultrawide};
 use graphics_tweaks::{Overrides, RenderScale, QUITTING};
 
 const URP_NAMESPACE: &str = "UnityEngine.Rendering.Universal";
@@ -124,6 +130,12 @@ pub fn spawn_if_enabled() {
     }
     if let Some(scale) = config.ui_fov {
         requested.push(format!("uifov = {scale}"));
+    }
+    if let Some(scale) = config.fight_fov {
+        requested.push(format!("fightfov = {scale}"));
+    }
+    if let Some(scale) = config.ui_scale {
+        requested.push(format!("uiscale = {scale}"));
     }
     if config.overlay {
         requested.push("overlay = on".into());
@@ -479,13 +491,15 @@ unsafe fn run() -> Result<()> {
     let assemblies = il.wait_attach()?;
     let mut fps = Fps::new(&il, &assemblies);
     let mut nofade = NoFade::new(&il, &assemblies);
+    let mut fight_fov = FightFov::default();
     let bridge = LuaBridge::install(&il, &assemblies).map_err(|error| format!("{error:#}"));
     if let Err(message) = &bridge {
-        failed("Lua bridge", &format!("{message}; ultrawide, ui16x9 and uifov are unavailable"));
+        failed("Lua bridge", &format!("{message}; ultrawide, ui16x9, uifov, uiscale and the Lua console are unavailable"));
     }
     let mut ultrawide = Ultrawide::default();
     let mut ui_fit = UiFit::default();
     let mut ui_fov = UiFov::default();
+    let mut ui_scale = UiScale::default();
     if live().desired.overlay {
         graphics_overlay::start();
     }
@@ -525,8 +539,10 @@ unsafe fn run() -> Result<()> {
         }
         let (target_frame_rate, vsync_count) = fps.update(&il, desired.fps, &mut errors);
         nofade.update(&il, desired.nofade, &mut errors);
+        fight_fov.update(&il, &assemblies, desired.fight_fov, &mut errors);
         ultrawide.update(&bridge, desired.ultrawide, &mut errors);
-        ui_fit.update(&bridge, desired.ui16x9, &mut errors);
+        ui_scale.update(&bridge, desired.ui_scale, &mut errors);
+        ui_fit.update(&bridge, desired.ui16x9, desired.ui_scale, &mut errors);
         ui_fov.update(&bridge, desired.ui_fov, &mut errors);
         let catalogue = if runtime_data.is_null() { Vec::new() } else { graphics_tweaks::catalogue(&walker, runtime_data, &overrides) };
         if quitting() {

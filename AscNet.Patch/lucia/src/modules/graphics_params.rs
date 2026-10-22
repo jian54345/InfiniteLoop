@@ -12,6 +12,8 @@
 ///   game's own safe area (see `graphics_lua.rs`).
 /// - `uifov = 1.3`: widen the vertical field of view of the UI-scene cameras (War Zone map, team select) by this
 ///   factor (0.5-2.0, applied to tan(fov/2)).
+/// - `fightfov = 1.3`: widen supported perspective fight cameras by this factor (0.5-2.0, on tan(fov/2)).
+/// - `uiscale = 0.85`: scale UI content relative to the game's own canvas scale (0.5-1.5).
 /// - `renderscale = 2.0`: internal render scale in every scene (0.25-4.0).
 /// - `<Setting>.<Field> = value`: override one field of a render-pipeline quality setting object, e.g.
 ///   `ShadowSetting.CascadeSize = 4096`. Names are the game's own (case-sensitive) and are checked in-game;
@@ -19,6 +21,8 @@
 pub(crate) const CONFIG_FILE: &str = "ascnet-graphics.ini";
 pub(crate) const RENDER_SCALE_RANGE: (f32, f32) = (0.25, 4.0);
 pub(crate) const UI_FOV_RANGE: (f32, f32) = (0.5, 2.0);
+pub(crate) const FIGHT_FOV_RANGE: (f32, f32) = (0.5, 2.0);
+pub(crate) const UI_SCALE_RANGE: (f32, f32) = (0.5, 1.5);
 
 use super::graphics_live::Desired;
 
@@ -38,6 +42,8 @@ pub(crate) struct Config {
     pub ultrawide: bool,
     pub ui16x9: bool,
     pub ui_fov: Option<f32>,
+    pub fight_fov: Option<f32>,
+    pub ui_scale: Option<f32>,
     pub render_scale: Option<f32>,
     /// In file order; a repeated key keeps its first position and takes the last value.
     pub overrides: Vec<Override>,
@@ -46,7 +52,7 @@ pub(crate) struct Config {
 
 impl From<Config> for Desired {
     fn from(config: Config) -> Self {
-        Desired { render_scale: config.render_scale, overrides: config.overrides, dump: config.dump, overlay: config.overlay, fps: config.fps, nofade: config.nofade, ultrawide: config.ultrawide, ui16x9: config.ui16x9, ui_fov: config.ui_fov }
+        Desired { render_scale: config.render_scale, overrides: config.overrides, dump: config.dump, overlay: config.overlay, fps: config.fps, nofade: config.nofade, ultrawide: config.ultrawide, ui16x9: config.ui16x9, ui_fov: config.ui_fov, fight_fov: config.fight_fov, ui_scale: config.ui_scale }
     }
 }
 
@@ -58,6 +64,12 @@ pub(crate) fn render(desired: &Desired) -> String {
     }
     if let Some(scale) = desired.ui_fov {
         text.push_str(&format!("uifov = {scale}\n"));
+    }
+    if let Some(scale) = desired.fight_fov {
+        text.push_str(&format!("fightfov = {scale}\n"));
+    }
+    if let Some(scale) = desired.ui_scale {
+        text.push_str(&format!("uiscale = {scale}\n"));
     }
     for (key, on) in [("dump", desired.dump), ("overlay", desired.overlay), ("ultrawide", desired.ultrawide), ("ui16x9", desired.ui16x9)] {
         if on {
@@ -125,6 +137,16 @@ impl Config {
                     None => config.problems.push(format!(
                         "line {number}: `uifov` must be a number from {} to {}, got `{value}`", UI_FOV_RANGE.0, UI_FOV_RANGE.1)),
                 },
+                "fightfov" => match value.parse::<f32>().ok().filter(|s| (FIGHT_FOV_RANGE.0..=FIGHT_FOV_RANGE.1).contains(s)) {
+                    Some(scale) => config.fight_fov = Some(scale),
+                    None => config.problems.push(format!(
+                        "line {number}: `fightfov` must be a number from {} to {}, got `{value}`", FIGHT_FOV_RANGE.0, FIGHT_FOV_RANGE.1)),
+                },
+                "uiscale" => match value.parse::<f32>().ok().filter(|s| (UI_SCALE_RANGE.0..=UI_SCALE_RANGE.1).contains(s)) {
+                    Some(scale) => config.ui_scale = Some(scale),
+                    None => config.problems.push(format!(
+                        "line {number}: `uiscale` must be a number from {} to {}, got `{value}`", UI_SCALE_RANGE.0, UI_SCALE_RANGE.1)),
+                },
                 _ => match key.split_once('.') {
                     Some((setting, field)) if identifier(setting) && identifier(field) && !value.is_empty() => {
                         match config.overrides.iter_mut().find(|o| o.setting == setting && o.field == field) {
@@ -133,7 +155,7 @@ impl Config {
                         }
                     }
                     Some(_) if value.is_empty() => config.problems.push(format!("line {number}: `{key}` has no value")),
-                    _ => config.problems.push(format!("line {number}: unknown key `{key}` (expected dump, overlay, renderscale, fps, nofade, ultrawide, ui16x9, uifov or Setting.Field)")),
+                    _ => config.problems.push(format!("line {number}: unknown key `{key}` (expected dump, overlay, renderscale, fps, nofade, ultrawide, ui16x9, uifov, fightfov, uiscale or Setting.Field)")),
                 },
             }
         }
@@ -141,7 +163,7 @@ impl Config {
     }
 
     pub(crate) fn active(&self) -> bool {
-        self.dump || self.overlay || self.nofade || self.ultrawide || self.ui16x9 || self.ui_fov.is_some() || self.fps.is_some() || self.render_scale.is_some() || !self.overrides.is_empty()
+        self.dump || self.overlay || self.nofade || self.ultrawide || self.ui16x9 || self.ui_fov.is_some() || self.fight_fov.is_some() || self.ui_scale.is_some() || self.fps.is_some() || self.render_scale.is_some() || !self.overrides.is_empty()
     }
 }
 
@@ -257,10 +279,10 @@ mod tests {
         assert_eq!(config.problems, [
             "line 1: `dump` must be 1/0, true/false or on/off, got `yes`",
             "line 2: expected `key = value`, got `renderscale 2`",
-            "line 3: unknown key `shadows` (expected dump, overlay, renderscale, fps, nofade, ultrawide, ui16x9, uifov or Setting.Field)",
-            "line 4: unknown key `A.B.C` (expected dump, overlay, renderscale, fps, nofade, ultrawide, ui16x9, uifov or Setting.Field)",
+            "line 3: unknown key `shadows` (expected dump, overlay, renderscale, fps, nofade, ultrawide, ui16x9, uifov, fightfov, uiscale or Setting.Field)",
+            "line 4: unknown key `A.B.C` (expected dump, overlay, renderscale, fps, nofade, ultrawide, ui16x9, uifov, fightfov, uiscale or Setting.Field)",
             "line 5: `ShadowSetting.CascadeSize` has no value",
-            "line 6: unknown key `9a.b` (expected dump, overlay, renderscale, fps, nofade, ultrawide, ui16x9, uifov or Setting.Field)",
+            "line 6: unknown key `9a.b` (expected dump, overlay, renderscale, fps, nofade, ultrawide, ui16x9, uifov, fightfov, uiscale or Setting.Field)",
         ]);
     }
 
@@ -273,6 +295,28 @@ mod tests {
             assert_eq!(config.ui_fov, None, "{bad}");
             assert_eq!(config.problems.len(), 1, "{bad}");
         }
+    }
+
+    #[test]
+    fn fight_fov_and_ui_scale_are_bounded() {
+        for (key, upper) in [("FightFov", 2.0), ("UIScale", 1.5)] {
+            for value in [0.5, 1.0, upper] {
+                let config = Config::parse(&format!("{key} = {value}"));
+                let actual = if key == "FightFov" { config.fight_fov } else { config.ui_scale };
+                assert_eq!(actual, Some(value));
+                assert!(config.active() && config.problems.is_empty());
+            }
+            for bad in ["0.49", "2.01", "NaN", "inf", "-inf", "wide", ""] {
+                let config = Config::parse(&format!("{key} = {bad}"));
+                assert_eq!((config.fight_fov, config.ui_scale), (None, None), "{key}={bad}");
+                assert!(!config.active());
+                assert_eq!(config.problems.len(), 1, "{key}={bad}");
+            }
+        }
+        assert_eq!(Config::parse("uiscale = 1.51").ui_scale, None);
+        let config = Config::parse("fightfov = 0.5\nfightfov = 2\nuiscale = 0.5\nuiscale = 1.5");
+        assert_eq!((config.fight_fov, config.ui_scale), (Some(2.0), Some(1.5)));
+        assert!(config.problems.is_empty());
     }
 
     #[test]
@@ -366,6 +410,8 @@ mod tests {
             ultrawide: true,
             ui16x9: true,
             ui_fov: Some(1.35),
+            fight_fov: Some(1.25),
+            ui_scale: Some(0.85),
         };
         let config = Config::parse(&render(&desired));
         assert!(config.problems.is_empty());

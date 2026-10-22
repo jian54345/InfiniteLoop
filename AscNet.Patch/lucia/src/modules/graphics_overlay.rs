@@ -1,6 +1,6 @@
 //! In-game Dear ImGui overlay (hudhook, D3D11 Present hook) over the shared `LIVE` state. It only edits
 //! `desired` and reads `catalogue`/`status`; applying is the graphics worker's job. Ctrl+Shift+G toggles.
-use std::collections::HashMap;
+use std::collections::{HashMap, VecDeque};
 
 use hudhook::hooks::dx11::ImguiDx11Hooks;
 use hudhook::imgui::{Condition, Io, Key, TreeNodeFlags, Ui};
@@ -8,7 +8,8 @@ use hudhook::windows::Win32::Foundation::HINSTANCE;
 use hudhook::{Hudhook, ImguiRenderLoop, MessageFilter};
 
 use super::graphics_live::{Desired, FieldInfo, FieldKind, Live, Status, LIVE};
-use super::graphics_params::{render, Override, CONFIG_FILE, RENDER_SCALE_RANGE, UI_FOV_RANGE};
+use super::graphics_lua;
+use super::graphics_params::{render, Override, CONFIG_FILE, FIGHT_FOV_RANGE, RENDER_SCALE_RANGE, UI_FOV_RANGE, UI_SCALE_RANGE};
 use super::il2cpp;
 
 const RED: [f32; 4] = [1.0, 0.35, 0.35, 1.0];
@@ -35,6 +36,12 @@ struct Overlay {
     fps_last: i32,
     /// The last typed FPS value was below 1 and was not applied.
     fps_invalid: bool,
+    console_source: String,
+    console_history: VecDeque<(u64, String, Option<Result<String, String>>)>,
+    console_seen: Option<u64>,
+    console_scroll: bool,
+    /// Frames until swallowed key-ups are replayed after hiding (0 = nothing pending).
+    release_in: u8,
 }
 
 impl ImguiRenderLoop for Overlay {
@@ -43,11 +50,14 @@ impl ImguiRenderLoop for Overlay {
     }
 
     fn render(&mut self, ui: &mut Ui) {
+        self.poll_console();
+        let was_visible = self.visible;
         let io = ui.io();
         if io.key_ctrl && io.key_shift && ui.is_key_pressed_no_repeat(Key::G) {
             self.visible = !self.visible;
         }
         if !self.visible {
+            self.release_after_hide(was_visible);
             return;
         }
         let mut save = None;
@@ -60,6 +70,9 @@ impl ImguiRenderLoop for Overlay {
                 save = self.draw(ui, &mut live);
             });
         self.visible = open;
+        if !self.visible {
+            self.release_after_hide(true);
+        }
         if let Some(text) = save {
             self.save_result = save_ini(&text);
         }
@@ -67,10 +80,28 @@ impl ImguiRenderLoop for Overlay {
 }
 
 impl Overlay {
+    /// While visible the overlay blocks keyboard messages, including the key-ups of keys pressed before it opened
+    /// (at least Ctrl and Shift of the hotkey). The game then believes them held, and its key bindings, which match
+    /// whole key combinations, stop firing (skill orbs, character switch) while plain movement still works. A few
+    /// frames after hiding, when the message filter is open again, release every key that is not physically down.
+    fn release_after_hide(&mut self, just_hidden: bool) {
+        if just_hidden {
+            self.release_in = 3;
+        }
+        if self.release_in == 0 {
+            return;
+        }
+        self.release_in -= 1;
+        if self.release_in == 0 {
+            release_keys();
+        }
+    }
+
     /// Returns the ini text when "Save" was pressed; the file write happens outside the `LIVE` lock.
     fn draw(&mut self, ui: &Ui, live: &mut Live) -> Option<String> {
         let Live { desired, catalogue, status } = live;
         if catalogue.is_empty() {
+            self.draw_console(ui);
             ui.text("waiting for the game…");
             return None;
         }
@@ -87,6 +118,7 @@ impl Overlay {
         }
         self.draw_extras(ui, desired, status);
         draw_display(ui, desired, status);
+        self.draw_console(ui);
         ui.separator();
         let mut save = None;
         if ui.button("Save to ascnet-graphics.ini") {
@@ -102,6 +134,8 @@ impl Overlay {
             desired.ultrawide = false;
             desired.ui16x9 = false;
             desired.ui_fov = None;
+            desired.fight_fov = None;
+            desired.ui_scale = None;
         }
         if !self.save_result.is_empty() {
             ui.text_wrapped(&self.save_result);
@@ -124,6 +158,70 @@ impl Overlay {
             }
         }
         save
+    }
+
+    fn poll_console(&mut self) {
+        let Some((sequence, result)) = graphics_lua::console_outcome() else {
+            return;
+        };
+        if self.console_seen == Some(sequence) {
+            return;
+        }
+        self.console_seen = Some(sequence);
+        if let Some((_, _, outcome)) = self.console_history.iter_mut().find(|(id, _, _)| *id == sequence) {
+            *outcome = Some(result);
+            self.console_scroll = true;
+        }
+    }
+
+    fn draw_console(&mut self, ui: &Ui) {
+        if let Some(error) = graphics_lua::console_error() {
+            ui.text_colored(RED, error);
+        }
+        if !ui.collapsing_header("Lua console", TreeNodeFlags::empty()) {
+            return;
+        }
+        let submitted = ui.input_text_multiline("##lua_source", &mut self.console_source, [0.0, 120.0])
+            .enter_returns_true(true)
+            .build();
+        let shortcut = submitted && ui.io().key_ctrl && ui.is_key_pressed_no_repeat(Key::Enter);
+        let run = ui.button("Run") || shortcut;
+        ui.same_line();
+        ui.text("Ctrl+Enter to run; newer submissions replace queued code");
+        if run && !self.console_source.trim().is_empty() {
+            let sequence = graphics_lua::queue_console(&self.console_source);
+            for (_, _, outcome) in &mut self.console_history {
+                if outcome.is_none() {
+                    *outcome = Some(Err("Superseded by a newer submission".to_owned()));
+                }
+            }
+            if self.console_history.len() == 20 {
+                self.console_history.pop_front();
+            }
+            self.console_history.push_back((
+                sequence,
+                self.console_source.lines().next().unwrap_or("").to_owned(),
+                None,
+            ));
+            self.console_scroll = true;
+        }
+        ui.child_window("lua_results").size([0.0, 180.0]).build(|| {
+            for (sequence, source, outcome) in &self.console_history {
+                ui.text_wrapped(format!("#{sequence} > {source}"));
+                match outcome {
+                    Some(Ok(value)) => ui.text_wrapped(format!("Ok: {value}")),
+                    Some(Err(error)) => {
+                        let _color = ui.push_style_color(hudhook::imgui::StyleColor::Text, RED);
+                        ui.text_wrapped(format!("Err: {error}"));
+                    }
+                    None => ui.text("Queued…"),
+                }
+            }
+            if self.console_scroll {
+                ui.set_scroll_here_y_with_ratio(1.0);
+                self.console_scroll = false;
+            }
+        });
     }
 
     /// Returns true when the override was removed (the caller drops its text buffer).
@@ -236,7 +334,21 @@ fn draw_display(ui: &Ui, desired: &mut Desired, status: &Status) {
     if let Some(scale) = desired.ui_fov.as_mut() {
         ui.slider("UI-scene FOV factor", UI_FOV_RANGE.0, UI_FOV_RANGE.1, scale);
     }
-    for key in ["ultrawide", "ui16x9", "uifov"] {
+    let mut fight_fov_on = desired.fight_fov.is_some();
+    if ui.checkbox("Override fight-camera FOV", &mut fight_fov_on) {
+        desired.fight_fov = fight_fov_on.then_some(1.0);
+    }
+    if let Some(scale) = desired.fight_fov.as_mut() {
+        ui.slider("Fight-camera FOV factor", FIGHT_FOV_RANGE.0, FIGHT_FOV_RANGE.1, scale);
+    }
+    let mut ui_scale_on = desired.ui_scale.is_some();
+    if ui.checkbox("Override UI scale", &mut ui_scale_on) {
+        desired.ui_scale = ui_scale_on.then_some(1.0);
+    }
+    if let Some(scale) = desired.ui_scale.as_mut() {
+        ui.slider("UI scale factor", UI_SCALE_RANGE.0, UI_SCALE_RANGE.1, scale);
+    }
+    for key in ["ultrawide", "ui16x9", "uifov", "fightfov", "uiscale", "console"] {
         if let Some((_, message)) = status.errors.iter().find(|(k, _)| k == key) {
             ui.text_colored(RED, message);
         }
@@ -277,4 +389,61 @@ fn save_ini(text: &str) -> String {
             format!("save failed: {error}")
         }
     }
+}
+
+/// The game's top-level Unity window in this process.
+fn game_window() -> Option<windows::Win32::Foundation::HWND> {
+    use windows::Win32::Foundation::{BOOL, HWND, LPARAM};
+    use windows::Win32::UI::WindowsAndMessaging::{EnumWindows, GetClassNameW, GetWindowThreadProcessId};
+    unsafe extern "system" fn visit(hwnd: HWND, found: LPARAM) -> BOOL {
+        let mut pid = 0u32;
+        GetWindowThreadProcessId(hwnd, Some(&mut pid));
+        let mut class = [0u16; 32];
+        let len = GetClassNameW(hwnd, &mut class).max(0) as usize;
+        if pid == std::process::id() && String::from_utf16_lossy(&class[..len]) == "UnityWndClass" {
+            *(found.0 as *mut HWND) = hwnd;
+            return BOOL(0);
+        }
+        BOOL(1)
+    }
+    let mut found = HWND::default();
+    // EnumWindows reports an error when the callback stops early; `found` is what matters.
+    let _ = unsafe { EnumWindows(Some(visit), LPARAM(&mut found as *mut HWND as isize)) };
+    (found.0 != 0).then_some(found)
+}
+
+/// Posts a key-up for every key that is not physically held, with the scan code and extended bit Unity uses to tell
+/// left and right modifiers apart. Key-ups for keys the game never saw go down are ignored by Unity.
+fn release_keys() {
+    use windows::Win32::Foundation::{LPARAM, WPARAM};
+    use windows::Win32::UI::Input::KeyboardAndMouse::{
+        GetAsyncKeyState, MapVirtualKeyW, MAPVK_VK_TO_VSC_EX, VK_CONTROL, VK_LCONTROL, VK_LMENU, VK_LSHIFT, VK_MENU,
+        VK_RCONTROL, VK_RMENU, VK_RSHIFT, VK_SHIFT,
+    };
+    use windows::Win32::UI::WindowsAndMessaging::{PostMessageW, WM_KEYUP, WM_SYSKEYUP};
+    let Some(hwnd) = game_window() else {
+        il2cpp::failed("overlay key release", "the game window was not found", "keys held while the overlay opened may stay stuck until pressed again");
+        return;
+    };
+    let sided = [(VK_LSHIFT, VK_SHIFT), (VK_RSHIFT, VK_SHIFT), (VK_LCONTROL, VK_CONTROL), (VK_RCONTROL, VK_CONTROL), (VK_LMENU, VK_MENU), (VK_RMENU, VK_MENU)];
+    let mut keys: Vec<(u16, u16)> = sided.iter().map(|(side, generic)| (side.0, generic.0)).collect();
+    keys.extend((0x08u16..=0xFE).filter(|&vk| ![VK_SHIFT.0, VK_CONTROL.0, VK_MENU.0].contains(&vk) && !sided.iter().any(|(s, _)| s.0 == vk)).map(|vk| (vk, vk)));
+    let mut released = 0;
+    for (physical, sent) in keys {
+        if unsafe { GetAsyncKeyState(i32::from(physical)) } as u16 & 0x8000 != 0 {
+            continue;
+        }
+        let scan = unsafe { MapVirtualKeyW(u32::from(physical), MAPVK_VK_TO_VSC_EX) };
+        if scan == 0 {
+            continue;
+        }
+        let extended = u32::from(scan & 0xFF00 == 0xE000);
+        // repeat 1, scan code, extended, previous state down, transition up
+        let lparam = 1 | ((scan & 0xFF) << 16) | (extended << 24) | (1 << 30) | (1 << 31);
+        let message = if sent == VK_MENU.0 { WM_SYSKEYUP } else { WM_KEYUP };
+        if unsafe { PostMessageW(hwnd, message, WPARAM(usize::from(sent)), LPARAM(lparam as isize)) }.is_ok() {
+            released += 1;
+        }
+    }
+    il2cpp::ok("overlay key release", &format!("posted {released} key-up(s) after hiding"));
 }

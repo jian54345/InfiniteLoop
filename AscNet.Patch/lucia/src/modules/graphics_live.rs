@@ -23,6 +23,10 @@ pub(crate) struct Desired {
     pub ui16x9: bool,
     /// `uifov = <scale>`: UI-scene cameras' vertical field of view widened by this factor (on tan(fov/2)).
     pub ui_fov: Option<f32>,
+    /// `fightfov = <scale>`: supported perspective fight cameras' FOV factor (on tan(fov/2)).
+    pub fight_fov: Option<f32>,
+    /// `uiscale = <scale>`: UI content scale relative to the game's own canvas scale.
+    pub ui_scale: Option<f32>,
 }
 
 #[derive(Clone, Debug, PartialEq)]
