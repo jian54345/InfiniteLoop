@@ -30,8 +30,10 @@ internal static class ArenaStageDataset
     // Scales every hydrated NPC level; levels are stored for the captured challenge, so callers pass target/reference.
     public static void ScaleLevels(PreFightResponse.PreFightResponseFightData fightData, double factor)
     {
-        foreach (Dictionary<string, object> group in (List<Dictionary<string, object>>)fightData.NpcGroupList)
-            foreach (Dictionary<string, object?> npc in (List<object?>)group["NpcList"])
+        List<Dictionary<string, object>> groups = (List<Dictionary<string, object>>?)fightData.NpcGroupList
+            ?? throw new InvalidOperationException("Arena NpcGroupList is not hydrated");
+        foreach (Dictionary<string, object> group in groups)
+            foreach (Dictionary<string, object?> npc in ((List<object?>)group["NpcList"]).Cast<Dictionary<string, object?>>())
                 npc["Level"] = Math.Max(1L, (long)Math.Round(Convert.ToInt64(npc["Level"]) * factor));
     }
 
