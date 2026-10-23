@@ -51,6 +51,7 @@ unsafe fn initialize() -> bool {
 /// (`kurosdk_getConfigInfo`); CN keeps the retail KRSDKEx.dll, so nothing would call `ascnet_patch_initialize`
 /// and lucia must start itself. The short poll keeps the hooks ahead of the SDK's first request.
 unsafe fn startup_thread(probe: bool) {
+    modules::net_audit::install();
     if !probe && !is_cn_client() {
         return;
     }

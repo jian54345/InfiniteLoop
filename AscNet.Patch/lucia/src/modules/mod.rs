@@ -16,6 +16,7 @@ mod cn_sdk;
 mod graphics;
 mod il2cpp;
 mod network;
+pub(crate) mod net_audit;
 
 pub use cn_sdk::{identity_line as cn_identity_line, is_cn_client, CnSdk};
 pub use network::Http;

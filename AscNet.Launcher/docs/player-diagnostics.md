@@ -243,3 +243,29 @@ anisotropic filtering and `maxQueuedFrames` accessors are stripped from the 4.8 
 `[lucia] OK lookup XRemoteConfig: assembly=... class=XRemoteConfig` / `[lucia] FAILED lookup XRemoteConfig ...`
 (`XRemoteConfig` is a metadata dump only; no hook is installed on it and routing does not depend on it),
 `remote-config ...` field/method dumps and the first 64 `InternalSetUrl call url=...` lines.
+
+## Telemetry block
+
+Always on. `lucia` hooks the DNS entry points of `ws2_32.dll` (`getaddrinfo`, `GetAddrInfoW`, `GetAddrInfoExW`,
+`gethostbyname`) as soon as it loads and makes lookups of these hosts (and their subdomains) fail as if offline:
+`wetest.net` (CrashSight crash/exception uploads, `pc.crashsight.wetest.net`) and the public-IP services the
+client queries at start-up (`XNoticeManager.RequestIp`: `icanhazip.com`, `ipify.org`, `ifconfig.me`, `ifconfig.co`,
+`inet-ip.info`; the client has no consumer of that IP, so it simply stays empty). Each blocked host is logged once:
+
+```
+[lucia] OK telemetry blocked: ipv4.icanhazip.com (getaddrinfo) from UnityPlayer.dll; the lookup fails as if offline
+```
+
+Client feedback/log uploads are already routed to the local server, and the scroll notices
+(`ScrollPicNotice.json`, `ScrollTextNotice.json`) are now routed to AscNet like the other notice files instead of
+Kuro's CDN. ThinkingData, kurodata and PerfSight made no network calls in the 4.8 audit. Notice pictures under
+`client/notice/pic/` still come from Kuro's CDN when a notice references them.
+
+## Network audit (developers)
+
+Set `ASCNET_PATCH_NETAUDIT=1` in the environment before launch to opt in to network auditing,
+including early startup and native traffic. Apart from the telemetry block above it is observe-only: it does not
+block connections or change routing. It logs each unique `api host[:port] from module` tuple (`module` is the
+first non-system module on the call stack), up to 512 unique tuples per process.
+Logging runs on a dedicated worker; if its bounded 512-event queue fills, audit events may be
+dropped rather than blocking network calls, and a `FAILED` warning reports the loss.
