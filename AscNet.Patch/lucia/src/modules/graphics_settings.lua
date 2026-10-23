@@ -32,6 +32,24 @@ local function report(message)
     box.logs[#box.logs + 1] = message:sub(1, 400)
 end
 local function destroy(go) if go then go:SetActive(false); Object.Destroy(go) end end
+-- XClass tables (XLuaUiManager, UiSet) keep methods in a `vtbl` captured by their metatable's __index.
+-- With remote-config Debug the class __newindex logs every reassignment as an error (XClass.lua:85),
+-- so wrappers are written straight into that table, the way the game's XHotReload reaches upvalues.
+local function setMethod(target, key, value)
+    local meta = debug.getmetatable(target)
+    local index = meta and meta.__index
+    if type(index) == "function" then
+        for i = 1, 16 do
+            local name, upvalue = debug.getupvalue(index, i)
+            if not name then break end
+            if name == "vtbl" and type(upvalue) == "table" then
+                rawset(upvalue, key, value)
+                return
+            end
+        end
+    end
+    target[key] = value
+end
 local function child(transform, path) return assert(transform:Find(path), "missing " .. path) end
 local UI = Unity.UI
 -- Typed lookup searching the node and its children. GetComponent("Slider") matches the short
@@ -241,23 +259,23 @@ local function install(target)
     class = target
     originalStart, originalShow, originalDestroy = class.OnStart, class.ShowSubPanel, class.OnDestroy
     local ok, err = pcall(function()
-        class.OnStart = function(ui, ...)
+        setMethod(class, "OnStart", function(ui, ...)
             originalStart(ui, ...)
             local success, reason = pcall(addTab, ui)
             if not success then rollback(ui, reason) end
-        end
-        class.ShowSubPanel = function(ui, index, ...)
+        end)
+        setMethod(class, "ShowSubPanel", function(ui, index, ...)
             originalShow(ui, index, ...)
             local panel = instances[ui]
             if panel and index == panel.index then
                 ui.BtnSave.gameObject:SetActive(false)
                 ui.BtnDefault.gameObject:SetActive(false)
             end
-        end
-        class.OnDestroy = function(ui, ...)
+        end)
+        setMethod(class, "OnDestroy", function(ui, ...)
             instances[ui] = nil
             if originalDestroy then return originalDestroy(ui, ...) end
-        end
+        end)
         box.refresh = function()
             for ui, panel in pairs(instances) do
                 if panel.index and ui.SelectedIndex == panel.index then
@@ -269,7 +287,9 @@ local function install(target)
         box.installed = class
     end)
     if not ok then
-        class.OnStart, class.ShowSubPanel, class.OnDestroy = originalStart, originalShow, originalDestroy
+        setMethod(class, "OnStart", originalStart)
+        setMethod(class, "ShowSubPanel", originalShow)
+        setMethod(class, "OnDestroy", originalDestroy)
         error(err, 0)
     end
     report("OK lua AscNet Settings: hooked the Settings screen")
@@ -296,10 +316,10 @@ end
 -- A wrapped XLuaUiManager.New was never called for UiSet in-game (C# likely holds its own
 -- reference); game Lua opens Settings with XLuaUiManager.Open("UiSet", ...), looked up per call.
 local originalOpen = XLuaUiManager.Open
-XLuaUiManager.Open = function(uiName, ...)
+setMethod(XLuaUiManager, "Open", function(uiName, ...)
     if uiName == "UiSet" then ensure(true) end
     return originalOpen(uiName, ...)
-end
+end)
 -- Other entry points (PopThenOpen, ...) load the module themselves; the per-tick refresh then
 -- installs it, so the tab appears from the next time Settings opens.
 box.refresh = function() ensure(false) end

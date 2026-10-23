@@ -431,7 +431,8 @@ that fetches its config (`"ShowInspector": true` also sends `IsShowInspector = 1
 inspector only when both are on). Both default to off; the client reads them at start-up, so restart the game after
 changing them. Verified on 4.8 EN: the login screen gains the debug server-address field; plain-text Lua in
 `<persistentDataPath>/Lua/Matrix/<module>.lua` is loaded before the game's own module (per module; a missing file
-falls back to the shipped one, a broken file is an error); and a TSV at `<persistentDataPath>/Table/<requested path>`
+falls back to the shipped one, a broken file is an error; the game's `XHotReload.Reload("<module>")` re-reads an
+edited override into the running client, UI changes showing when the screen next opens); and a TSV at `<persistentDataPath>/Table/<requested path>`
 replaces that one table (e.g. `Table/Client/UiPc/UiPcScreenResolution.tab`: header row of column names, tab-separated,
 CRLF; the path is case-sensitive and indexed at start-up; non-ASCII text is GBK on EN). From disassembly, not yet
 exercised: `Lua/Launch/` for `XLaunch*` modules, `Lua/DlcFight/` for fight Lua, and compiled IFix patches at
