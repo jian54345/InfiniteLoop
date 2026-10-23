@@ -3,11 +3,12 @@
 use std::collections::{HashMap, VecDeque};
 
 use hudhook::hooks::dx11::ImguiDx11Hooks;
-use hudhook::imgui::{Condition, Io, Key, TreeNodeFlags, Ui};
+use hudhook::imgui::{Condition, Io, Key, ProgressBar, StyleColor, TreeNodeFlags, Ui, WindowFlags};
 use hudhook::windows::Win32::Foundation::HINSTANCE;
 use hudhook::{Hudhook, ImguiRenderLoop, MessageFilter};
 
 use super::graphics_live::{Desired, FieldInfo, FieldKind, Live, Status, LIVE};
+use super::graphics_dps::DpsSnapshot;
 use super::graphics_lua;
 use super::graphics_params::{render, Override, CONFIG_FILE, FIGHT_FOV_RANGE, RENDER_SCALE_RANGE, UI_FOV_RANGE, UI_SCALE_RANGE};
 use super::il2cpp;
@@ -29,6 +30,13 @@ pub(super) fn start() {
 #[derive(Default)]
 struct Overlay {
     visible: bool,
+    /// Inverted so the compact meter is visible by default without persisting UI preferences.
+    dps_hidden: bool,
+    dps_corner: usize,
+    dps_hide_outside_fight: bool,
+    dps_details: bool,
+    /// Stored as an offset so derived Default gives a 1.0 scale.
+    dps_scale_offset: f32,
     /// Text being edited for array fields, keyed `Setting.Field`; committed on Enter.
     buffers: HashMap<String, String>,
     save_result: String,
@@ -53,9 +61,14 @@ impl ImguiRenderLoop for Overlay {
         self.poll_console();
         let was_visible = self.visible;
         let io = ui.io();
-        if io.key_ctrl && io.key_shift && ui.is_key_pressed_no_repeat(Key::G) {
+        let overlay_enabled = LIVE.lock().unwrap_or_else(|poisoned| poisoned.into_inner()).desired.overlay;
+        if overlay_enabled && io.key_ctrl && io.key_shift && ui.is_key_pressed_no_repeat(Key::G) {
             self.visible = !self.visible;
         }
+        if !overlay_enabled {
+            self.visible = false;
+        }
+        self.draw_compact_dps(ui);
         if !self.visible {
             self.release_after_hide(was_visible);
             return;
@@ -99,7 +112,8 @@ impl Overlay {
 
     /// Returns the ini text when "Save" was pressed; the file write happens outside the `LIVE` lock.
     fn draw(&mut self, ui: &Ui, live: &mut Live) -> Option<String> {
-        let Live { desired, catalogue, status } = live;
+        let Live { desired, catalogue, status, dps, dps_reset } = live;
+        self.draw_dps_controls(ui, desired, dps.as_ref(), dps_reset);
         if catalogue.is_empty() {
             self.draw_console(ui);
             ui.text("waiting for the game…");
@@ -136,6 +150,7 @@ impl Overlay {
             desired.ui_fov = None;
             desired.fight_fov = None;
             desired.ui_scale = None;
+            desired.dps_meter = false;
         }
         if !self.save_result.is_empty() {
             ui.text_wrapped(&self.save_result);
@@ -158,6 +173,66 @@ impl Overlay {
             }
         }
         save
+    }
+
+    fn draw_dps_controls(&mut self, ui: &Ui, desired: &mut Desired, snapshot: Option<&DpsSnapshot>, reset: &mut u64) {
+        if !ui.collapsing_header("DPS meter", TreeNodeFlags::empty()) {
+            return;
+        }
+        ui.checkbox("Enable DPS meter", &mut desired.dps_meter);
+        let mut compact = !self.dps_hidden;
+        if ui.checkbox("Show compact meter", &mut compact) {
+            self.dps_hidden = !compact;
+        }
+        ui.combo_simple_string("Meter corner", &mut self.dps_corner, &["Top right", "Top left", "Bottom right", "Bottom left"]);
+        ui.checkbox("Hide compact meter outside fights", &mut self.dps_hide_outside_fight);
+        let mut scale = 1.0 + self.dps_scale_offset;
+        if ui.slider("Compact meter scale", 0.75, 2.0, &mut scale) {
+            self.dps_scale_offset = scale - 1.0;
+        }
+        ui.checkbox("Show damage details", &mut self.dps_details);
+        if ui.button("Reset DPS") {
+            *reset = reset.wrapping_add(1);
+        }
+        ui.text_wrapped("Recorded normal-fight damage, including owned summons. Not effective HP removed; DLC/Babylonia is unsupported.");
+        if let Some(snapshot) = snapshot {
+            draw_dps_summary(ui, snapshot);
+            draw_dps_rows(ui, snapshot, self.dps_details, 440.0);
+        } else if desired.dps_meter {
+            ui.text("Waiting for DPS sample…");
+        }
+        ui.separator();
+    }
+
+    fn draw_compact_dps(&self, ui: &Ui) {
+        if self.dps_hidden {
+            return;
+        }
+        let live = LIVE.lock().unwrap_or_else(|poisoned| poisoned.into_inner());
+        if !live.desired.dps_meter {
+            return;
+        }
+        if self.dps_hide_outside_fight && !live.dps.as_ref().is_some_and(|snapshot| snapshot.status == "active") {
+            return;
+        }
+        let scale = (1.0 + self.dps_scale_offset).clamp(0.75, 2.0);
+        let display = ui.io().display_size;
+        let right = self.dps_corner % 2 == 0;
+        let bottom = self.dps_corner >= 2;
+        let position = [if right { display[0] - 12.0 } else { 12.0 }, if bottom { display[1] - 12.0 } else { 12.0 }];
+        ui.window("Recorded damage##compact_dps")
+            .position(position, Condition::Always)
+            .position_pivot([if right { 1.0 } else { 0.0 }, if bottom { 1.0 } else { 0.0 }])
+            .flags(WindowFlags::NO_INPUTS | WindowFlags::NO_DECORATION | WindowFlags::ALWAYS_AUTO_RESIZE | WindowFlags::NO_SAVED_SETTINGS | WindowFlags::NO_FOCUS_ON_APPEARING | WindowFlags::NO_NAV)
+            .build(|| {
+                ui.set_window_font_scale(scale);
+                if let Some(snapshot) = &live.dps {
+                    draw_dps_summary(ui, snapshot);
+                    draw_dps_rows(ui, snapshot, self.dps_details, 360.0 * scale);
+                } else {
+                    ui.text("DPS: waiting for sample…");
+                }
+            });
     }
 
     fn poll_console(&mut self) {
@@ -314,6 +389,84 @@ impl Overlay {
         ui.checkbox("No camera fade", &mut desired.nofade);
         if let Some((_, message)) = status.errors.iter().find(|(key, _)| key == "nofade") {
             ui.text_colored(RED, message);
+        }
+    }
+}
+
+fn draw_dps_summary(ui: &Ui, snapshot: &DpsSnapshot) {
+    let state = if snapshot.status == "active" { "In fight" } else { "Last fight" };
+    ui.text(format!("{state} | {:.1}s", snapshot.elapsed));
+    ui.text(format!("Team {} | {} DPS | {} peak 5s",
+        human_number(snapshot.total as f64), human_number(snapshot.dps), human_number(snapshot.peak5)));
+    if snapshot.status != "active" && snapshot.status != "retained" {
+        ui.text(&snapshot.status);
+    }
+    if snapshot.dropped_hits > 0 {
+        ui.text_colored(AMBER, format!("Dropped hit samples: {} (hit details incomplete)", snapshot.dropped_hits));
+    }
+}
+
+fn draw_dps_rows(ui: &Ui, snapshot: &DpsSnapshot, details: bool, width: f32) {
+    const COLORS: [[f32; 4]; 6] = [
+        [0.25, 0.62, 0.90, 1.0], [0.70, 0.38, 0.75, 1.0], [0.22, 0.70, 0.48, 1.0],
+        [0.85, 0.53, 0.22, 1.0], [0.78, 0.31, 0.40, 1.0], [0.38, 0.65, 0.68, 1.0],
+    ];
+    for row in &snapshot.rows {
+        let label = format!("{} | {} | {} DPS | {:.1}%", row.name,
+            human_number(row.total as f64), human_number(row.dps), row.share * 100.0);
+        {
+            // Character-ID order, not damage rank, keeps team colors distinct as damage order changes.
+            let color_index = snapshot.rows.iter().filter(|other| other.character_id < row.character_id).count();
+            let _color = ui.push_style_color(StyleColor::PlotHistogram, COLORS[color_index % COLORS.len()]);
+            ProgressBar::new(row.share.clamp(0.0, 1.0) as f32)
+                .size([width, ui.text_line_height_with_spacing() + 4.0])
+                .overlay_text(&label)
+                .build(ui);
+        }
+        if !details {
+            continue;
+        }
+        ui.text(format!("Physical {} | Elemental {} | Healing {} | Taken {}",
+            human_number(row.physical as f64), human_number(row.elemental as f64),
+            human_number(row.cure as f64), human_number(row.hurt as f64)));
+        ui.text(format!("Hits {} | Crits {} | Double crits {} | Biggest {}",
+            human_number(row.hits as f64), human_number(row.crits as f64),
+            human_number(row.double_crits as f64), human_number(row.biggest_hit as f64)));
+        ui.text(format!("Fight {} DPS | On-field {} DPS ({:.1}s) | Peak 5s {}",
+            human_number(row.dps), human_number(row.on_field_dps), row.on_field_seconds,
+            human_number(row.peak5)));
+        if !row.damage_ids.is_empty() {
+            let ids = row.damage_ids.iter().take(5).map(|(id, _)| id.to_string()).collect::<Vec<_>>().join(", ");
+            ui.text(format!("Top damage IDs: {ids}"));
+        }
+    }
+}
+
+fn human_number(value: f64) -> String {
+    let (scaled, suffix) = if value.abs() >= 999_950.0 {
+        (value / 1_000_000.0, "M")
+    } else if value.abs() >= 999.95 {
+        (value / 1_000.0, "k")
+    } else {
+        (value, "")
+    };
+    let precision = if scaled.abs() < 10.0 { 2 } else { 1 };
+    format!("{scaled:.precision$}{suffix}")
+}
+
+#[cfg(test)]
+mod dps_display_tests {
+    use super::human_number;
+
+    #[test]
+    fn human_numbers_keep_one_or_two_decimals_and_promote_rounded_units() {
+        for (value, expected) in [
+            (0.0, "0.00"), (9.123, "9.12"), (42.24, "42.2"),
+            (999.0, "999.0"), (999.96, "1.00k"), (1_234.0, "1.23k"),
+            (12_345.0, "12.3k"), (999_960.0, "1.00M"),
+            (1_234_567.0, "1.23M"), (12_345_678.0, "12.3M"),
+        ] {
+            assert_eq!(human_number(value), expected);
         }
     }
 }

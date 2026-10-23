@@ -6,6 +6,7 @@
 /// - `dump = 1`: log every render-pipeline / quality value, then each change.
 /// - `fps = 240`: unlock the frame rate (`Application.targetFrameRate`, vsync off while set); a positive whole number.
 /// - `nofade = on`: disable the camera / character proximity fade.
+/// - `dpsmeter = on`: show settlement-recorded per-character damage in normal fights, including summons.
 /// - `ultrawide = on`: run fullscreen at the monitor's own resolution (21:9, 32:9, ...) instead of the game's
 ///   2560x2048 cap (see `graphics_lua.rs`); off restores the game's own window fallback.
 /// - `ui16x9 = on`: on screens wider than 16:9, keep menu content and the fight HUD in a centred 16:9 area through the
@@ -37,6 +38,7 @@ pub(crate) struct Override {
 pub(crate) struct Config {
     pub dump: bool,
     pub overlay: bool,
+    pub dps_meter: bool,
     pub fps: Option<i32>,
     pub nofade: bool,
     pub ultrawide: bool,
@@ -52,7 +54,7 @@ pub(crate) struct Config {
 
 impl From<Config> for Desired {
     fn from(config: Config) -> Self {
-        Desired { render_scale: config.render_scale, overrides: config.overrides, dump: config.dump, overlay: config.overlay, fps: config.fps, nofade: config.nofade, ultrawide: config.ultrawide, ui16x9: config.ui16x9, ui_fov: config.ui_fov, fight_fov: config.fight_fov, ui_scale: config.ui_scale }
+        Desired { render_scale: config.render_scale, overrides: config.overrides, dump: config.dump, overlay: config.overlay, dps_meter: config.dps_meter, fps: config.fps, nofade: config.nofade, ultrawide: config.ultrawide, ui16x9: config.ui16x9, ui_fov: config.ui_fov, fight_fov: config.fight_fov, ui_scale: config.ui_scale }
     }
 }
 
@@ -71,7 +73,7 @@ pub(crate) fn render(desired: &Desired) -> String {
     if let Some(scale) = desired.ui_scale {
         text.push_str(&format!("uiscale = {scale}\n"));
     }
-    for (key, on) in [("dump", desired.dump), ("overlay", desired.overlay), ("ultrawide", desired.ultrawide), ("ui16x9", desired.ui16x9)] {
+    for (key, on) in [("dump", desired.dump), ("overlay", desired.overlay), ("dpsmeter", desired.dps_meter), ("ultrawide", desired.ultrawide), ("ui16x9", desired.ui16x9)] {
         if on {
             text.push_str(&format!("{key} = on\n"));
         }
@@ -110,6 +112,10 @@ impl Config {
                 "overlay" => match flag(value) {
                     Some(on) => config.overlay = on,
                     None => config.problems.push(format!("line {number}: `overlay` must be 1/0, true/false or on/off, got `{value}`")),
+                },
+                "dpsmeter" => match flag(value) {
+                    Some(on) => config.dps_meter = on,
+                    None => config.problems.push(format!("line {number}: `dpsmeter` must be 1/0, true/false or on/off, got `{value}`")),
                 },
                 "fps" => match fps(value) {
                     Some(fps) => config.fps = Some(fps),
@@ -155,7 +161,7 @@ impl Config {
                         }
                     }
                     Some(_) if value.is_empty() => config.problems.push(format!("line {number}: `{key}` has no value")),
-                    _ => config.problems.push(format!("line {number}: unknown key `{key}` (expected dump, overlay, renderscale, fps, nofade, ultrawide, ui16x9, uifov, fightfov, uiscale or Setting.Field)")),
+                    _ => config.problems.push(format!("line {number}: unknown key `{key}` (expected dump, overlay, dpsmeter, renderscale, fps, nofade, ultrawide, ui16x9, uifov, fightfov, uiscale or Setting.Field)")),
                 },
             }
         }
@@ -163,7 +169,7 @@ impl Config {
     }
 
     pub(crate) fn active(&self) -> bool {
-        self.dump || self.overlay || self.nofade || self.ultrawide || self.ui16x9 || self.ui_fov.is_some() || self.fight_fov.is_some() || self.ui_scale.is_some() || self.fps.is_some() || self.render_scale.is_some() || !self.overrides.is_empty()
+        self.dump || self.overlay || self.dps_meter || self.nofade || self.ultrawide || self.ui16x9 || self.ui_fov.is_some() || self.fight_fov.is_some() || self.ui_scale.is_some() || self.fps.is_some() || self.render_scale.is_some() || !self.overrides.is_empty()
     }
 }
 
@@ -279,10 +285,10 @@ mod tests {
         assert_eq!(config.problems, [
             "line 1: `dump` must be 1/0, true/false or on/off, got `yes`",
             "line 2: expected `key = value`, got `renderscale 2`",
-            "line 3: unknown key `shadows` (expected dump, overlay, renderscale, fps, nofade, ultrawide, ui16x9, uifov, fightfov, uiscale or Setting.Field)",
-            "line 4: unknown key `A.B.C` (expected dump, overlay, renderscale, fps, nofade, ultrawide, ui16x9, uifov, fightfov, uiscale or Setting.Field)",
+            "line 3: unknown key `shadows` (expected dump, overlay, dpsmeter, renderscale, fps, nofade, ultrawide, ui16x9, uifov, fightfov, uiscale or Setting.Field)",
+            "line 4: unknown key `A.B.C` (expected dump, overlay, dpsmeter, renderscale, fps, nofade, ultrawide, ui16x9, uifov, fightfov, uiscale or Setting.Field)",
             "line 5: `ShadowSetting.CascadeSize` has no value",
-            "line 6: unknown key `9a.b` (expected dump, overlay, renderscale, fps, nofade, ultrawide, ui16x9, uifov, fightfov, uiscale or Setting.Field)",
+            "line 6: unknown key `9a.b` (expected dump, overlay, dpsmeter, renderscale, fps, nofade, ultrawide, ui16x9, uifov, fightfov, uiscale or Setting.Field)",
         ]);
     }
 
@@ -350,6 +356,26 @@ mod tests {
     }
 
     #[test]
+    fn dps_meter_flag() {
+        assert!(!Desired::default().dps_meter);
+        assert!(!Config::parse("").dps_meter);
+        for value in ["on", "1", "true"] {
+            let config = Config::parse(&format!("DpsMeter = {value}"));
+            assert!(config.dps_meter && config.active() && config.problems.is_empty());
+            let desired = Desired::from(config);
+            assert!(desired.dps_meter);
+            assert!(render(&desired).contains("dpsmeter = on\n"));
+        }
+        for value in ["off", "0", "false"] {
+            let config = Config::parse(&format!("dpsmeter = {value}"));
+            assert!(!config.dps_meter && !config.active() && config.problems.is_empty());
+            assert!(!render(&Desired::from(config)).contains("dpsmeter"));
+        }
+        assert!(!Config::parse("dpsmeter = on\ndpsmeter = off").dps_meter);
+        assert_eq!(Config::parse("dpsmeter = maybe").problems, ["line 1: `dpsmeter` must be 1/0, true/false or on/off, got `maybe`"]);
+    }
+
+    #[test]
     fn fps_accepts_plain_positive_integers() {
         for (text, want) in [("240", 240), ("1", 1), ("2147483647", i32::MAX)] {
             let config = Config::parse(&format!("FPS = {text}"));
@@ -405,6 +431,7 @@ mod tests {
             ],
             dump: true,
             overlay: true,
+            dps_meter: true,
             fps: Some(240),
             nofade: true,
             ultrawide: true,

@@ -247,9 +247,19 @@ unsafe fn find_do_string(il: &Il2cpp, class: *mut c_void, methods: ClassMethods,
     }
 }
 
+/// Set by the worker; the next `XLuaEngine.Update` on the main thread installs the overlay (see `graphics.rs`).
+static START_OVERLAY: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
+
+pub(super) fn start_overlay_on_main_thread() {
+    START_OVERLAY.store(true, Relaxed);
+}
+
 unsafe extern "win64" fn on_update(_: *mut Registers, _: usize) {
     if QUITTING.load(Relaxed) {
         return;
+    }
+    if START_OVERLAY.swap(false, Relaxed) {
+        super::graphics_overlay::start();
     }
     let Some(ctx) = CTX.get() else { return };
     // try_borrow: a chunk that somehow re-enters `XLuaEngine.Update` must not panic across the hook.

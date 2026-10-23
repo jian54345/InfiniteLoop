@@ -4,6 +4,7 @@
 use std::sync::{LazyLock, Mutex};
 
 use super::graphics_params::Override;
+use super::graphics_dps::DpsSnapshot;
 
 /// What the player wants; the same data as `ascnet-graphics.ini`. Override values stay text in the ini syntax
 /// (`on`/`off`, numbers, enum names, comma lists); the worker types them against the live field.
@@ -13,6 +14,8 @@ pub(crate) struct Desired {
     pub overrides: Vec<Override>,
     pub dump: bool,
     pub overlay: bool,
+    /// `dpsmeter = on`: sample recorded normal-fight damage for the overlay.
+    pub dps_meter: bool,
     /// `fps = <n>`: `Application.targetFrameRate = n` (and `vSyncCount = 0`) while set; `None` = the game's own.
     pub fps: Option<i32>,
     /// `nofade = on`: camera/character proximity fade disabled while true.
@@ -83,6 +86,9 @@ pub(crate) struct Live {
     /// Empty until IL2CPP and `GetRuntimeData()` are ready; refreshed by the worker every tick.
     pub catalogue: Vec<SettingInfo>,
     pub status: Status,
+    pub dps: Option<DpsSnapshot>,
+    /// Overlay reset requests; the worker consumes changes without calling Lua on the render thread.
+    pub dps_reset: u64,
 }
 
 pub(crate) static LIVE: LazyLock<Mutex<Live>> = LazyLock::new(|| Mutex::new(Live::default()));

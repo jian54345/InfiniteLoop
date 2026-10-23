@@ -21,6 +21,10 @@
 mod graphics_extras;
 #[path = "graphics_fight_fov.rs"]
 mod graphics_fight_fov;
+#[path = "graphics_dps.rs"]
+mod graphics_dps;
+#[path = "graphics_dps_hits.rs"]
+mod graphics_dps_hits;
 #[path = "graphics_lua.rs"]
 mod graphics_lua;
 #[path = "graphics_live.rs"]
@@ -44,6 +48,7 @@ use graphics_live::{Live, Status, LIVE};
 use graphics_params::{Config, CONFIG_FILE};
 use graphics_extras::{Fps, NoFade};
 use graphics_fight_fov::FightFov;
+use graphics_dps::DpsMeter;
 use graphics_lua::{LuaBridge, UiFit, UiFov, UiScale, Ultrawide};
 use graphics_tweaks::{Overrides, RenderScale, QUITTING};
 
@@ -136,6 +141,9 @@ pub fn spawn_if_enabled() {
     }
     if let Some(scale) = config.ui_scale {
         requested.push(format!("uiscale = {scale}"));
+    }
+    if config.dps_meter {
+        requested.push("dpsmeter = on".into());
     }
     if config.overlay {
         requested.push("overlay = on".into());
@@ -494,14 +502,26 @@ unsafe fn run() -> Result<()> {
     let mut fight_fov = FightFov::default();
     let bridge = LuaBridge::install(&il, &assemblies).map_err(|error| format!("{error:#}"));
     if let Err(message) = &bridge {
-        failed("Lua bridge", &format!("{message}; ultrawide, ui16x9, uifov, uiscale and the Lua console are unavailable"));
+        failed("Lua bridge", &format!("{message}; ultrawide, ui16x9, uifov, uiscale, dpsmeter and the Lua console are unavailable"));
     }
     let mut ultrawide = Ultrawide::default();
     let mut ui_fit = UiFit::default();
     let mut ui_fov = UiFov::default();
     let mut ui_scale = UiScale::default();
-    if live().desired.overlay {
-        graphics_overlay::start();
+    let mut dps_meter = DpsMeter::default();
+    let mut damage_hook = graphics_dps_hits::DamageHook::default();
+    let wants_overlay = {
+        let live = live();
+        live.desired.overlay || live.desired.dps_meter
+    };
+    if wants_overlay {
+        // hudhook creates and destroys a dummy window to find Present. From this worker thread, Wine's
+        // NtUserDestroyWindow can block forever (seen: game stuck on a black screen at startup), so the
+        // install runs on the game's main thread through the Lua bridge detour when it is available.
+        match &bridge {
+            Ok(_) => graphics_lua::start_overlay_on_main_thread(),
+            Err(_) => graphics_overlay::start(),
+        }
     }
     let _quit_hook = match graphics_tweaks::watch_quit(&il, &assemblies) {
         Ok(hook) => Some(hook),
@@ -523,7 +543,10 @@ unsafe fn run() -> Result<()> {
         if quitting() {
             park(&il);
         }
-        let desired = live().desired.clone();
+        let (desired, dps_reset) = {
+            let live = live();
+            (live.desired.clone(), live.dps_reset)
+        };
         let scene = || scene_name(&il, roots.active_scene);
         let runtime_data = runtime_data(&walker, roots.urp_assets, &mut data_offset);
         let mut errors = Vec::new();
@@ -544,6 +567,8 @@ unsafe fn run() -> Result<()> {
         ui_scale.update(&bridge, desired.ui_scale, &mut errors);
         ui_fit.update(&bridge, desired.ui16x9, desired.ui_scale, &mut errors);
         ui_fov.update(&bridge, desired.ui_fov, &mut errors);
+        damage_hook.update(&il, &assemblies, desired.dps_meter);
+        let dps = dps_meter.update(&bridge, desired.dps_meter, dps_reset, &mut errors);
         let catalogue = if runtime_data.is_null() { Vec::new() } else { graphics_tweaks::catalogue(&walker, runtime_data, &overrides) };
         if quitting() {
             park(&il);
@@ -551,6 +576,7 @@ unsafe fn run() -> Result<()> {
         {
             let mut live = live();
             live.catalogue = catalogue;
+            live.dps = dps;
             live.status = Status {
                 scene: scene(),
                 game_render_scale: RenderScale::game_scale(),
