@@ -44,6 +44,37 @@ local clock = fight and fight.NonPausedTime or 0
 local role = fight and fight:GetClientRole()
 local controlled = role and role.Npc and role.Npc.Id or 0
 local out = {table.concat({'DPS2', s.epoch, status, string.format('%.6f', clock), controlled}, '\t')}
+local model = agency and agency.XCharacter and agency.XCharacter._Model
+-- Damage ID -> skill index, built per character the first time it appears. The tables are lazy
+-- binary proxies (XTableBytesLoader): pairs() would decode all ~24.8k CharacterSkillLevelEffect
+-- rows at once (a visible hitch mid-fight), so only indexed rows are read:
+-- CharacterSkill[char].SkillGroupId -> CharacterSkillGroup[g].SkillId -> MinMaxLevel[skill].Min
+-- -> CharacterSkillLevelEffect[skill*100+min].SubMagicId. SubMagicId is identical at every level
+-- of every skill in the 4.8 tables, so one row per skill covers all levels.
+s.magic = s.magic or {}
+s.indexed = s.indexed or {}
+local function index(id)
+    if s.indexed[id] or not model then return end
+    local ok = pcall(function()
+        local skills = model:GetCharacterSkill()[id]
+        if not skills then return end
+        local groups, levels, effects = model:GetCharacterSkillGroup(), model:GetCharacterSkillLevelEffectMinMaxLevel(), model:GetCharacterSkillLevelEffect()
+        for _, groupId in pairs(skills.SkillGroupId or {}) do
+            local group = groups[groupId]
+            for _, skillId in pairs(group and group.SkillId or {}) do
+                local range = levels[skillId]
+                local level = skillId * 100 + (range and range.Min or 1)
+                local effect = effects[level]
+                for _, magic in pairs(effect and effect.SubMagicId or {}) do
+                    local list = s.magic[magic]
+                    if not list then list = {}; s.magic[magic] = list end
+                    list[#list+1] = level
+                end
+            end
+        end
+    end)
+    if ok then s.indexed[id] = true end
+end
 if (state == 3 or state == 4 or state == 5) and data then
     if not role then return table.concat({'DPS2', s.epoch, 'waiting local role', clock, 0}, '\t') end
     if data.NpcDpsTable then
@@ -58,35 +89,18 @@ if (state == 3 or state == 4 or state == 5) and data then
                     name = name:gsub('.', function(c) return string.format('%02x', string.byte(c)) end)
                     s.names[id] = name
                 end
+                index(id)
                 out[#out+1] = table.concat({id, name, tostring(v.DamageTotal), tostring(v.Cure),
                     tostring(v.Hurt), tostring(v.BreakEndure), tostring(key)}, '\t')
             end
         end)
     end
 end
-local model = agency and agency.XCharacter and agency.XCharacter._Model
 if model and #requested > 0 then
     -- A temporarily unavailable model must not block result totals or cache misses.
     pcall(function()
-    -- XCharacterModel.lua:339/352; SkillLevelId joins upgrade description Id. Both are lazy
-    -- binary-table proxies (XTableBytesLoader): next() sees an empty table, # and pairs work.
+    -- XCharacterModel.lua:339/352; SkillLevelId joins upgrade description Id.
     local descriptions = model:GetCharacterSkillUpgradeDes()
-    if not s.magic then
-        local effects = model:GetCharacterSkillLevelEffect()
-        if not effects or #effects == 0 then return end
-        local index = {}
-        for _, effect in pairs(effects) do
-            local ids = effect.SubMagicId
-            if type(ids) == 'table' then
-                for _, id in pairs(ids) do
-                    local list = index[id]
-                    if not list then list = {}; index[id] = list end
-                    list[#list+1] = effect.SkillLevelId
-                end
-            end
-        end
-        s.magic = index
-    end
     if not descriptions or #descriptions == 0 then return end
     for _, id in ipairs(requested) do
         local unique, encoded = {}, {}
