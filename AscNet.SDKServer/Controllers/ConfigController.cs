@@ -69,6 +69,12 @@ namespace AscNet.SDKServer.Controllers
             else
                 AddLegacyClientConfig(remoteConfigs, package, version, versionConfig, publicHttpOrigin);
 
+            // Local research switches (config.json "Client"); the stock rows stay authoritative otherwise.
+            if (Common.Common.config.Client.Debug)
+                remoteConfigs.SetConfig("Debug", true);
+            if (Common.Common.config.Client.ShowInspector)
+                remoteConfigs.SetConfig("IsShowInspector", true);
+
             string serializedObject = TsvTool.SerializeObject(remoteConfigs);
             return serializedObject;
         }

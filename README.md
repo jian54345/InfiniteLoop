@@ -424,6 +424,19 @@ Default config values come from `AscNet.Common/Config.cs`:
 
 `Resources/Configs/config.json` may be left empty to use those defaults, or populated with overrides.
 
+### Client debug environment (local research)
+
+`"Client": { "Debug": true }` in `config.json` makes the SDK server send remote-config `Debug = 1` to every client
+that fetches its config (`"ShowInspector": true` also sends `IsShowInspector = 1`; the client opens its Proxima
+inspector only when both are on). Both default to off; the client reads them at start-up, so restart the game after
+changing them. Verified on 4.8 EN: the login screen gains the debug server-address field, and plain-text Lua in
+`<persistentDataPath>/Lua/Matrix/<module>.lua` is loaded before the game's own module (per module; a missing file
+falls back to the shipped one, a broken file is an error). From disassembly, not yet exercised: `Lua/Launch/` for
+`XLaunch*` modules, `Lua/DlcFight/` for fight Lua, per-table TSV overrides at `Table/<requested path>` (CRLF,
+case-sensitive path, GBK on EN), and compiled IFix patches at `InjectFix/<assembly>.patch.bytes`. On the Windows
+client Debug also turns on the game's editor-debug Lua paths (class wrapping, extra network checks, timer stack
+traces), so it is not for normal play. `persistentDataPath` is `%USERPROFILE%\AppData\LocalLow\kurogame\PGR`.
+
 ## Running with the Steam/PC bridge
 
 Basic local bridge with MongoDB managed by the runner:
