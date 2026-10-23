@@ -10,7 +10,7 @@ use hudhook::{Hudhook, ImguiRenderLoop, MessageFilter};
 use super::graphics_live::{Desired, FieldInfo, FieldKind, Live, Status, LIVE};
 use super::graphics_dps::DpsSnapshot;
 use super::graphics_lua;
-use super::graphics_params::{render, Override, CONFIG_FILE, FIGHT_FOV_RANGE, RENDER_SCALE_RANGE, UI_FOV_RANGE, UI_SCALE_RANGE};
+use super::graphics_params::{render, Override, CONFIG_FILE, DPS_SCALE_RANGE, FIGHT_FOV_RANGE, RENDER_SCALE_RANGE, UI_FOV_RANGE, UI_SCALE_RANGE};
 use super::il2cpp;
 
 const RED: [f32; 4] = [1.0, 0.35, 0.35, 1.0];
@@ -30,13 +30,6 @@ pub(super) fn start() {
 #[derive(Default)]
 struct Overlay {
     visible: bool,
-    /// Inverted so the compact meter is visible by default without persisting UI preferences.
-    dps_hidden: bool,
-    dps_corner: usize,
-    dps_hide_outside_fight: bool,
-    dps_details: bool,
-    /// Stored as an offset so derived Default gives a 1.0 scale.
-    dps_scale_offset: f32,
     /// Text being edited for array fields, keyed `Setting.Field`; committed on Enter.
     buffers: HashMap<String, String>,
     save_result: String,
@@ -151,6 +144,11 @@ impl Overlay {
             desired.fight_fov = None;
             desired.ui_scale = None;
             desired.dps_meter = false;
+            desired.dps_corner = 0;
+            desired.dps_details = false;
+            desired.dps_scale = 1.0;
+            desired.dps_hide_outside = false;
+            desired.dps_compact = true;
         }
         if !self.save_result.is_empty() {
             ui.text_wrapped(&self.save_result);
@@ -180,24 +178,23 @@ impl Overlay {
             return;
         }
         ui.checkbox("Enable DPS meter", &mut desired.dps_meter);
-        let mut compact = !self.dps_hidden;
-        if ui.checkbox("Show compact meter", &mut compact) {
-            self.dps_hidden = !compact;
+        ui.checkbox("Show compact meter", &mut desired.dps_compact);
+        let mut corner = usize::from(desired.dps_corner);
+        if ui.combo_simple_string("Meter corner", &mut corner, &["Top right", "Top left", "Bottom right", "Bottom left"]) {
+            desired.dps_corner = corner as u8;
         }
-        ui.combo_simple_string("Meter corner", &mut self.dps_corner, &["Top right", "Top left", "Bottom right", "Bottom left"]);
-        ui.checkbox("Hide compact meter outside fights", &mut self.dps_hide_outside_fight);
-        let mut scale = 1.0 + self.dps_scale_offset;
-        if ui.slider("Compact meter scale", 0.75, 2.0, &mut scale) {
-            self.dps_scale_offset = scale - 1.0;
+        ui.checkbox("Hide compact meter outside fights", &mut desired.dps_hide_outside);
+        if ui.slider("Compact meter scale", DPS_SCALE_RANGE.0, DPS_SCALE_RANGE.1, &mut desired.dps_scale) {
+            desired.dps_scale = desired.dps_scale.clamp(DPS_SCALE_RANGE.0, DPS_SCALE_RANGE.1);
         }
-        ui.checkbox("Show damage details", &mut self.dps_details);
+        ui.checkbox("Show damage details", &mut desired.dps_details);
         if ui.button("Reset DPS") {
             *reset = reset.wrapping_add(1);
         }
         ui.text_wrapped("Recorded normal-fight damage, including owned summons. Not effective HP removed; DLC/Babylonia is unsupported.");
         if let Some(snapshot) = snapshot {
             draw_dps_summary(ui, snapshot);
-            draw_dps_rows(ui, snapshot, self.dps_details, 440.0);
+            draw_dps_rows(ui, snapshot, desired.dps_details, 440.0);
         } else if desired.dps_meter {
             ui.text("Waiting for DPS sample…");
         }
@@ -205,20 +202,17 @@ impl Overlay {
     }
 
     fn draw_compact_dps(&self, ui: &Ui) {
-        if self.dps_hidden {
-            return;
-        }
         let live = LIVE.lock().unwrap_or_else(|poisoned| poisoned.into_inner());
-        if !live.desired.dps_meter {
+        if !live.desired.dps_compact || !live.desired.dps_meter {
             return;
         }
-        if self.dps_hide_outside_fight && !live.dps.as_ref().is_some_and(|snapshot| snapshot.status == "active") {
+        if live.desired.dps_hide_outside && !live.dps.as_ref().is_some_and(|snapshot| snapshot.status == "active") {
             return;
         }
-        let scale = (1.0 + self.dps_scale_offset).clamp(0.75, 2.0);
+        let scale = live.desired.dps_scale.clamp(DPS_SCALE_RANGE.0, DPS_SCALE_RANGE.1);
         let display = ui.io().display_size;
-        let right = self.dps_corner % 2 == 0;
-        let bottom = self.dps_corner >= 2;
+        let right = live.desired.dps_corner % 2 == 0;
+        let bottom = live.desired.dps_corner >= 2;
         let position = [if right { display[0] - 12.0 } else { 12.0 }, if bottom { display[1] - 12.0 } else { 12.0 }];
         ui.window("Recorded damage##compact_dps")
             .position(position, Condition::Always)
@@ -228,7 +222,7 @@ impl Overlay {
                 ui.set_window_font_scale(scale);
                 if let Some(snapshot) = &live.dps {
                     draw_dps_summary(ui, snapshot);
-                    draw_dps_rows(ui, snapshot, self.dps_details, 360.0 * scale);
+                    draw_dps_rows(ui, snapshot, live.desired.dps_details, 360.0 * scale);
                 } else {
                     ui.text("DPS: waiting for sample…");
                 }
@@ -411,7 +405,10 @@ fn draw_dps_rows(ui: &Ui, snapshot: &DpsSnapshot, details: bool, width: f32) {
         [0.25, 0.62, 0.90, 1.0], [0.70, 0.38, 0.75, 1.0], [0.22, 0.70, 0.48, 1.0],
         [0.85, 0.53, 0.22, 1.0], [0.78, 0.31, 0.40, 1.0], [0.38, 0.65, 0.68, 1.0],
     ];
-    for row in &snapshot.rows {
+    for (index, row) in snapshot.rows.iter().enumerate() {
+        if index > 0 {
+            if details { ui.new_line(); } else { ui.spacing(); }
+        }
         let label = format!("{} | {} | {} DPS | {:.1}%", row.name,
             human_number(row.total as f64), human_number(row.dps), row.share * 100.0);
         {
@@ -426,18 +423,27 @@ fn draw_dps_rows(ui: &Ui, snapshot: &DpsSnapshot, details: bool, width: f32) {
         if !details {
             continue;
         }
-        ui.text(format!("Physical {} | Elemental {} | Healing {} | Taken {}",
-            human_number(row.physical as f64), human_number(row.elemental as f64),
-            human_number(row.cure as f64), human_number(row.hurt as f64)));
-        ui.text(format!("Hits {} | Crits {} | Double crits {} | Biggest {}",
-            human_number(row.hits as f64), human_number(row.crits as f64),
-            human_number(row.double_crits as f64), human_number(row.biggest_hit as f64)));
-        ui.text(format!("Fight {} DPS | On-field {} DPS ({:.1}s) | Peak 5s {}",
-            human_number(row.dps), human_number(row.on_field_dps), row.on_field_seconds,
-            human_number(row.peak5)));
-        if !row.damage_ids.is_empty() {
-            let ids = row.damage_ids.iter().take(5).map(|(id, _)| id.to_string()).collect::<Vec<_>>().join(", ");
-            ui.text(format!("Top damage IDs: {ids}"));
+        let crit_rate = if row.hits > 0 { row.crits as f64 * 100.0 / row.hits as f64 } else { 0.0 };
+        ui.text(format!("Crit {crit_rate:.1}% ({}/{} hits) | Biggest {} | Peak 5s {}",
+            row.crits, row.hits, human_number(row.biggest_hit as f64), human_number(row.peak5)));
+        // Characters only swapped in for QTE/assists have damage but no controlled time.
+        let on_field = if row.on_field_seconds >= 0.5 {
+            format!("{} DPS ({:.1}s)", human_number(row.on_field_dps), row.on_field_seconds)
+        } else {
+            "not controlled".to_owned()
+        };
+        let mut line = format!("On-field {on_field}");
+        if row.cure > 0 { line.push_str(&format!(" | Healing {}", human_number(row.cure as f64))); }
+        if row.hurt > 0 { line.push_str(&format!(" | Taken {}", human_number(row.hurt as f64))); }
+        ui.text(line);
+        if !row.skills.is_empty() {
+            ui.text("Skills (share of hit-sampled damage):");
+            ui.indent();
+            for skill in &row.skills {
+                ui.text_wrapped(format!("{} | {} | {:.1}%", skill.name,
+                    human_number(skill.damage as f64), skill.share * 100.0));
+            }
+            ui.unindent();
         }
     }
 }
@@ -525,7 +531,7 @@ fn draw_render_scale(ui: &Ui, desired: &mut Desired, fallback: Option<f32>) {
     }
 }
 
-fn save_ini(text: &str) -> String {
+pub(super) fn save_ini(text: &str) -> String {
     let path = std::env::current_exe().ok().and_then(|exe| exe.parent().map(|dir| dir.join(CONFIG_FILE)));
     let Some(path) = path else {
         let reason = "cannot locate PGR.exe's folder";

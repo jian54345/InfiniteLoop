@@ -9,10 +9,10 @@ use crate::{interceptor::Interceptor, modules::il2cpp::{self, export, Il2cpp, FL
 pub(super) struct Hit {
     pub launcher_id: i32,
     pub target_id: i32,
-    pub damage: u32,
     pub damage_id: i32,
+    pub damage: u32,
+    /// `IsCrit`, or the `DoubleCrit` custom damage flag (an upgraded crit; counted as a crit).
     pub crit: bool,
-    pub double_crit: bool,
 }
 
 const CAPACITY: usize = 4096;
@@ -27,7 +27,7 @@ struct Ring<const N: usize> {
 }
 impl<const N: usize> Ring<N> {
     const fn new() -> Self {
-        let mut slots = [const { Slot { sequence: AtomicUsize::new(0), hit: UnsafeCell::new(Hit { launcher_id: 0, target_id: 0, damage: 0, damage_id: 0, crit: false, double_crit: false }) } }; N];
+        let mut slots = [const { Slot { sequence: AtomicUsize::new(0), hit: UnsafeCell::new(Hit { launcher_id: 0, target_id: 0, damage_id: 0, damage: 0, crit: false }) } }; N];
         let mut i = 0;
         while i < N { slots[i].sequence = AtomicUsize::new(i); i += 1; }
         Self { slots, write: AtomicUsize::new(0), read: AtomicUsize::new(0), dropped: AtomicU64::new(0) }
@@ -95,13 +95,12 @@ unsafe extern "win64" fn on_damage(registers: *mut Registers, _: usize) {
     // ilhook 2.3.0 write_trampoline_prolog first executes push rsp, then preserves that
     // value in Registers.rsp before relocating ANY original instructions. This is entry RSP.
     let context = *((registers.rsp as usize + 0x48) as *const usize);
-    let (damage_id, crit, double_crit) = if context == 0 { (0, false, false) } else {
-        (*((context + 0x20) as *const i32), *((context + 0x4C) as *const u8) != 0, *((context + 0x50) as *const i32) == 1)
-    };
+    let crit = context != 0 && (*((context + 0x4C) as *const u8) != 0 || *((context + 0x50) as *const i32) == 1);
     RING.push(Hit {
         launcher_id: *((launcher + 0x2C) as *const i32),
         target_id: *((target + 0x2C) as *const i32),
-        damage: damage as u32, damage_id, crit, double_crit,
+        damage_id: if context == 0 { 0 } else { *((context + 0x20) as *const i32) },
+        damage: damage as u32, crit,
     });
 }
 

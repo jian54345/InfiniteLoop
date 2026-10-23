@@ -37,6 +37,8 @@ mod graphics_nofade_params;
 mod graphics_params;
 #[path = "graphics_tweaks.rs"]
 mod graphics_tweaks;
+#[path = "graphics_settings.rs"]
+mod graphics_settings;
 
 use std::{collections::BTreeMap, ffi::{c_void, CString}, ptr::null_mut, sync::{atomic::Ordering, MutexGuard, PoisonError}, time::{Duration, Instant}};
 
@@ -95,21 +97,21 @@ fn failed(what: &str, reason: &str) {
     il2cpp::failed(what, reason, UNAFFECTED);
 }
 
-/// Starts the worker when `ascnet-graphics.ini` asks for it. A missing file is the normal "off" case and logs
-/// nothing; every other problem is reported. Never blocks the caller.
+/// Starts the graphics worker and Settings tab even without an ini or enabled overrides.
+/// Missing configuration uses the game's defaults; other read problems are reported.
 pub fn spawn_if_enabled() {
     let Some(path) = std::env::current_exe().ok().and_then(|exe| Some(exe.parent()?.join(CONFIG_FILE))) else { return };
     let text = match std::fs::read_to_string(&path) {
         Ok(text) => text,
-        Err(error) if error.kind() == std::io::ErrorKind::NotFound => return,
-        Err(error) => return failed(&format!("read {CONFIG_FILE}"), &format!("{}: {error}", path.display())),
+        Err(error) if error.kind() == std::io::ErrorKind::NotFound => String::new(),
+        Err(error) => {
+            failed(&format!("read {CONFIG_FILE}"), &format!("{}: {error}", path.display()));
+            String::new()
+        }
     };
     let config = Config::parse(&text);
     for problem in &config.problems {
         failed(CONFIG_FILE, &format!("{problem}; that line is ignored"));
-    }
-    if !config.active() {
-        return;
     }
     let mut requested = Vec::new();
     if let Some(scale) = config.render_scale {
@@ -502,27 +504,16 @@ unsafe fn run() -> Result<()> {
     let mut fight_fov = FightFov::default();
     let bridge = LuaBridge::install(&il, &assemblies).map_err(|error| format!("{error:#}"));
     if let Err(message) = &bridge {
-        failed("Lua bridge", &format!("{message}; ultrawide, ui16x9, uifov, uiscale, dpsmeter and the Lua console are unavailable"));
+        failed("Lua bridge", &format!("{message}; AscNet Settings, ultrawide, ui16x9, uifov, uiscale, dpsmeter and the Lua console are unavailable"));
     }
     let mut ultrawide = Ultrawide::default();
     let mut ui_fit = UiFit::default();
     let mut ui_fov = UiFov::default();
     let mut ui_scale = UiScale::default();
     let mut dps_meter = DpsMeter::default();
+    let mut settings = graphics_settings::Settings::default();
     let mut damage_hook = graphics_dps_hits::DamageHook::default();
-    let wants_overlay = {
-        let live = live();
-        live.desired.overlay || live.desired.dps_meter
-    };
-    if wants_overlay {
-        // hudhook creates and destroys a dummy window to find Present. From this worker thread, Wine's
-        // NtUserDestroyWindow can block forever (seen: game stuck on a black screen at startup), so the
-        // install runs on the game's main thread through the Lua bridge detour when it is available.
-        match &bridge {
-            Ok(_) => graphics_lua::start_overlay_on_main_thread(),
-            Err(_) => graphics_overlay::start(),
-        }
-    }
+    let mut overlay_started = false;
     let _quit_hook = match graphics_tweaks::watch_quit(&il, &assemblies) {
         Ok(hook) => Some(hook),
         Err(error) => {
@@ -543,10 +534,19 @@ unsafe fn run() -> Result<()> {
         if quitting() {
             park(&il);
         }
+        settings.receive(&bridge);
         let (desired, dps_reset) = {
             let live = live();
             (live.desired.clone(), live.dps_reset)
         };
+        if !overlay_started && (desired.overlay || desired.dps_meter) {
+            // Installing through the bridge avoids Wine's dummy-window destroy stall on this worker.
+            match &bridge {
+                Ok(_) => graphics_lua::start_overlay_on_main_thread(),
+                Err(_) => graphics_overlay::start(),
+            }
+            overlay_started = true;
+        }
         let scene = || scene_name(&il, roots.active_scene);
         let runtime_data = runtime_data(&walker, roots.urp_assets, &mut data_offset);
         let mut errors = Vec::new();
@@ -588,6 +588,7 @@ unsafe fn run() -> Result<()> {
                 fullscreen: LuaBridge::fullscreen(),
             };
         }
+        settings.publish(&bridge);
         if desired.dump && tick % DUMP_EVERY == 0 {
             if quitting() {
                 park(&il);

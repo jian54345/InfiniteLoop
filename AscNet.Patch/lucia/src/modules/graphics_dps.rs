@@ -6,6 +6,8 @@
 //! Hits wait for the next runtime-id poll join and are fenced at epoch/reset boundaries.
 //! On-field time assigns each non-paused clock delta to the previous controlled character.
 //! Double crits also count as crits; damage-id rankings use recorded hit damage, not counts.
+//! Named skill shares use sampled hit damage (not result totals); names are runtime-only.
+//! Skill-name cache survives fights/resets; unavailable runtime tables leave IDs retryable.
 use std::collections::{BTreeMap, VecDeque};
 use super::graphics_lua::LuaBridge;
 use super::graphics_dps_hits::{self, Hit};
@@ -14,6 +16,8 @@ const CHUNK: &str = "lucia_dps";
 const POLL: &str = r#"
 local s = rawget(_G, '__lucia_dps')
 if not s then s = {epoch=0, names={}}; rawset(_G, '__lucia_dps', s) end
+local agency = rawget(_G, 'XMVCA')
+local tool = rawget(_G, 'XTool')
 local fight = CS.XFight.Instance
 local result = fight and fight.Result
 local data = result and result.Data
@@ -43,30 +47,71 @@ local out = {table.concat({'DPS2', s.epoch, status, string.format('%.6f', clock)
 if (state == 3 or state == 4 or state == 5) and data then
     if not role then return table.concat({'DPS2', s.epoch, 'waiting local role', clock, 0}, '\t') end
     if data.NpcDpsTable then
-        XTool.LoopMap(data.NpcDpsTable, function(key, v)
+        tool.LoopMap(data.NpcDpsTable, function(key, v)
             if v.RoleId == role.Id and v.CharacterId > 0 then
                 local id = tonumber(v.CharacterId)
                 local name = s.names[id]
                 if not name then
                     -- Verified accessor: XCharacterAgency.lua:3027, not NPC template names.
-                    name = XMVCA.XCharacter:GetCharacterName(id)
+                    name = agency and agency.XCharacter and agency.XCharacter:GetCharacterName(id)
                     if not name or name == '' then name = tostring(id) end
                     name = name:gsub('.', function(c) return string.format('%02x', string.byte(c)) end)
                     s.names[id] = name
                 end
-                local elemental = 0
-                if v.DamageMagic then
-                    for i = 0, v.DamageMagic.Length - 1 do elemental = elemental + v.DamageMagic[i] end
-                end
-                out[#out+1] = table.concat({id, name, tostring(v.DamageTotal),
-                    tostring(v.DamageNormal), tostring(elemental), tostring(v.Cure),
+                out[#out+1] = table.concat({id, name, tostring(v.DamageTotal), tostring(v.Cure),
                     tostring(v.Hurt), tostring(v.BreakEndure), tostring(key)}, '\t')
             end
         end)
     end
 end
+local model = agency and agency.XCharacter and agency.XCharacter._Model
+if model and #requested > 0 then
+    -- A temporarily unavailable model must not block result totals or cache misses.
+    pcall(function()
+    -- XCharacterModel.lua:339/352; SkillLevelId joins upgrade description Id. Both are lazy
+    -- binary-table proxies (XTableBytesLoader): next() sees an empty table, # and pairs work.
+    local descriptions = model:GetCharacterSkillUpgradeDes()
+    if not s.magic then
+        local effects = model:GetCharacterSkillLevelEffect()
+        if not effects or #effects == 0 then return end
+        local index = {}
+        for _, effect in pairs(effects) do
+            local ids = effect.SubMagicId
+            if type(ids) == 'table' then
+                for _, id in pairs(ids) do
+                    local list = index[id]
+                    if not list then list = {}; index[id] = list end
+                    list[#list+1] = effect.SkillLevelId
+                end
+            end
+        end
+        s.magic = index
+    end
+    if not descriptions or #descriptions == 0 then return end
+    for _, id in ipairs(requested) do
+        local unique, encoded = {}, {}
+        for _, level in ipairs(s.magic[id] or {}) do
+            local description = descriptions[level]
+            local name = description and description.Name
+            if type(name) == 'string' and name ~= '' and not unique[name] then
+                unique[name] = true
+                encoded[#encoded+1] = (name:gsub('.', function(c) return string.format('%02x', string.byte(c)) end))
+            end
+        end
+        table.sort(encoded)
+        out[#out+1] = 'S\t' .. id .. '\t' .. table.concat(encoded, ',')
+    end
+    end)
+end
 return table.concat(out, '\n')
 "#;
+
+#[derive(Clone, Debug, Default)]
+pub(super) struct DpsSkill {
+    pub name: String,
+    pub damage: u64,
+    pub share: f64,
+}
 
 #[derive(Clone, Debug, Default)]
 pub(super) struct DpsRow {
@@ -76,18 +121,15 @@ pub(super) struct DpsRow {
     pub share: f64,
     pub dps: f64,
     pub peak5: f64,
-    pub physical: u64,
-    pub elemental: u64,
     pub cure: u64,
     pub hurt: u64,
     pub break_endure: u64,
     pub hits: u64,
     pub crits: u64,
-    pub double_crits: u64,
     pub biggest_hit: u64,
-    pub damage_ids: Vec<(i32, u64)>,
     pub on_field_seconds: f64,
     pub on_field_dps: f64,
+    pub skills: Vec<DpsSkill>,
 }
 
 #[derive(Clone, Debug, Default)]
@@ -104,6 +146,7 @@ pub(super) struct DpsSnapshot {
 struct Sample {
     epoch: u64, status: String, clock: f64, controlled: i32,
     runtime_ids: BTreeMap<i32, u32>, rows: BTreeMap<u32, DpsRow>,
+    skills: BTreeMap<i32, String>,
 }
 
 fn parse(source: &str) -> Result<Sample, String> {
@@ -115,22 +158,73 @@ fn parse(source: &str) -> Result<Sample, String> {
     if !clock.is_finite() || clock < 0.0 { return Err(bad()); }
     let mut rows: BTreeMap<u32, DpsRow> = BTreeMap::new();
     let mut runtime_ids = BTreeMap::new();
+    let mut skills = BTreeMap::new();
     for line in lines {
         let f: Vec<_> = line.split('\t').collect();
-        if f.len() != 9 { return Err(bad()); }
+        if f.first() == Some(&"S") {
+            if f.len() != 3 { return Err(bad()); }
+            let id = f[1].parse().map_err(|_| bad())?;
+            let mut names = f[2].split(',').filter(|s| !s.is_empty())
+                .map(decode_name).collect::<Result<Vec<_>, _>>()?;
+            names.sort();
+            names.dedup();
+            skills.insert(id, names.join(" / "));
+            continue;
+        }
+        if f.len() != 7 { return Err(bad()); }
         let id: u32 = f[0].parse().map_err(|_| bad())?;
         if id == 0 || f[1].len() % 2 != 0 || !f[1].is_ascii() { return Err(bad()); }
         let bytes = (0..f[1].len()).step_by(2).map(|i| u8::from_str_radix(&f[1][i..i+2], 16).map_err(|_| bad())).collect::<Result<Vec<_>, _>>()?;
         let name = String::from_utf8(bytes).map_err(|_| bad())?;
-        let values = f[2..8].iter().map(|s| s.parse::<u64>().map_err(|_| bad())).collect::<Result<Vec<_>, _>>()?;
-        runtime_ids.insert(f[8].parse().map_err(|_| bad())?, id);
+        let values = f[2..6].iter().map(|s| s.parse::<u64>().map_err(|_| bad())).collect::<Result<Vec<_>, _>>()?;
+        runtime_ids.insert(f[6].parse().map_err(|_| bad())?, id);
         let row = rows.entry(id).or_insert_with(|| DpsRow { character_id: id, name, ..Default::default() });
-        for (dst, value) in [&mut row.total, &mut row.physical, &mut row.elemental, &mut row.cure, &mut row.hurt, &mut row.break_endure].into_iter().zip(values) {
+        for (dst, value) in [&mut row.total, &mut row.cure, &mut row.hurt, &mut row.break_endure].into_iter().zip(values) {
             *dst = dst.checked_add(value).ok_or_else(bad)?;
         }
     }
     Ok(Sample { epoch: h[1].parse().map_err(|_| bad())?, status: h[2].to_owned(), clock,
-        controlled: h[4].parse().map_err(|_| bad())?, runtime_ids, rows })
+        controlled: h[4].parse().map_err(|_| bad())?, runtime_ids, rows, skills })
+}
+
+fn decode_name(hex: &str) -> Result<String, String> {
+    let bad = || "invalid DPS skill name".to_owned();
+    if hex.len() % 2 != 0 || !hex.is_ascii() { return Err(bad()); }
+    let bytes = (0..hex.len()).step_by(2)
+        .map(|i| u8::from_str_radix(&hex[i..i+2], 16).map_err(|_| bad()))
+        .collect::<Result<Vec<_>, _>>()?;
+    String::from_utf8(bytes).map_err(|_| bad())
+}
+
+fn skill_rows(damage_ids: &BTreeMap<i32, u64>, names: &BTreeMap<i32, String>) -> Vec<DpsSkill> {
+    let mut named: BTreeMap<&str, u64> = BTreeMap::new();
+    let mut unresolved = Vec::new();
+    let mut other = 0u64;
+    let total = damage_ids.values().fold(0u64, |sum, damage| sum.saturating_add(*damage));
+    for (id, damage) in damage_ids {
+        if let Some(name) = names.get(id).filter(|name| !name.is_empty()) {
+            let sum = named.entry(name.as_str()).or_default();
+            *sum = sum.saturating_add(*damage);
+        } else {
+            other = other.saturating_add(*damage);
+            unresolved.push(*id);
+        }
+    }
+    let mut rows: Vec<_> = named.into_iter().map(|(name, damage)| DpsSkill {
+        name: name.to_owned(), damage, share: 0.0,
+    }).collect();
+    rows.sort_by(|a, b| b.damage.cmp(&a.damage).then(a.name.cmp(&b.name)));
+    if rows.len() > 5 {
+        let damage = rows.drain(5..).fold(0u64, |sum, row| sum.saturating_add(row.damage));
+        rows.push(DpsSkill { name: "Other named skills".into(), damage, share: 0.0 });
+    }
+    if !unresolved.is_empty() {
+        let ids = unresolved.iter().take(5).map(ToString::to_string).collect::<Vec<_>>().join(", ");
+        let suffix = if unresolved.len() > 5 { ", …" } else { "" };
+        rows.push(DpsSkill { name: format!("Other (IDs: {ids}{suffix})"), damage: other, share: 0.0 });
+    }
+    for row in &mut rows { row.share = if total > 0 { row.damage as f64 / total as f64 } else { 0.0 }; }
+    rows
 }
 
 #[derive(Default)]
@@ -155,8 +249,8 @@ impl Window {
 
 #[derive(Default)]
 struct HitStats {
-    hits: u64, crits: u64, double_crits: u64, biggest: u64,
-    damage_ids: BTreeMap<i32, u64>, on_field: f64,
+    hits: u64, crits: u64, biggest: u64, on_field: f64,
+    damage_ids: BTreeMap<i32, u64>,
 }
 
 #[derive(Default)]
@@ -178,6 +272,7 @@ pub(super) struct DpsMeter {
     pending_hits: Vec<Hit>,
     controlled: Option<u32>,
     dropped_origin: u64,
+    skill_names: BTreeMap<i32, String>,
 }
 
 impl DpsMeter {
@@ -213,7 +308,17 @@ impl DpsMeter {
                         result = outcome.and_then(|text| parse(&text)).map(|sample| self.apply(sample));
                     }
                 }
-                if !self.pending { bridge.queue(CHUNK, POLL.to_owned()); self.pending = true; }
+                if !self.pending {
+                    let mut ids: Vec<_> = self.hits.values().flat_map(|stats| stats.damage_ids.keys().copied())
+                        .chain(self.pending_hits.iter().map(|hit| hit.damage_id))
+                        .filter(|id| !self.skill_names.contains_key(id)).collect();
+                    ids.sort_unstable();
+                    ids.dedup();
+                    ids.truncate(128);
+                    let requested = ids.iter().map(ToString::to_string).collect::<Vec<_>>().join(",");
+                    bridge.queue(CHUNK, format!("local requested = {{{requested}}}\n{POLL}"));
+                    self.pending = true;
+                }
                 result
             }
         };
@@ -226,6 +331,7 @@ impl DpsMeter {
     }
 
     fn apply(&mut self, sample: Sample) {
+        self.skill_names.extend(sample.skills);
         let new_fight = self.epoch != Some(sample.epoch) || sample.clock < self.last_clock;
         if new_fight || self.reset_pending { self.clear_hits(); }
         let finishing = self.snapshot.status == "active" && !new_fight && !sample.rows.is_empty()
@@ -235,6 +341,13 @@ impl DpsMeter {
             self.controlled = None;
         }
         let active = sample.status == "active";
+        if !active {
+            for row in &mut self.snapshot.rows {
+                if let Some(stats) = self.hits.get(&row.character_id) {
+                    row.skills = skill_rows(&stats.damage_ids, &self.skill_names);
+                }
+            }
+        }
         if !active && self.snapshot.status != "active" && !self.reset_pending {
             self.snapshot.status = sample.status;
             return;
@@ -270,11 +383,10 @@ impl DpsMeter {
                 if let Some(id) = sample.runtime_ids.get(&hit.launcher_id) {
                     let stats = self.hits.entry(*id).or_default();
                     stats.hits = stats.hits.saturating_add(1);
-                    stats.crits = stats.crits.saturating_add(u64::from(hit.crit || hit.double_crit));
-                    stats.double_crits = stats.double_crits.saturating_add(u64::from(hit.double_crit));
+                    stats.crits = stats.crits.saturating_add(u64::from(hit.crit));
                     stats.biggest = stats.biggest.max(u64::from(hit.damage));
-                    let count = stats.damage_ids.entry(hit.damage_id).or_default();
-                    *count = count.saturating_add(u64::from(hit.damage));
+                    let damage = stats.damage_ids.entry(hit.damage_id).or_default();
+                    *damage = damage.saturating_add(u64::from(hit.damage));
                 }
             }
             self.controlled = if active { sample.runtime_ids.get(&sample.controlled).copied() } else { None };
@@ -286,8 +398,6 @@ impl DpsMeter {
         for (id, mut row) in sample.rows {
             if let Some(base) = self.baseline.get(&id) {
                 row.total = row.total.saturating_sub(base.total);
-                row.physical = row.physical.saturating_sub(base.physical);
-                row.elemental = row.elemental.saturating_sub(base.elemental);
                 row.cure = row.cure.saturating_sub(base.cure);
                 row.hurt = row.hurt.saturating_sub(base.hurt);
                 row.break_endure = row.break_endure.saturating_sub(base.break_endure);
@@ -296,13 +406,10 @@ impl DpsMeter {
             if let Some(stats) = self.hits.get(&id) {
                 row.hits = stats.hits;
                 row.crits = stats.crits;
-                row.double_crits = stats.double_crits;
                 row.biggest_hit = stats.biggest;
-                row.damage_ids = stats.damage_ids.iter().map(|(&id, &count)| (id, count)).collect();
-                row.damage_ids.sort_by(|a, b| b.1.cmp(&a.1).then(a.0.cmp(&b.0)));
-                row.damage_ids.truncate(5);
                 row.on_field_seconds = stats.on_field;
                 row.on_field_dps = if stats.on_field > 0.0 { row.total as f64 / stats.on_field } else { 0.0 };
+                row.skills = skill_rows(&stats.damage_ids, &self.skill_names);
             }
             let window = self.windows.entry(id).or_insert_with(|| { let mut w = Window::default(); w.push(0.0, 0); w });
             row.peak5 = window.push(elapsed, row.total);
@@ -336,11 +443,42 @@ mod tests {
     use super::*;
 
     fn sample(epoch: u64, clock: f64, controlled: i32) -> Sample {
-        parse(&format!("DPS2\t{epoch}\tactive\t{clock}\t{controlled}\n101\t416c706861\t100\t40\t60\t2\t3\t4\t11\n101\t416c706861\t50\t20\t30\t1\t2\t3\t12\n202\t42\t20\t20\t0\t0\t0\t0\t22")).unwrap()
+        parse(&format!("DPS2\t{epoch}\tactive\t{clock}\t{controlled}\n101\t416c706861\t100\t2\t3\t4\t11\n101\t416c706861\t50\t1\t2\t3\t12\n202\t42\t20\t0\t0\t0\t22")).unwrap()
     }
 
-    fn hit(launcher_id: i32, damage: u32, damage_id: i32) -> Hit {
-        Hit { launcher_id, target_id: 99, damage, damage_id, crit: true, double_crit: false }
+    fn hit(launcher_id: i32, damage: u32) -> Hit {
+        Hit { launcher_id, target_id: 99, damage, damage_id: 632104, crit: true }
+    }
+
+    #[test]
+    fn skill_parser_groups_names_ambiguity_and_unresolved_damage() {
+        let sample = parse("DPS2\t1\tactive\t1\t11\nS\t1\t42657461,416c706861,416c706861\nS\t2\t416c706861,42657461\nS\t3\t\nS\t4\t47616d6d61").unwrap();
+        assert_eq!(sample.skills[&1], "Alpha / Beta");
+        let damage = BTreeMap::from([(1, 20), (2, 30), (3, 10), (4, 25), (99, 15)]);
+        let rows = skill_rows(&damage, &sample.skills);
+        assert_eq!(rows.len(), 3);
+        assert_eq!((&rows[0].name[..], rows[0].damage, rows[0].share), ("Alpha / Beta", 50, 0.5));
+        assert_eq!((&rows[1].name[..], rows[1].damage), ("Gamma", 25));
+        assert_eq!((&rows[2].name[..], rows[2].damage, rows[2].share), ("Other (IDs: 3, 99)", 25, 0.25));
+        assert!(parse("DPS2\t1\tactive\t1\t0\nS\t1\tff").is_err());
+        assert!(parse("DPS2\t1\tactive\t1\t0\nS\t1\t0").is_err());
+    }
+
+    #[test]
+    fn skill_limits_keep_resolved_overflow_separate_and_cache_survives_reset() {
+        let names: BTreeMap<_, _> = (1..=7).map(|id| (id, format!("Skill {id}"))).collect();
+        let damage: BTreeMap<_, _> = (1..=14).map(|id| (id, id as u64)).collect();
+        let rows = skill_rows(&damage, &names);
+        assert_eq!(rows.len(), 7);
+        assert_eq!(rows[0].name, "Skill 7");
+        assert_eq!(rows[5].name, "Other named skills");
+        assert_eq!(rows[5].damage, 3);
+        assert_eq!(rows[6].name, "Other (IDs: 8, 9, 10, 11, 12, …)");
+        assert!((rows.iter().map(|row| row.share).sum::<f64>() - 1.0).abs() < 1e-12);
+        let mut meter = DpsMeter::default();
+        meter.skill_names = names;
+        meter.clear_hits();
+        assert_eq!(meter.skill_names.len(), 7);
     }
 
     #[test]
@@ -349,11 +487,10 @@ mod tests {
         meter.apply(sample(1, 5.0, 11));
         assert_eq!(meter.snapshot.total, 170);
         assert_eq!(meter.snapshot.rows[0].name, "Alpha");
-        meter.pending_hits.extend([hit(12, 300, 7), hit(11, 40, 8), hit(999, 999, 9)]);
+        meter.pending_hits.extend([hit(12, 300), hit(11, 40), hit(999, 999)]);
         meter.apply(sample(1, 7.0, 22));
         let row = &meter.snapshot.rows[0];
-        assert_eq!((row.hits, row.crits, row.double_crits, row.biggest_hit), (2, 2, 0, 300));
-        assert_eq!(row.damage_ids, vec![(7, 300), (8, 40)]);
+        assert_eq!((row.hits, row.crits, row.biggest_hit), (2, 2, 300));
         assert_eq!(row.on_field_seconds, 2.0);
         assert_eq!(row.on_field_dps, 75.0);
         assert_eq!(row.total, 150); // Native hits never replace result totals.
@@ -361,14 +498,11 @@ mod tests {
         assert_eq!(meter.hits[&202].on_field, 0.0);
         meter.apply(sample(1, 8.0, 11));
         assert_eq!(meter.hits[&202].on_field, 1.0);
-        for id in 0..7 { meter.pending_hits.push(hit(11, 1, id)); }
-        meter.apply(sample(1, 9.0, 11));
-        assert_eq!(meter.snapshot.rows[0].damage_ids.len(), 5);
-        meter.pending_hits.push(hit(11, 1000, 1));
+        meter.pending_hits.push(hit(11, 1000));
         meter.apply(sample(2, 1.0, 11)); // Reused NPC ids cannot credit a previous fight.
         assert_eq!(meter.snapshot.rows[0].hits, 0);
         assert_eq!(meter.snapshot.rows[0].on_field_seconds, 0.0);
-        meter.pending_hits.push(hit(11, 1000, 1));
+        meter.pending_hits.push(hit(11, 1000));
         meter.reset_pending = true;
         meter.apply(sample(2, 2.0, 11));
         assert_eq!(meter.snapshot.total, 0);
@@ -377,26 +511,46 @@ mod tests {
     }
 
     #[test]
+    fn sampled_hit_damage_groups_skills_without_replacing_result_totals() {
+        let mut meter = DpsMeter::default();
+        meter.apply(sample(1, 1.0, 11));
+        let mut first = hit(11, 40);
+        first.damage_id = 1;
+        let mut second = hit(12, 60);
+        second.damage_id = 2;
+        meter.pending_hits.extend([first, second]);
+        let mut next = sample(1, 2.0, 11);
+        next.skills = parse("DPS2\t1\tactive\t2\t11\nS\t1\t416c706861\nS\t2\t416c706861").unwrap().skills;
+        meter.apply(next);
+        let row = &meter.snapshot.rows[0];
+        assert_eq!(row.total, 150);
+        assert_eq!(row.skills.len(), 1);
+        assert_eq!(row.skills[0].name, "Alpha");
+        assert_eq!(row.skills[0].damage, 100);
+        assert_eq!(row.skills[0].share, 1.0);
+        assert_eq!(meter.hits[&101].damage_ids[&1], 40);
+        assert_eq!(meter.hits[&101].damage_ids[&2], 60);
+    }
+
+    #[test]
     fn parser_retention_and_window() {
         let mut meter = DpsMeter::default();
         meter.apply(sample(1, 5.0, 11));
         assert_eq!(meter.snapshot.peak5, 34.0);
-        let mut final_hit = hit(11, 20, 3);
+        let mut final_hit = hit(11, 20);
         final_hit.crit = false;
-        final_hit.double_crit = true;
         meter.pending_hits.push(final_hit);
         let mut final_sample = sample(1, 6.0, 11);
         final_sample.status = "retained".into();
         meter.apply(final_sample);
         assert_eq!(meter.snapshot.rows[0].hits, 1);
-        assert_eq!(meter.snapshot.rows[0].crits, 1);
-        assert_eq!(meter.snapshot.rows[0].double_crits, 1);
+        assert_eq!(meter.snapshot.rows[0].crits, 0);
         assert_eq!(meter.snapshot.rows[0].on_field_seconds, 1.0);
         meter.apply(parse("DPS2\t1\tretained\t5\t0").unwrap());
         assert_eq!(meter.snapshot.rows.len(), 2);
         assert!(parse("DPS2\t1\tactive\tNaN\t0").is_err());
-        assert!(parse("DPS2\t1\tactive\t1\t0\n1\tff\t0\t0\t0\t0\t0\t0\t1").is_err());
-        assert!(parse("DPS2\t1\tactive\t1\t0\n1\t41\t-1\t0\t0\t0\t0\t0\t1").is_err());
+        assert!(parse("DPS2\t1\tactive\t1\t0\n1\tff\t0\t0\t0\t0\t1").is_err());
+        assert!(parse("DPS2\t1\tactive\t1\t0\n1\t41\t-1\t0\t0\t0\t1").is_err());
         let mut window = Window::default();
         for i in 0..=20 { window.push(i as f64, i * 10); }
         assert_eq!(window.peak, 10.0);

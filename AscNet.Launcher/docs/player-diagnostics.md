@@ -125,8 +125,9 @@ its own cache under `%APPDATA%\KR_G148\A1393\` (agreement, `KRSDKCache.json`) an
 
 Both are plain keys of `ascnet-graphics.ini` (see the table below): `fps = <n>` and `nofade = on`. There are no
 environment variables and no extra threads; the graphics worker applies them. The launcher has no controls for them.
-Two ways to set them, both editing the same file:
+Three ways to set them, all using the same file:
 
+- The **AscNet** tab in the game's Settings screen applies and persists changes live; no separate Save is needed.
 - The in-game overlay (`overlay = on`, Ctrl+Shift+G): **Unlock FPS** + target field (enabling uses the last value, else
   240; values below 1 are refused inline) and **No camera fade** apply live within 0.5 s; **Save to ascnet-graphics.ini**
   rewrites the whole file.
@@ -187,7 +188,48 @@ first result and on every later change, not every 0.5 s.
 ## Graphics options (`ascnet-graphics.ini`)
 
 `ascnet-graphics.ini` beside `PGR.exe` is read by `lucia` at game start, however the game is launched (launcher,
-CrossOver shortcut, script). One `key = value` per line, `#`/`;` comments. Absent file = off, no lines.
+CrossOver shortcut, script). One `key = value` per line, `#`/`;` comments. An absent file leaves all overrides off;
+the Settings bridge still starts so the **AscNet** tab can enable options and create the file.
+
+### In-game Settings → AscNet
+
+The **AscNet** tab adds the common controls to the game's own Settings screen. Changes apply live and each
+accepted change is automatically written to `ascnet-graphics.ini`; no separate Save or restart is needed.
+Hand-edited ini changes are still read at game start, not watched while the game runs.
+
+Controls are **Render scale** (0.25–4), **FPS limit** (30–360), **No camera fade**, **Ultrawide fullscreen**,
+**UI in centred 16:9**, **Wider UI-scene FOV** and **Fight camera FOV** (0.5–2), **UI scale** (0.5–1.5),
+**DPS meter**, **DPS meter window**, **Meter corner** (top right, top left, bottom right, bottom left),
+**Meter size** (0.75–2), **Show skills and details**, **Hide meter outside fights**, and **Overlay**.
+Optional numeric overrides have an enable toggle and a slider; disable one to return to the game's own value.
+Save / Return to Default are hidden on this tab only; the game's own tabs keep their stock behavior.
+
+A persistence failure leaves the accepted settings live for this session but not saved for the next launch; the
+tab reports the failure. Saving uses the same path as the overlay, so the log prefix remains
+`[lucia] OK overlay save: <path>` or `[lucia] FAILED overlay save: <reason>; the settings stay live but are not saved`.
+
+The Ctrl+Shift+G overlay remains the advanced diagnostics surface: raw render-pipeline quality fields, per-option
+errors, the Lua console, detailed DPS controls/results, and graphics dump controls. The Settings tab does not replace those tools.
+
+If the required Lua/UI objects are unavailable or installation fails, the stock Settings UI remains usable;
+the AscNet controls are unavailable rather than replacing the game's controls with a broken panel.
+
+The tab is added to the game's own tab list (`XUiButtonGroup.AddButton`, a copy of the "Others" button) and its
+panel is built on first open from the game's PC graphics and sound prefabs. Healthy lines:
+
+```
+[lucia] OK lua AscNet Settings: waiting for the Settings screen
+[lucia] OK lua AscNet Settings: hooked the Settings screen
+[lucia] OK lua AscNet Settings: tab added (index 13)
+[lucia] OK lua AscNet Settings: templates found
+[lucia] OK lua AscNet Settings: panel built (15 options)
+```
+
+Any failure is one `[lucia] FAILED lua AscNet Settings: <reason>` line; the AscNet tab is then hidden and the
+game's Settings screen is left as the game built it. If Settings is first opened through a path other than
+`XLuaUiManager.Open("UiSet")`, the tab appears from the next time Settings opens.
+
+### Ini keys and advanced diagnostics
 
 | Key | Effect |
 |---|---|
@@ -201,12 +243,19 @@ CrossOver shortcut, script). One `key = value` per line, `#`/`;` comments. Absen
 | `uiscale = 0.85` | Scales UI content relative to the game's own size (0.5–1.5; absent = the game's own). The Lua bridge changes the root `UiRoot` `CanvasScaler` in `ScaleWithScreenSize` mode from reference resolution 1920×1080 to `1920/factor` × `1080/factor`, and restores it when disabled. With `ui16x9`, the physical safe rectangle remains centred 16:9; UI adapter offsets are compensated separately for the chosen scale. Fight-HUD-specific custom offsets may remain; HUD layout and the combination with `ui16x9` still need in-game checking. |
 | `<Setting>.<Field> = value` | Overrides one field of the render pipeline's runtime quality objects (`UniversalRenderPipelineAsset.RenderPipelineDefaultQualityData`, read as managed memory, never through Unity calls), e.g. `ShadowSetting.CascadeSize = 4096`. Names are the game's own and case-sensitive (see the overlay or dump). Values: `on`/`off`, numbers, enum names or numbers (`AntiAliasingSetting.DeferredAAMethod = SubpixelMorphologicalAntiAliasing`), comma lists for arrays (`ShadowSetting.CascadeFrameUpdate = 0,0,1,2`). Re-applied every 0.5 s; the game resets them on scene and quality changes. Removing an override restores the game's value. |
 | `overlay = on` | In-game Dear ImGui window (hudhook D3D11 `Present` hook), toggled with **Ctrl+Shift+G**; the game gets no keyboard/mouse input while it is open. Shows scene, game-requested and effective render scale; edits render scale and every quality field live (changes apply within 0.5 s), marks overridden fields with the game's value and a Reset, shows each key's error in red, and **Save to ascnet-graphics.ini** writes the current options. Not all fields have a visible effect: `ForwardAAMethod` is ignored by deferred-rendered cameras (`DeferredAAMethod` applies), `ActiveRealTimeAreaLight` only matters in scenes with area lights, and no renderer reader was found for `AdditionalCharacterLighting`. |
-| `dpsmeter = on` | Enables the DPS meter (`on`/`off`, `1`/`0`, `true`/`false`; absent = off). Normal fights only; DLC/Babylonia (`StatusSyncFight`) is unsupported. Per-character **recorded damage** comes from the game's live settlement accumulator, including owned summons attributed to their root master; it is not guaranteed actual enemy HP removed. The overlay shows damage-sorted, character-colored share bars, human-readable k/M totals, fight-time DPS and team peak-five-second DPS, with **In fight** / **Last fight** duration. Session-only controls select corner, compact visibility, hiding outside fights, compact scale (0.75–2), and optional details: physical/elemental damage, healing, damage taken, hits, crits, double crits, biggest hit, on-field DPS and the top five numeric damage IDs by damage (no skill-name guesses). On-field time is sampled controlled-character time, not exact switch timing; summons can deal damage while their owner is off field, so on-field DPS is recorded character damage divided by sampled on-field time, not damage restricted to that time. Native hit details supplement, never replace, authoritative settlement totals; dropped hit samples are shown as incomplete hit details. The compact meter never captures gameplay input. |
+| `dpsmeter = on` | Enables the DPS meter (`on`/`off`, `1`/`0`, `true`/`false`; absent = off). Normal fights only; DLC/Babylonia (`StatusSyncFight`) is unsupported. Per-character **recorded damage** comes from the game's live settlement accumulator, including owned summons attributed to their root master; it is not guaranteed actual enemy HP removed. The overlay shows damage-sorted, character-colored share bars, human-readable k/M totals, fight-time DPS and team peak-five-second DPS, with **In fight** / **Last fight** duration and spacing between characters in both meter views. Persisted controls select corner, compact visibility, hiding outside fights, compact scale (0.75–2), and optional details per character: crit rate (crit hits / hits, a double crit counts as a crit), biggest hit, peak five-second DPS, on-field DPS ("not controlled" for characters that were only swapped in for QTE/assists), healing / damage taken when non-zero, and the top five named skills by sampled hit damage. Skill names are resolved from the game's loaded character-skill tables; ambiguous matches show names joined with " / ", and unresolved damage IDs appear only in a capped **Other** label. Skill percentages use that character's **hit-sampled damage**, not settlement totals, so they need not match the character bar. The settlement record's per-element split (`DamageNormal` / `DamageMagic`) is not shown: its element sum exceeds the recorded total, so its meaning is not established. On-field time is sampled controlled-character time, not exact switch timing; summons can deal damage while their owner is off field, so on-field DPS is recorded character damage divided by sampled on-field time, not damage restricted to that time. Native hit details supplement, never replace, authoritative settlement totals; dropped hit samples are shown as incomplete hit details. The compact meter never captures gameplay input. |
+| `dpscorner = topright` | Compact-meter corner: `topright` (default), `topleft`, `bottomright`, or `bottomleft`. |
+| `dpsdetails = off` | Shows per-character damage details in both meter views when enabled (`on`/`off`, `1`/`0`, `true`/`false`; default = off). |
+| `dpsscale = 1` | Compact-meter scale (0.75–2.0; default = 1). |
+| `dpshideoutside = off` | Hides the compact meter outside active fights when enabled (`on`/`off`, `1`/`0`, `true`/`false`; default = off). |
+| `dpscompact = on` | Shows the compact meter when the DPS meter is enabled (`on`/`off`, `1`/`0`, `true`/`false`; default = on). |
 | `dump = 1` | Read-only: every render-pipeline quality object (`RenderPIplineQualityManger` statics, `GetRuntimeData()` and its `Quality_*` settings, `Is*()` flags), `XQualityManager.Instance`, `XResolutionManager` statics and the managed `UnityEngine.QualitySettings` getters, every 2 s; all values once, then only changes, tagged with the active Unity scene (`XGame` = menus, `FightScene`, `NormalScene` = Babylonia). |
 
 The DPS denominator uses the game's `XFight.NonPausedTime`, excluding menu pauses. Peak five-second DPS is estimated
 from cumulative damage samples every 0.5 s, not exact hit timings. The graphics overlay provides DPS controls and a
-reset; compact-meter position, visibility, scale, hide-outside-fights and detail preferences are session-only.
+reset. Compact-meter position, visibility, scale, hide-outside-fights and detail preferences are shared with the
+in-game Settings tab and persisted by saving; only non-default preferences are written to the ini. **Reset all**
+restores their defaults. **Reset DPS** clears the recorded fight data without changing display preferences.
 
 The overlay also has a Lua console for executing snippets on the game's main thread and viewing their results or errors.
 The console is overlay-only: there is no ini key, and commands are not saved with graphics options.

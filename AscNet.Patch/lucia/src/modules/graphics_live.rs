@@ -8,7 +8,7 @@ use super::graphics_dps::DpsSnapshot;
 
 /// What the player wants; the same data as `ascnet-graphics.ini`. Override values stay text in the ini syntax
 /// (`on`/`off`, numbers, enum names, comma lists); the worker types them against the live field.
-#[derive(Clone, Debug, Default, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub(crate) struct Desired {
     pub render_scale: Option<f32>,
     pub overrides: Vec<Override>,
@@ -16,6 +16,12 @@ pub(crate) struct Desired {
     pub overlay: bool,
     /// `dpsmeter = on`: sample recorded normal-fight damage for the overlay.
     pub dps_meter: bool,
+    /// DPS window corner: 0 top-right, 1 top-left, 2 bottom-right, 3 bottom-left.
+    pub dps_corner: u8,
+    pub dps_details: bool,
+    pub dps_scale: f32,
+    pub dps_hide_outside: bool,
+    pub dps_compact: bool,
     /// `fps = <n>`: `Application.targetFrameRate = n` (and `vSyncCount = 0`) while set; `None` = the game's own.
     pub fps: Option<i32>,
     /// `nofade = on`: camera/character proximity fade disabled while true.
@@ -30,6 +36,30 @@ pub(crate) struct Desired {
     pub fight_fov: Option<f32>,
     /// `uiscale = <scale>`: UI content scale relative to the game's own canvas scale.
     pub ui_scale: Option<f32>,
+}
+
+impl Default for Desired {
+    fn default() -> Self {
+        Self {
+            render_scale: None,
+            overrides: Vec::new(),
+            dump: false,
+            overlay: false,
+            dps_meter: false,
+            dps_corner: 0,
+            dps_details: false,
+            dps_scale: 1.0,
+            dps_hide_outside: false,
+            dps_compact: true,
+            fps: None,
+            nofade: false,
+            ultrawide: false,
+            ui16x9: false,
+            ui_fov: None,
+            fight_fov: None,
+            ui_scale: None,
+        }
+    }
 }
 
 #[derive(Clone, Debug, PartialEq)]
