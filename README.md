@@ -428,7 +428,9 @@ Default config values come from `AscNet.Common/Config.cs`:
 
 `"Client": { "Debug": true }` in `config.json` makes the SDK server send remote-config `Debug = 1` to every client
 that fetches its config (`"ShowInspector": true` also sends `IsShowInspector = 1`; the client opens its Proxima
-inspector only when both are on). Both default to off; the client reads them at start-up, so restart the game after
+inspector only when both are on: tap the like count on the player info page 5 times, then browse to port 7378,
+password `HaruGames`; verified on 4.8 EN, it gives a live hierarchy, component editor, log and console, and it
+**listens on all interfaces**, so only enable it on a trusted network). Both default to off; the client reads them at start-up, so restart the game after
 changing them. Verified on 4.8 EN: the login screen gains the debug server-address field; plain-text Lua in
 `<persistentDataPath>/Lua/Matrix/<module>.lua` is loaded before the game's own module (per module; a missing file
 falls back to the shipped one, a broken file is an error; the game's `XHotReload.Reload("<module>")` re-reads an
