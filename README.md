@@ -429,13 +429,15 @@ Default config values come from `AscNet.Common/Config.cs`:
 `"Client": { "Debug": true }` in `config.json` makes the SDK server send remote-config `Debug = 1` to every client
 that fetches its config (`"ShowInspector": true` also sends `IsShowInspector = 1`; the client opens its Proxima
 inspector only when both are on). Both default to off; the client reads them at start-up, so restart the game after
-changing them. Verified on 4.8 EN: the login screen gains the debug server-address field, and plain-text Lua in
+changing them. Verified on 4.8 EN: the login screen gains the debug server-address field; plain-text Lua in
 `<persistentDataPath>/Lua/Matrix/<module>.lua` is loaded before the game's own module (per module; a missing file
-falls back to the shipped one, a broken file is an error). From disassembly, not yet exercised: `Lua/Launch/` for
-`XLaunch*` modules, `Lua/DlcFight/` for fight Lua, per-table TSV overrides at `Table/<requested path>` (CRLF,
-case-sensitive path, GBK on EN), and compiled IFix patches at `InjectFix/<assembly>.patch.bytes`. On the Windows
-client Debug also turns on the game's editor-debug Lua paths (class wrapping, extra network checks, timer stack
-traces), so it is not for normal play. `persistentDataPath` is `%USERPROFILE%\AppData\LocalLow\kurogame\PGR`.
+falls back to the shipped one, a broken file is an error); and a TSV at `<persistentDataPath>/Table/<requested path>`
+replaces that one table (e.g. `Table/Client/UiPc/UiPcScreenResolution.tab`: header row of column names, tab-separated,
+CRLF; the path is case-sensitive and indexed at start-up; non-ASCII text is GBK on EN). From disassembly, not yet
+exercised: `Lua/Launch/` for `XLaunch*` modules, `Lua/DlcFight/` for fight Lua, and compiled IFix patches at
+`InjectFix/<assembly>.patch.bytes`. On the Windows client Debug also turns on the game's editor-debug Lua paths
+(class wrapping, extra network checks, timer stack traces), so it is not for normal play. `persistentDataPath` is
+`%USERPROFILE%\AppData\LocalLow\kurogame\PGR`.
 
 ## Running with the Steam/PC bridge
 
