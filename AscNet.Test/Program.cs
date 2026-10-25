@@ -194,6 +194,11 @@ namespace AscNet.Test
                     ValidateLoadingOptionCompatibility();
                     return;
                 }
+                if (args.Contains("--purchases-compat-only"))
+                {
+                    ValidatePurchasesCompatibility();
+                    return;
+                }
                 if (args.Contains("--store-purchases-only"))
                 {
                     ValidateStorePurchases();
@@ -1105,9 +1110,43 @@ namespace AscNet.Test
                     return;
                 }
 
+                if (args.Contains("--misc-player-compat-only"))
+                {
+                    ValidateMiscPlayerCompatibility();
+                    return;
+                }
+
+                if (args.Contains("--misc-system-compat-only"))
+                {
+                    ValidateMiscSystemCompatibility();
+                    return;
+                }
+
+                if (args.Contains("--equip-partner-compat-only"))
+                {
+                    ValidateEquipPartnerCompatibility();
+                    return;
+                }
                 if (args.Contains("--shop-refresh-compat-only"))
                 {
                     ValidateShopRefreshCompatibility();
+                    return;
+                }
+                if (args.Contains("--wardrobe-photo-compat-only"))
+                {
+                    ValidateWardrobePhotoCompatibility();
+                    return;
+                }
+
+                if (args.Contains("--collection-misc-compat-only"))
+                {
+                    ValidateCollectionMiscCompatibility();
+                    return;
+                }
+
+                if (args.Contains("--chat-social-compat-only"))
+                {
+                    ValidateChatSocialCompatibility();
                     return;
                 }
 
@@ -1309,6 +1348,13 @@ namespace AscNet.Test
                 ValidateCharacterTowerCompatibility();
                 ValidateShopCompatibility();
                 ValidateShopRefreshCompatibility();
+                ValidatePurchasesCompatibility();
+                ValidateChatSocialCompatibility();
+                ValidateEquipPartnerCompatibility();
+                ValidateCollectionMiscCompatibility();
+                ValidateWardrobePhotoCompatibility();
+                ValidateMiscSystemCompatibility();
+                ValidateMiscPlayerCompatibility();
                 ValidateFriendsCompatibility();
                 ValidateWeeklyActivenessCompatibility();
                 ValidateArchiveCompatibility();
@@ -5460,7 +5506,9 @@ namespace AscNet.Test
                     startupPushesByName,
                     nameof(NotifyLoginMailCollectionBoxData),
                     "AccountModule.DoLogin NotifyLoginMailCollectionBoxData startup payload");
-            AssertEqual(0, startupMailCollection.OpenActivityIds.Count,
+            AssertEqual(TableReaderV2.Parse<AscNet.Table.V2.share.mailcollectionbox.MailCollectionBoxActivityTable>()
+                .Count(activity => CollectionMiscModule.IsFavoriteMailActivityOpen(activity, DateTimeOffset.UtcNow)),
+                startupMailCollection.OpenActivityIds.Count,
                 "AccountModule.DoLogin mail collection-box open activities");
             AssertEqual(0, startupMailCollection.MailCollectionBoxDataDb.ReceivedFavoriteMailIds.Count,
                 "AccountModule.DoLogin mail collection-box favorite state");
@@ -5521,8 +5569,10 @@ namespace AscNet.Test
                 startupPushesByName,
                 nameof(NotifyFunctionalEntranceData),
                 "AccountModule.DoLogin NotifyFunctionalEntranceData startup payload");
+            // Acknowledged entrance red points are persisted per player (FunctionalEntranceRedPointNumUpdateRequest);
+            // this fresh fixture has acknowledged none, so the entrance still shows its red point.
             AssertIntegerDictionary(
-                new Dictionary<int, int> { [20000] = 45 },
+                new Dictionary<int, int>(),
                 startupFunctionalEntranceData.RedPointDatas,
                 "AccountModule.DoLogin NotifyFunctionalEntranceData.RedPointDatas functional entrance redpoint");
 

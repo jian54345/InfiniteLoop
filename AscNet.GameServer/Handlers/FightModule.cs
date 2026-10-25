@@ -319,7 +319,7 @@ namespace AscNet.GameServer.Handlers
     {
         private const int TeamManagerSetTeamParaError = 20004003;
         private const int FightAuthorizationError = 1033;
-        private enum TeamPrefabValidationFailure
+        internal enum TeamPrefabValidationFailure
         {
             None,
             MissingPayload,
@@ -1907,7 +1907,7 @@ namespace AscNet.GameServer.Handlers
             return true;
         }
 
-        private static void ApplyTeamPrefabPartnerSkills(
+        internal static void ApplyTeamPrefabPartnerSkills(
             AscNet.Common.Database.Character character,
             PartnerData partner,
             IReadOnlyDictionary<int, List<int>>? skillData)
@@ -2398,7 +2398,7 @@ namespace AscNet.GameServer.Handlers
             return true;
         }
 
-        private static bool IsValidPartnerSkillData(
+        internal static bool IsValidPartnerSkillData(
             PartnerData partner,
             IReadOnlyDictionary<int, List<int>>? skillData,
             out TeamPrefabValidationFailure failure)

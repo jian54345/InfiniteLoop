@@ -3,6 +3,24 @@
   "sourceCommit": "c5a53f047bb72b3631d3798b06add7f9713c5589",
   "tables": [
     {
+      "path": "share/report/ReportTag.tsv",
+      "columns": 6, "rows": 104, "naturalKey": "Id",
+      "filter": "all",
+      "contentSha256": "4c34ffb1f85d53cd1026e8470510177a03fe2f5d9dbd0eb5a81aad903dac775c",
+      "source": ["EN bytes/share/report/ReportTag.json"],
+      "sourceSha256": { "ReportTag.json": "7f707e93c93880b397f3c2d24c6dee05cd334c97d9771ab84e273f4a7f1c44cf" },
+      "transformation": "Direct projection of Id, Name, ParentId, SelectPriority, OrderPriority, ContentType; absent fields are blank."
+    },
+    {
+      "path": "share/report/ReportEntry.tsv",
+      "columns": 13, "rows": 5, "naturalKey": "Id",
+      "filter": "all",
+      "contentSha256": "36f131c343e59619f53690e526cdef0e086ff9eebc61699b15a3f31c516aa121",
+      "source": ["EN bytes/share/report/ReportEntry.json"],
+      "sourceSha256": { "ReportEntry.json": "8b52e043a9c8d992806b718ca60194f9bdbd4ec653ed5dfcacfa3d7deb11746f" },
+      "transformation": "Direct projection of Id, Name, TagLevel, Title, IsShowReportChat; TagIds array expanded to 1-based TagIds[1..9] columns."
+    },
+    {
       "path": "share/fuben/extrachapter/ChapterExtraClaim.tsv",
       "columns": 24, "rows": 36, "naturalKey": "TreasureId",
       "filter": "authored treasure references",
@@ -2866,6 +2884,21 @@
       ]
     },
     {
+      "columns": 2,
+      "contentSha256": "23d188408ed48b6c4444faf7d19c3c568e7202e218292b772a815486ff41d803",
+      "filter": "all",
+      "naturalKey": "FunctionId",
+      "path": "share/functional/FunctionalEntranceConfig.tsv",
+      "rows": 1,
+      "source": [
+        "EN bytes/share/functional/FunctionalEntranceConfig.json"
+      ],
+      "sourceSha256": {
+        "FunctionalEntranceConfig.json": "d13b824b2c4958eba127d3c4f7efd135185a2cc15b861125c379e0727f93342c"
+      },
+      "transformation": "Project FunctionId and RedPointNum (the only columns the server consumes; Label/Icon/TaskId/LabelTimeId are client presentation)."
+    },
+    {
       "columns": 12,
       "contentSha256": "e8756ae795c3bb4c4a13e7502ca0d01360068600814678c4b08ec6f74674b972",
       "filter": "all",
@@ -4835,6 +4868,18 @@
         "Decoded client AccumulatedPay tab. No tiers were added."
       ],
       "transformation": "Copied the client forever accumulated-pay row. Money is a rainbow-card count, not USD."
+    },
+    {
+      "path": "share/pay/FirstPayReward.tsv",
+      "rows": 2,
+      "columns": 4,
+      "contentSha256": "203f05d1c97cb7059eeb7762c6df5893b91bcb54cb54375eef780d8bceda79b2",
+      "naturalKey": "Id",
+      "filter": "all rows",
+      "source": [
+        "PGR_DATA/en/bytes/share/pay/FirstPayReward.json (EN rows; CN has NeedPayMoney 10000). Client schema XTableFirstPayReward, read by XPayConfigs.Init."
+      ],
+      "transformation": "Copied the client rows; the absent SmallRewardId on row 2 is 0 (no small reward). NeedPayMoney is compared with NotifyPayInfo.TotalPayMoney, counted in hundredths of the Pay.ShowAmount currency."
     },
     {
       "path": "share/pay/AccumulatedPayReward.tsv",
@@ -8950,6 +8995,88 @@
       "transformation": [
         "all authored rows and fields in source order; omitted values remain blank"
       ]
+    },
+    {
+      "path": "share/exhibition/ExhibitionLimit.tsv",
+      "rows": 85,
+      "columns": 5,
+      "naturalKey": "CharacterId",
+      "contentSha256": "a596f5014ae48e64dab67cac22b7fa6e6faebd81d27e6049b9311f2f7c400c7f",
+      "source": [
+        "EN bytes/share/Exhibition/ExhibitionLimit.json"
+      ],
+      "sourceSha256": {
+        "ExhibitionLimit.json": "2be84e458271403259203aef55128508b2391c799d9d0d2adf9fb91489ff21e3"
+      },
+      "filter": "all rows; server-relevant columns only",
+      "transformation": [
+        "project listed columns; list columns use 1-based TSV indices"
+      ]
+    },
+    {
+      "path": "share/fashion/FashionAureole.tsv",
+      "rows": 192,
+      "columns": 3,
+      "naturalKey": "Id",
+      "contentSha256": "32ace23947aaee3c1f9c1156903406b090c694f99af85e29d051523d59cc80be",
+      "source": [
+        "EN bytes/share/Fashion/FashionAureole.json"
+      ],
+      "sourceSha256": {
+        "FashionAureole.json": "f9c92634a5f31e9ffa9f3380f393fc9ae7705b43b2226ae460fe57024068e9ad"
+      },
+      "filter": "all rows; server-relevant columns only",
+      "transformation": [
+        "project listed columns; list columns use 1-based TSV indices"
+      ]
+    },
+    {
+      "path": "share/mailcollectionbox/MailCollectionBoxActivity.tsv",
+      "rows": 270,
+      "columns": 4,
+      "naturalKey": "Id",
+      "contentSha256": "f2c66ba62afaba521b051cdec0031e6614dc4912e6b7de48c13012b468e23f11",
+      "source": [
+        "EN bytes/share/MailCollectionBox/MailCollectionBoxActivity.json"
+      ],
+      "sourceSha256": {
+        "MailCollectionBoxActivity.json": "26ecbd6ae24ab2f4a8f343096e4d6b9479f631277a3cd2677181a64cf0ed5f12"
+      },
+      "filter": "all rows; server-relevant columns only",
+      "transformation": [
+        "project listed columns; list columns use 1-based TSV indices"
+      ]
+    },
+    {
+      "path": "share/mailcollectionbox/MailCollectionBoxFavoriteMail.tsv",
+      "rows": 330,
+      "columns": 4,
+      "naturalKey": "Id",
+      "contentSha256": "f548f6350de5451e96611758d40a7b7fa94fd4c67fe99d1a6f5dc7995bf30630",
+      "source": [
+        "EN bytes/share/MailCollectionBox/MailCollectionBoxFavoriteMail.json"
+      ],
+      "sourceSha256": {
+        "MailCollectionBoxFavoriteMail.json": "96bcd7c9b16209de7bb10e28d0bcd04ae74de0db0e45cec89eb40949ac61df65"
+      },
+      "filter": "all rows; server-relevant columns only",
+      "transformation": [
+        "project listed columns; list columns use 1-based TSV indices"
+      ]
+    },
+    {
+      "path": "share/fuben/AutoFight.tsv",
+      "columns": 2, "rows": 4, "naturalKey": "Id",
+      "contentSha256": "ccc524eaf138ed79c11877123ebff0cbd5d1e19f928cddce8ee5d2b67a92e970",
+      "source": ["EN bytes/share/fuben/AutoFight.json (sha256:b2f6ccaa2d08fe99b335052beec28211443382bde6f0bc119c8e18bafdab48bc)"],
+      "transformation": ["all authored rows and fields in source order"]
+    },
+    {
+      "path": "share/movie/MovieRecordOptions.tsv",
+      "columns": 12, "rows": 5, "naturalKey": "Id",
+      "contentSha256": "cf1931a6ec13c6f87b7a8656a9b2cf927f74be8f14582fe1710e6a26c2f1d4fb",
+      "source": ["EN bytes/share/movie/MovieRecordOptions.json (sha256:0696fd17eec8d30328b32bfe9db1e7dd7dbc5db0beea57e6a9741345a7389f5f)"],
+      "transformation": ["all authored rows in source order; Options array expanded to 1-based Options[n] columns, shorter lists leave trailing cells blank"]
     }
   ],
   "validationNotes": [

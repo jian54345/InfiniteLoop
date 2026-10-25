@@ -498,7 +498,22 @@ namespace AscNet.Common.MsgPack
     {
         public Boolean IsRandomBackground { get; set; }
         public Boolean IsBackgroundRandomFashion { get; set; }
-        public List<Int32> RandomBackgroundPool { get; set; } = new();
+        public List<RandomBackgroundData> RandomBackgroundPool { get; set; } = new();
+    }
+
+    [global::MessagePack.MessagePackObject(true)]
+    public class RandomBackgroundData
+    {
+        public Int32 BackgroundId { get; set; }
+        public List<RandomBackgroundCharData> RandomChars { get; set; } = new();
+    }
+
+    [global::MessagePack.MessagePackObject(true)]
+    public class RandomBackgroundCharData
+    {
+        public Int32 CharId { get; set; }
+        public Boolean IsRandom { get; set; }
+        public List<Int32> RandomFashions { get; set; } = new();
     }
 
 

@@ -803,11 +803,12 @@ namespace AscNet.GameServer.Handlers
                 FubenMainLineLuosaitaData = MainLineLuosaitaPayloadFactory.BuildLoginData(session.stage),
                 FubenChapterExtraLoginData = new() { TreasureData = session.player.ExtraChapterTreasures.Select(id => (object)id).ToList() },
                 FubenUrgentEventData = new(),
+                AutoFightRecords = MiscPlayerModule.BuildLoginRecords(session.player).Cast<dynamic>().ToList(),
                 FubenShortStoryLoginData = new() { TreasureData = session.player.ShortStoryTreasures.Select(id => (object)id).ToList() },
                 SignInfos = SignInModule.BuildLoginSignInfos(session.player),
                 UseBackgroundId = session.player.UseBackgroundId,
                 HaveBackgroundIds = BuildHaveBackgroundIds(session.player),
-                RandomBackgroundLoginData = new(),
+                RandomBackgroundLoginData = WardrobePhotoModule.BuildRandomBackgroundLoginData(session.player),
                 PurchaseClientInfoLoginData = BuildPurchaseClientInfoLoginData(session.player),
                 FunctionOpenTimeConfigList = BuildFunctionOpenTimeConfigList(timeLimitControls),
                 DlcPlayerData = new(),
@@ -865,7 +866,7 @@ namespace AscNet.GameServer.Handlers
             }
         }
 
-        private static List<int> BuildHaveBackgroundIds(Player player)
+        internal static List<int> BuildHaveBackgroundIds(Player player)
         {
             HashSet<int> backgroundIds = TableReaderV2.Parse<BackgroundTable>()
                 .Where(background => background.Id > 0 && background.IsFree > 0)
@@ -970,24 +971,9 @@ namespace AscNet.GameServer.Handlers
             };
         }
 
-        private static NotifyPayInfo BuildNotifyPayInfo()
+        private static NotifyFunctionalEntranceData BuildFunctionalEntranceData(Player player)
         {
-            return new()
-            {
-                TotalPayMoney = 0,
-                FirstRewardReceivedList = []
-            };
-        }
-
-        private static NotifyFunctionalEntranceData BuildFunctionalEntranceData()
-        {
-            return new()
-            {
-                RedPointDatas = new()
-                {
-                    { 20000, 45 }
-                }
-            };
+            return new() { RedPointDatas = new(player.FunctionalEntranceRedPoints) };
         }
 
         private static PurchaseDailyNotify BuildPurchaseDailyNotify()
@@ -1375,7 +1361,7 @@ namespace AscNet.GameServer.Handlers
                 NewPlayerTaskActiveDay = session.player.PlayerData.NewPlayerTaskActiveDay,
                 NewPlayerTaskActiveUi = session.player.PlayerData.NewPlayerTaskActiveUi
             };
-            NotifyPayInfo notifyPayInfo = BuildNotifyPayInfo();
+            NotifyPayInfo notifyPayInfo = PayModule.BuildNotifyPayInfo(session.player);
             PayModule.GrantMailDailyRewards(session, sendPush: false);
             long mailNow = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
             bool mailStateChanged = MailModule.EnsureSystemMails(session.player, mailNow)
@@ -1383,7 +1369,7 @@ namespace AscNet.GameServer.Handlers
             NotifyMails notifyMails = MailModule.BuildNotifyMails(session.player, mailNow);
             if (mailStateChanged)
                 session.player.SaveChecked();
-            NotifyFunctionalEntranceData notifyFunctionalEntranceData = BuildFunctionalEntranceData();
+            NotifyFunctionalEntranceData notifyFunctionalEntranceData = BuildFunctionalEntranceData(session.player);
             PurchaseDailyNotify purchaseDailyNotify = BuildPurchaseDailyNotify();
             PayModule.AddSignInNotifications(purchaseDailyNotify, session.player);
             foreach (uint id in session.player.PurchaseDailyPasses.Keys)
@@ -1525,12 +1511,12 @@ namespace AscNet.GameServer.Handlers
             session.SendPush(LifeTreeModule.BuildNotifyLifeTreeData(session.player));
             session.SendPush(GachaManager.BuildSelfChoicePayload(session.player));
             SendEmptyStartupPush(session, "NotifySelfChoiceLottoData");
-            session.SendPush(new NotifyLoginMailCollectionBoxData());
+            session.SendPush(CollectionMiscModule.BuildLoginData(session.player, DateTimeOffset.UtcNow));
             SendEmptyStartupPush(session, "NotifyNonogramData");
             SendEmptyStartupPush(session, "NotifyPivotCombatData");
             session.SendPush(LoadingModule.BuildLoginData(session.player));
             session.SendPush(RepeatChallengeModule.BuildLoginData(session.player));
-            SendEmptyStartupPush(session, "NotifyPlayerReportData");
+            session.SendPush(ChatSocialModule.BuildReportData(session.player));
             session.SendPush(SameColorGameModule.BuildLoginData(session.player));
             session.SendPush(StrongholdModule.BuildLoginData(session.player));
             SendEmptyStartupPush(session, "NotifySucceedBossData");
