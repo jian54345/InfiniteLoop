@@ -6,11 +6,12 @@ use ascnet_launcher::{
     install::{self, PatchState},
     local::{self, LocalBuild, LocalRuntime},
     package::{self, PatchPackage},
+    mods,
     updater,
 };
 use serde::{Deserialize, Serialize};
 use std::{
-    collections::VecDeque,
+    collections::{BTreeMap, VecDeque},
     env, fs,
     path::{Path, PathBuf},
     sync::{
@@ -67,6 +68,29 @@ const ID_STATUS_LINE: i32 = 136;
 /// Settings action. The home button becomes PLAY after setup succeeds, so this
 /// is the way to run that same setup again.
 const ID_RERUN_SETUP: i32 = 139;
+// 140-155 belong to the game client view (ui/client.rs); ids must be unique across both views.
+const ID_MOD_HEADING: i32 = 160;
+const ID_MOD_MASTER: i32 = 161;
+const ID_MOD_MASTER_LABEL: i32 = 162;
+const ID_MOD_STATUS: i32 = 163;
+/// One row per mod: `ID_MOD_ROWS + row * 3` = name label, `+ 1` = ON/OFF pill, `+ 2` = description.
+const ID_MOD_ROWS: i32 = 170;
+/// Rows that fit between the master switch and the panel's bottom action in the minimum window size.
+const MOD_ROWS: i32 = 2;
+const ID_MOD_LAST: i32 = ID_MOD_ROWS + MOD_ROWS * 3 - 1;
+
+const fn mod_row_name(row: i32) -> i32 { ID_MOD_ROWS + row * 3 }
+const fn mod_row_toggle(row: i32) -> i32 { ID_MOD_ROWS + row * 3 + 1 }
+const fn mod_row_description(row: i32) -> i32 { ID_MOD_ROWS + row * 3 + 2 }
+/// Checkboxes painted as the ON/OFF pill instead of a native checkbox.
+fn is_toggle(id: i32) -> bool {
+    matches!(id, ID_MUSIC_MUTED | ID_MOD_MASTER) || mod_toggle_row(id).is_some()
+}
+/// The row whose ON/OFF pill has this id.
+fn mod_toggle_row(id: i32) -> Option<usize> {
+    (ID_MOD_ROWS..=ID_MOD_LAST).contains(&id).then(|| id - ID_MOD_ROWS)
+        .filter(|offset| offset % 3 == 1).map(|offset| (offset / 3) as usize)
+}
 const CENTERED_EDIT_HEIGHT: i32 = 22;
 const LAUNCHER_VERSION: &str = env!("CARGO_PKG_VERSION");
 
@@ -95,6 +119,10 @@ struct Settings {
     /// Client language (edition) chosen in the Get game view; defaults from the Windows UI language.
     #[serde(default)]
     region: Option<download::Region>,
+    #[serde(default)]
+    client_mods_enabled: bool,
+    #[serde(default)]
+    enabled_mods: BTreeMap<String, bool>,
 }
 impl Default for Settings {
     fn default() -> Self {
@@ -105,6 +133,8 @@ impl Default for Settings {
             fps_enabled: false,
             no_camera_fade: false,
             region: None,
+            client_mods_enabled: false,
+            enabled_mods: BTreeMap::new(),
         }
     }
 }
@@ -204,6 +234,8 @@ struct Window {
     settings_open: bool,
     log: VecDeque<String>,
     client: client::State,
+    mods: Vec<mods::ModInfo>,
+    mod_status: String,
 }
 struct UiMutex(HANDLE);
 impl Drop for UiMutex {
@@ -239,6 +271,7 @@ enum WorkResult {
         patch: PatchState,
     },
     Restored,
+    Mods { settings: Settings, status: Result<String> },
     Client(client::Done),
     Launched {
         build: LocalBuild,
@@ -414,6 +447,8 @@ unsafe fn run_inner() -> Result<()> {
         settings_open: false,
         log,
         client: client::State::new(region),
+        mods: Vec::new(),
+        mod_status: String::new(),
     });
     let state_ptr = Box::into_raw(state);
     let hwnd = CreateWindowExW(
@@ -527,7 +562,7 @@ unsafe extern "system" fn wndproc(hwnd: HWND, msg: u32, wp: WPARAM, lp: LPARAM) 
         }
         WM_GETMINMAXINFO => {
             let info = &mut *(lp.0 as *mut MINMAXINFO);
-            info.ptMinTrackSize = POINT { x: 760, y: 560 };
+            info.ptMinTrackSize = POINT { x: 760, y: 690 };
             LRESULT(0)
         }
         WM_ERASEBKGND => LRESULT(1),
@@ -781,7 +816,7 @@ unsafe extern "system" fn backdrop_control_subclass(
     }
     if msg != WM_PAINT {
         let result = DefSubclassProc(hwnd, msg, wp, lp);
-        if GetDlgCtrlID(hwnd) == ID_MUSIC_MUTED
+        if is_toggle(GetDlgCtrlID(hwnd))
             && matches!(msg, BM_SETCHECK | BM_SETSTATE | WM_SETFOCUS | WM_KILLFOCUS | WM_ENABLE)
         {
             let _ = InvalidateRect(hwnd, None, false);
@@ -814,7 +849,7 @@ unsafe extern "system" fn backdrop_control_subclass(
     // Color queries also happen during partial native focus/state updates.
     // Restore only for a full paint, then present backdrop and native text together.
     paint_control_backdrop(hwnd, target, &*state);
-    if matches!(GetDlgCtrlID(hwnd), ID_MUSIC_MUTED) {
+    if is_toggle(GetDlgCtrlID(hwnd)) {
         draw_toggle(hwnd, target, rect, &*state);
     } else {
         let _ = DefSubclassProc(
@@ -1092,6 +1127,25 @@ unsafe fn create_controls(hwnd: HWND, state: &Window) {
     ] {
         control(hwnd, w!("STATIC"), text, WS_VISIBLE, id, 0, 0, 0, 0);
     }
+    // Same pattern as Background music: a text label plus a text-less checkbox painted as the ON/OFF pill.
+    let mut controls = vec![
+        (ID_MOD_HEADING, "CLIENT MODS", false),
+        (ID_MOD_MASTER_LABEL, "Client mods (game debug mode)", false),
+        (ID_MOD_MASTER, "", true),
+        (ID_MOD_STATUS, "Restart server and game after changes.", false),
+    ];
+    for row in 0..MOD_ROWS {
+        controls.extend([(mod_row_name(row), "", false), (mod_row_toggle(row), "", true), (mod_row_description(row), "", false)]);
+    }
+    for (id, text, checkbox) in controls {
+        let text = wide(text);
+        control(hwnd, if checkbox { w!("BUTTON") } else { w!("STATIC") },
+            PCWSTR(text.as_ptr()), WS_TABSTOP | if checkbox { WINDOW_STYLE(BS_AUTOCHECKBOX as u32) } else { WINDOW_STYLE::default() },
+            id, 0, 0, 0, 0);
+        let font = if id == ID_MOD_HEADING { state.label_font } else { state.body_font };
+        let _ = SendMessageW(GetDlgItem(hwnd, id), WM_SETFONT, WPARAM(font.0 as usize), LPARAM(1));
+        let _ = SetWindowSubclass(GetDlgItem(hwnd, id), Some(backdrop_control_subclass), 1, 0);
+    }
     control(
         hwnd,
         w!("BUTTON"),
@@ -1284,7 +1338,7 @@ fn home_controls(width: i32, height: i32) -> (RECT, RECT, RECT) {
 
 fn settings_rect(width: i32, height: i32) -> RECT {
     let panel_width = (width - 48).min(760);
-    let panel_height = (height - 102).min(480);
+    let panel_height = (height - 102).min(560);
     let left = (width - panel_width) / 2;
     let top = 54 + (height - 54 - panel_height) / 2;
     RECT {
@@ -1300,6 +1354,15 @@ unsafe fn layout(hwnd: HWND, width: i32, height: i32, settings: bool, client: bo
     let settings_x = settings_panel.left + 40;
     let settings_content = settings_panel.right - settings_panel.left - 80;
     let (log, menu, action) = home_controls(width, height);
+    // Mod rows are shown by update_mod_controls (only rows that have a mod); leaving settings hides everything.
+    for id in ID_MOD_HEADING..=ID_MOD_STATUS {
+        let _ = ShowWindow(GetDlgItem(hwnd, id), if settings && !client { SW_SHOW } else { SW_HIDE });
+    }
+    if !settings || client {
+        for id in ID_MOD_ROWS..=ID_MOD_LAST {
+            let _ = ShowWindow(GetDlgItem(hwnd, id), SW_HIDE);
+        }
+    }
     if client {
         client::layout(hwnd, width, height);
         return;
@@ -1417,6 +1480,21 @@ unsafe fn layout(hwnd: HWND, width: i32, height: i32, settings: bool, client: bo
             36,
             true,
         );
+        let label_width = settings_content - 90;
+        for (id, x, y, w, h) in [
+            (ID_MOD_HEADING, settings_x, top + 262, settings_content, 20),
+            (ID_MOD_MASTER_LABEL, settings_x, top + 293, label_width, 24),
+            (ID_MOD_MASTER, toggle_x, top + 286, 72, 36),
+            (ID_MOD_STATUS, settings_x, top + 328, settings_content, 20),
+        ] {
+            let _ = MoveWindow(GetDlgItem(hwnd, id), x, y, w, h, true);
+        }
+        for row in 0..MOD_ROWS {
+            let y = top + 356 + row * 60;
+            let _ = MoveWindow(GetDlgItem(hwnd, mod_row_name(row)), settings_x, y + 7, label_width, 24, true);
+            let _ = MoveWindow(GetDlgItem(hwnd, mod_row_toggle(row)), toggle_x, y, 72, 36, true);
+            let _ = MoveWindow(GetDlgItem(hwnd, mod_row_description(row)), settings_x, y + 38, settings_content, 20, true);
+        }
         let action_y = settings_panel.bottom - 72;
         let _ = MoveWindow(
             GetDlgItem(hwnd, ID_PROGRESS),
@@ -1579,8 +1657,115 @@ unsafe fn finish_services_stopped(hwnd: HWND, state: &mut Window, result: Result
     }
 }
 
+fn apply_mod_settings(settings: &Settings) -> Result<String> {
+    let game = settings.selected_game.as_deref().context("Select a game folder before changing client mods")?;
+    let root = local::root()?;
+    let config = root.join("config.json");
+    let persistent = mods::persistent_directory(game)?;
+    if settings.client_mods_enabled {
+        mods::set_debug(&config, true)?;
+        let selected: Vec<String> = settings.enabled_mods.iter()
+            .filter(|(_, enabled)| **enabled).map(|(id, _)| id.clone()).collect();
+        let report = mods::apply(game, &persistent, &ascnet_launcher::setup::mods_directory(&root), &config, &selected)?;
+        Ok(format!("Applied: {}. Skipped: {}. Restart server and game.",
+            report.applied.join(", "), report.skipped.join(", ")))
+    } else {
+        mods::set_debug(&config, false)?;
+        mods::clean(game, &persistent)?;
+        Ok("Client mods disabled; owned overrides removed. Restart server and game.".to_owned())
+    }
+}
+
+unsafe fn refresh_mods(hwnd: HWND, state: &mut Window) {
+    match local::root().and_then(|root| mods::discover(&ascnet_launcher::setup::mods_directory(&root))) {
+        Ok(catalog) => {
+            state.mods = catalog;
+        }
+        Err(error) => {
+            state.mods.clear();
+            state.mod_status = format!("Client mods unavailable: {error:#}");
+        }
+    }
+    update_mod_controls(hwnd, state);
+}
+
+unsafe fn update_mod_controls(hwnd: HWND, state: &Window) {
+    let Ok(model) = state.model.lock() else {
+        set_text(hwnd, ID_MOD_STATUS, "Launcher state unavailable; reopen the launcher.");
+        return;
+    };
+    let available = !model.busy && !model.stopping;
+    let _ = EnableWindow(GetDlgItem(hwnd, ID_MOD_MASTER), available);
+    let _ = SendMessageW(GetDlgItem(hwnd, ID_MOD_MASTER), BM_SETCHECK,
+        WPARAM(if model.settings.client_mods_enabled { BST_CHECKED.0 as usize } else { BST_UNCHECKED.0 as usize }), LPARAM(0));
+    let visible = state.settings_open && !state.client.open;
+    for row in 0..MOD_ROWS {
+        let item = state.mods.get(row as usize);
+        let checked = item.and_then(|item| model.settings.enabled_mods.get(&item.id)).copied().unwrap_or(false);
+        set_text(hwnd, mod_row_name(row), item.map(|item| item.name.as_str()).unwrap_or(""));
+        set_text(hwnd, mod_row_description(row), item.map(|item| item.description.as_str()).unwrap_or(""));
+        let toggle = GetDlgItem(hwnd, mod_row_toggle(row));
+        let _ = SendMessageW(toggle, BM_SETCHECK,
+            WPARAM(if checked { BST_CHECKED.0 as usize } else { BST_UNCHECKED.0 as usize }), LPARAM(0));
+        let _ = EnableWindow(toggle, available && item.is_some());
+        for id in [mod_row_name(row), mod_row_toggle(row), mod_row_description(row)] {
+            let _ = ShowWindow(GetDlgItem(hwnd, id), if visible && item.is_some() { SW_SHOW } else { SW_HIDE });
+        }
+    }
+    let status = if !state.mod_status.is_empty() {
+        state.mod_status.clone()
+    } else if state.mods.is_empty() {
+        "No mods available; run Setup to refresh the AscNet source.".to_owned()
+    } else if state.mods.len() > MOD_ROWS as usize {
+        format!("Showing {MOD_ROWS} of {} mods. Restart server and game after changes.", state.mods.len())
+    } else {
+        "Restart server and game after changes.".to_owned()
+    };
+    set_text(hwnd, ID_MOD_STATUS, &status);
+}
+
+unsafe fn change_mods(hwnd: HWND, state: &mut Window, id: i32) {
+    let prepared = (|| -> Result<_> {
+        let mut model = state.model.lock().map_err(|_| anyhow::anyhow!("Launcher state unavailable"))?;
+        anyhow::ensure!(!model.busy && !model.stopping, "Wait for the current launcher operation");
+        let mut settings = model.settings.clone();
+        let checked = SendMessageW(GetDlgItem(hwnd, id), BM_GETCHECK, WPARAM(0), LPARAM(0)).0 == BST_CHECKED.0 as isize;
+        if id == ID_MOD_MASTER {
+            settings.client_mods_enabled = checked;
+        } else if let Some(item) = mod_toggle_row(id).and_then(|row| state.mods.get(row)) {
+            settings.enabled_mods.insert(item.id.clone(), checked);
+        }
+        model.busy = true;
+        Ok((settings, model.generation.fetch_add(1, Ordering::SeqCst) + 1, model.events.clone()))
+    })();
+    let (settings, generation, events) = match prepared {
+        Ok(prepared) => prepared,
+        Err(error) => {
+            state.mod_status = format!("Client mods change failed: {error:#}");
+            update_mod_controls(hwnd, state);
+            return;
+        }
+    };
+    state.mod_status = "Applying client mods… Restart server and game after changes.".to_owned();
+    set_busy(hwnd, true, "Applying client mods…");
+    update_mod_controls(hwnd, state);
+    thread::spawn(move || {
+        let status = (|| {
+            let status = apply_mod_settings(&settings)?;
+            save_settings(&settings)?;
+            Ok(status)
+        })();
+        let result = Ok(WorkResult::Mods { settings, status });
+        post_event(hwnd, &events, Event::Work(Work { generation, result }));
+    });
+}
+
 unsafe fn command(hwnd: HWND, state: &mut Window, id: i32, notification: u16) {
     let id = if id == ID_STATUS { ID_SETTINGS } else { id };
+    if notification == BN_CLICKED as u16 && (id == ID_MOD_MASTER || mod_toggle_row(id).is_some()) {
+        change_mods(hwnd, state, id);
+        return;
+    }
     match id {
         ID_SETTINGS => {
             if state.client.open {
@@ -1588,6 +1773,9 @@ unsafe fn command(hwnd: HWND, state: &mut Window, id: i32, notification: u16) {
                 return;
             }
             state.settings_open = !state.settings_open;
+            if state.settings_open {
+                refresh_mods(hwnd, state);
+            }
             let mut rect = RECT::default();
             let _ = GetClientRect(hwnd, &mut rect);
             layout(hwnd, rect.right, rect.bottom, state.settings_open, false);
@@ -1899,6 +2087,8 @@ fn start_prepare(hwnd: HWND, state: &mut Window) {
             let mut progress = |s: &str| post_progress(hwnd, &events, s);
             install::log_action("Setup", &game, None, None);
             let build = local::prepare(&config.repository_url, &config.branch, &game, &mut progress)?;
+            let settings = model.lock().map_err(|_| anyhow::anyhow!("Launcher state unavailable"))?.settings.clone();
+            post_progress(hwnd, &events, &apply_mod_settings(&settings)?);
             let package = package::load_package(&build.patch_directory)?;
             let patch = install::inspect(&game, &package);
             install::log_action("Setup", &game, Some(&package), patch.as_ref().ok());
@@ -1949,6 +2139,8 @@ fn start_restore(hwnd: HWND, state: &mut Window) {
                 .context("Select a game folder")?;
             install::log_action("Restore", &game, None, None);
             install::restore_with_consent(&game, &mut |s| post_progress(hwnd, &events, &s))?;
+            mods::clean(&game, &mods::persistent_directory(&game)?)?;
+            mods::set_debug(&local::root()?.join("config.json"), false)?;
             Ok(WorkResult::Restored)
         })();
         let result = install::log_result("Restore", result);
@@ -1987,6 +2179,8 @@ fn start_play(hwnd: HWND, state: &mut Window) {
     unsafe { set_busy(hwnd, true, "Checking game and resource access…") };
     thread::spawn(move || {
         let result = (|| {
+            let settings = model.lock().map_err(|_| anyhow::anyhow!("Launcher state unavailable"))?.settings.clone();
+            post_progress(hwnd, &events, &apply_mod_settings(&settings)?);
             let patch = install::inspect(&game, &package);
             install::log_action("Play", &game, Some(&package), patch.as_ref().ok());
             let patch = patch?;
@@ -2039,12 +2233,23 @@ unsafe fn finish_work(hwnd: HWND, state: &mut Window, work: Work) {
         Ok(WorkResult::Prepared { .. }) => "Setup complete",
         Ok(WorkResult::Restored) => "Retail files restored",
         Ok(WorkResult::Client(_)) => "Game client updated",
+        Ok(WorkResult::Mods { .. }) => "Client mods updated",
         Ok(WorkResult::Launched { .. }) => "Local backend is ready",
         Err(e) if e.downcast_ref::<install::ElevationCancelled>().is_some() =>
             "Administrator approval cancelled; game files were not changed",
         Err(_) => "Operation failed",
     };
     match work.result {
+        Ok(WorkResult::Mods { settings, status }) => {
+            state.mod_status = match status {
+                Ok(status) => {
+                    m.settings = settings;
+                    status
+                }
+                Err(error) => format!("Client mods change failed: {error:#}"),
+            };
+            source_status = Some(state.mod_status.clone());
+        }
         Ok(WorkResult::LauncherChecked(result)) => {
             let message = match result {
                 Ok(Some(staged)) if m.runtime.is_none() => {
@@ -2155,6 +2360,7 @@ unsafe fn finish_work(hwnd: HWND, state: &mut Window, work: Work) {
         }
     }
     drop(m);
+    refresh_mods(hwnd, state);
     append_log(hwnd, state, log);
     for message in [source_status, patch_status, fps_status].into_iter().flatten() {
         append_log(hwnd, state, &message);
@@ -2906,5 +3112,24 @@ pub fn show_fatal(message: &str) {
             w!("AscNet Launcher"),
             MB_OK | MB_ICONERROR,
         );
+    }
+}
+
+#[cfg(test)]
+mod settings_tests {
+    use super::Settings;
+
+    #[test]
+    fn legacy_settings_default_mods_off_and_selection_round_trips() -> anyhow::Result<()> {
+        let mut settings: Settings = serde_json::from_str(r#"{"selectedGame":null}"#)?;
+        assert!(!settings.client_mods_enabled);
+        assert!(settings.enabled_mods.is_empty());
+        settings.client_mods_enabled = true;
+        settings.enabled_mods.insert("console".to_owned(), true);
+        settings.enabled_mods.insert("disabled".to_owned(), false);
+        let restored: Settings = serde_json::from_slice(&serde_json::to_vec(&settings)?)?;
+        assert!(restored.client_mods_enabled);
+        assert_eq!(restored.enabled_mods, settings.enabled_mods);
+        Ok(())
     }
 }

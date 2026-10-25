@@ -384,6 +384,7 @@ This also covers the earlier broken state where `Gender` may have been written b
 | `AscNet.Table/` | Table generator/parser support. |
 | `AscNet.Test/` | Focused compatibility harness and regression checks. |
 | `Resources/` | Runtime configs, current client tables, data fixtures, notices. |
+| `Mods/` | Launcher-managed Lua/table client mods and authoring instructions. |
 | `proxy.py` | mitmproxy script that routes client HTTP traffic back to local AscNet. |
 | `run_steam.py` | Steam/PC bridge runner for AscNet + proxy + optional MongoDB + launch command. |
 | `launch-pgr-ascnet.sh` | macOS/CrossOver launch example for the Steam client. |
@@ -423,6 +424,18 @@ Default config values come from `AscNet.Common/Config.cs`:
 | MongoDB database | `asc_net` |
 
 `Resources/Configs/config.json` may be left empty to use those defaults, or populated with overrides.
+
+### Launcher client mods
+
+The launcher's **SETTINGS → CLIENT MODS** section manages the checked-in [Mods](Mods/README.md) catalogue, including the Lua GM menu
+(**Ctrl+Shift+D**, or **GM Menu** in the main screen's second menu). Setup refreshes the retained source checkout;
+the catalogue is read directly from `<local runtime root>/checkout/Mods`, including when server binaries are cached.
+Close the game, turn on **Client mods (game debug mode)** and switch each wanted mod ON in its own row; changes
+save and apply immediately, without an Apply button. Restart the server and game. The master switch defaults off and enables the
+game's external Lua/table loaders, not the Proxima inspector. A client-version diff mismatch skips the affected
+mod and reports its reason rather than patching a different shipped source. Switching mods off or removing them removes only
+tracked overrides; unrelated files are preserved. See [mod authoring and research tools](Mods/README.md) and
+[player diagnostics](AscNet.Launcher/docs/player-diagnostics.md).
 
 ### Client debug environment (local research)
 

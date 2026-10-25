@@ -80,6 +80,11 @@ pub fn run(
     }
 }
 
+/// Use the retained checkout directly so Setup updates mods even when reusing a cached build.
+pub fn mods_directory(root: &Path) -> PathBuf {
+    root.join("checkout").join("Mods")
+}
+
 pub(crate) fn without_program_files_git_include(text: &str) -> String {
     let newline = if text.contains("\r\n") { "\r\n" } else { "\n" };
     let mut kept = Vec::new();

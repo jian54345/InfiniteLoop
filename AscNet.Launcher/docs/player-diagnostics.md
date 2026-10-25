@@ -94,6 +94,34 @@ applies the next time the launcher starts the server:
 
 Leave the `GameServer` and `Database` entries unchanged; the launcher refuses to start the server if they no longer match Setup.
 
+## Client mods
+
+**SETTINGS → CLIENT MODS** reads the retained checkout's `Mods/` directory under the local runtime root, not an embedded
+catalogue or a copied build directory. Setup refreshes this checkout even when reusing cached server binaries.
+See [the mod catalogue and authoring guide](../../Mods/README.md).
+
+Close `PGR.exe` before changing a selection. Turn on **Client mods (game debug mode)** for the external
+Lua/table loaders, then switch individual mods on or off; every mod has its own ON/OFF row with its description.
+Changes save and apply immediately; there is no Apply button. Restart the server and game afterward. The master
+switch defaults off and does not enable the Proxima inspector. The GM menu opens with **Ctrl+Shift+D** or the main screen's second-menu
+**GM Menu** button. Some GM commands need stripped debug APIs or unsupported server requests and report errors;
+that is different from an installation failure.
+
+When reporting a mod problem, include the selected client folder and region, selected mod IDs, whether the master
+switch is enabled, the complete status/activity-log apply result or compatibility reason, and relevant `launcher.log` lines.
+For a Lua error, also include the traceback from the newest log under the client's persistent data directory's
+`log/`. The launcher resolves that directory using the selected client's `PGR_Data/app.info` company/product and the
+Windows LocalLow known folder, respecting redirection; do not assume another region's `kurogame/PGR` path.
+A diff mismatch means the shipped source differs from the mod's expected source; the whole affected
+mod is skipped rather than approximately applied. Do not edit a diff merely to suppress the compatibility warning.
+
+Installed overrides live under `Lua/Matrix/` and `Table/` in that persistent directory. The ownership manifest is
+`Lua/Matrix/.ascnet-mods.json`; removal uses this manifest and preserves unrelated files. Do not delete the manifest
+to uninstall a mod, or run the research installer concurrently with launcher mod actions.
+
+Setup and Play reapply saved mod preferences before starting the server. **Restore** removes tracked overrides and
+sets server Debug off, but retains the saved master switch and individual selections; the next Play reapplies them.
+
 ## China (CN) client
 
 The CN client (战双帕弥什) has no `KRSDK.dll` and no `KRSDK.bin`, and a CN folder must not contain `KRSDK.dll`: Setup moves a

@@ -2,6 +2,8 @@
 pub mod access;
 pub mod download;
 pub mod fps;
+pub mod bundle;
+pub mod mods;
 pub mod graphics_ini;
 pub mod install;
 pub mod local;
