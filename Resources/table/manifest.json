@@ -3,6 +3,101 @@
   "sourceCommit": "c5a53f047bb72b3631d3798b06add7f9713c5589",
   "tables": [
     {
+      "path": "share/fuben/extrachapter/ChapterExtraClaim.tsv",
+      "columns": 24, "rows": 36, "naturalKey": "TreasureId",
+      "filter": "authored treasure references",
+      "contentSha256": "4a11a024aeca9ce839ab5e16d035937f9a9d0f3bc97e3eeb9f801ad0ee70cebd",
+      "source": ["EN bytes/share/fuben/extrachapter/ChapterExtraDetails.json", "EN bytes/share/fuben/extrachapter/ChapterExtraStarTreasure.json"],
+      "sourceSha256": {
+        "ChapterExtraDetails.json": "421b3cd32fb4a2db63069752ad01d51565634e313dbe5c052644ec0aa58513e2",
+        "ChapterExtraStarTreasure.json": "31e576e081678f2b50c73929b2d8a5a0199027f76d82013993c0f7d87afacc55"
+      },
+      "transformation": "Join details TreasureId to star treasure rows; project ChapterId, TreasureId, RequireStar, RewardId and chapter StageId array with 1-based TSV columns."
+    },
+    {
+      "path": "share/fuben/shortstory/ShortStoryClaim.tsv",
+      "columns": 28, "rows": 18, "naturalKey": "TreasureId",
+      "filter": "authored treasure references",
+      "contentSha256": "3ddffc53062d29e950c4623d5227ef6cf0a1cd25d2b21a8c9d23a538e42907af",
+      "source": ["EN bytes/share/fuben/shortstory/ShortStoryDetails.json", "EN bytes/share/fuben/shortstory/ShortStoryStarTreasure.json"],
+      "sourceSha256": {
+        "ShortStoryDetails.json": "9f9b0ba8bce4cc61d7f2e4dac6ad160fd66a4b75dd1d048201006e36f4b8f34f",
+        "ShortStoryStarTreasure.json": "3140f5bdfb69a611aeaaa95d1b28846cc95d145a0ce69e88fe99cedf8d2740ed"
+      },
+      "transformation": "Join details TreasureId to star treasure rows; project ChapterId, TreasureId, RequireStar, RewardId and chapter StageId array with 1-based TSV columns."
+    },
+    {
+      "path": "share/fuben/experiment/ExperimentClaim.tsv",
+      "columns": 5, "rows": 3, "naturalKey": "Id",
+      "filter": "levels with nonzero StarReward",
+      "contentSha256": "16e6049d21f31cf4a8106926271437aa6ffb7ab38cbb84f1dd818fab6c9c3a91",
+      "source": ["EN bytes/share/fuben/experiment/ExperimentLevel.json", "EN bytes/share/fuben/experiment/ExperimentReward.json"],
+      "sourceSha256": {
+        "ExperimentLevel.json": "b10f42387c663cc2eb314eea7790b31f6073edbccfe8b025616d8f4acc13d054",
+        "ExperimentReward.json": "2c63ef5b64344d175bbfc1f792b7c5de2a8f746b5e7931fa4bac9fd81d2f8cb8"
+      },
+      "transformation": "Join level StarReward to reward Id; zip StarNum and RewardId arrays; project level Id, authored stage, star threshold and reward. Id is stable source-order ordinal."
+    },
+    {
+      "path": "share/fuben/prequel/Cover.tsv",
+      "columns": 3,
+      "rows": 26,
+      "naturalKey": "CoverId",
+      "filter": "all",
+      "contentSha256": "58961d207c67146e9970f151e0d8530090b02fbd8d7c6f4b2dd6a0db5b05b8aa",
+      "source": ["/Volumes/Lucia/PGR-native-research/PGR_DATA/en/bytes/share/fuben/prequel/Cover.json (sha256:1bdb4df649f8002c564773a375055b7842a0528a9dbc9f39e3018818b3582c36)"],
+      "transformation": ["project CoverId, OpenCondition and ChallengeStage in source order; source has no ChallengeConsumeItem or ChallengeConsumeCount"]
+    },
+    {
+      "path": "share/scoretitle/CollectionWall.tsv",
+      "columns": 4, "rows": 2, "naturalKey": "Id", "filter": "all",
+      "contentSha256": "05fd021305ebb0eacf1d9f202b49e95dcdf0ea27f08a4d7d926379c4fee00c53",
+      "source": ["/Volumes/Lucia/PGR-native-research/PGR_DATA/en/bytes/share/scoretitle/CollectionWall.json"],
+      "transformation": ["project Id, Condition, InitBackgroundId, InitPedestalId; absent optional Condition becomes zero"]
+    },
+    {
+      "path": "share/scoretitle/CollectionWallDecoration.tsv",
+      "columns": 4, "rows": 4, "naturalKey": "Id", "filter": "all",
+      "contentSha256": "249728b40b7982a1262c08dcf5db8c68493302827f011b43e29741c91671de48",
+      "source": ["/Volumes/Lucia/PGR-native-research/PGR_DATA/en/bytes/share/scoretitle/CollectionWallDecoration.json"],
+      "transformation": ["project Id, Type, UnlockType, Condition; absent optional Condition becomes zero"]
+    },
+    {
+      "path": "client/collectionwall/CollectionSize.tsv",
+      "columns": 2, "rows": 5, "naturalKey": "Id", "filter": "all",
+      "contentSha256": "63cdc1a6d3c537054f131dbf62dc36c979f477c61a590cbaa46bdbca77af724f",
+      "source": ["/Volumes/Lucia/PGR-native-research/PGR_DATA/cn/bytes/client/collectionwall/CollectionSize.json"],
+      "transformation": ["CN fallback because EN table is missing; project Id and GridNum"]
+    },
+    {
+      "path": "share/player/ProfilePolicy.tsv",
+      "columns": 2, "rows": 7, "naturalKey": "Key", "filter": "all",
+      "contentSha256": "90bdae8b39df51565b4c09edaa63d1d17a4710dba95d22f563b985b3c1293773",
+      "source": ["AscNet missing-retail policy; TextLength follows EN XUiPanelWriteDiary.lua:95; WallWidth/WallHeight are the installed EN UiCollectionWallEdit WallContent rect (1440x810) divided by XCollectionWallConfigs.CellSize (90), which XUiGridPlacedCollection clamps placements to"],
+      "transformation": ["Explicit local diary/message counts, daily like quota and paging, not recovered retail limits; wall-grid bounds mirror the client edit surface"]
+    },
+    {
+      "path": "share/player/HonorLevel.tsv",
+      "columns": 2,
+      "rows": 1000,
+      "naturalKey": "HonorLevel",
+      "filter": "all",
+      "contentSha256": "249c26b63e3049ab09b020b4cdd7147bbf57f9f8f9318996820191bea28b1d36",
+      "source": ["/Volumes/Lucia/PGR-native-research/PGR_DATA/cn/bytes/share/player/HonorLevel.json"],
+      "sourceSha256": { "HonorLevel.json": "bef5c9065b4717c056ca706bd17b044c30b537255c8c1d01bc05c18ed95c1cfb" },
+      "transformation": "CN fallback because EN player table is absent; project HonorLevel and MaxFriendCount, retain all authored rows."
+    },
+    {
+      "path": "share/task/NewPlayerTaskGroup.tsv",
+      "columns": 2,
+      "rows": 7,
+      "naturalKey": "Id",
+      "filter": "all",
+      "contentSha256": "dc04d66d13a767450b0342e0b5cb695671e71884ea27e5b6fd2f001b2cbcc215",
+      "source": ["/Volumes/Lucia/PGR-native-research/PGR_DATA/en/bytes/share/task/NewPlayerTaskGroup.json (sha256:9644d309bf7207c70a89ab31e82f8bacc20a65ab49b1eead7d7f49a7b28cd775)"],
+      "transformation": ["project Id and OpenDay in source order"]
+    },
+    {
       "columns": 2,
       "contentSha256": "8c99cba7838d13501dd15dc0426bc3a678ea1b2ccff4f39b81f56dcab2aa3454",
       "filter": "all",
@@ -5648,29 +5743,15 @@
       "path": "share/scoretitle/ScoreTitle.tsv",
       "naturalKey": "Id",
       "source": [
-        "/Volumes/Lucia/PGR-native-research/PGR_DATA/en/bytes/share/scoretitle/ScoreTitle.json (sha256:0b439b126f3f2b009101ee51c7106a455c50d033c4a9e10ed51ce4b224cd7b4a)",
-        "EN BiancaTheatreLevelReward.RewardId + BiancaTheatreActivity.RewardIds + BiancaTheatreAchievement.TaskIds + BiancaTheatreTask.TaskId -> Task.RewardId -> Reward.SubIds -> RewardGoods.TemplateId -> ScoreTitle.Id",
-        "EN Theatre6PvpRank Id=3/4/5 RewardId=69188/69189/69190 -> Reward.SubIds -> RewardGoods.TemplateId=13019727/13019728/13019729 -> ScoreTitle.Id",
-        "Installed 4.8 TextAsset share/scoretitle/ScoreTitle.tab (sha256:27efcd19d8426b30f43a030ef11a25ed31219ab9a4db7b6f06ab284c94f05d84)",
-        {
-          "path": "share/scoretitle/ScoreTitle.tab",
-          "scope": "document",
-          "installedIndexSha1": "b22b87996db98720100e39586167440a005ea531",
-          "bundleIndexSha1": "735d7b5e87c242a5b01cd4b3eaea3c1a96d64329",
-          "rawTabSha1": "fe9d633e226bf2d31623c941a89bf0595c4cf42e",
-          "rawTabSize": 125019,
-          "decodedJsonSha256": "db138475e30f8ca40d76381768f727ebf9624cd5c2f07b0a906e88eff4dd30a6"
-        }
+        "/Volumes/Lucia/PGR-native-research/PGR_DATA/en/bytes/share/scoretitle/ScoreTitle.json (sha256:0b439b126f3f2b009101ee51c7106a455c50d033c4a9e10ed51ce4b224cd7b4a)"
       ],
-      "columns": 8,
-      "rows": 19,
-      "contentSha256": "a0c189a3f7433fef586d2430e0a969e45ca4223b83c2d67545c21c5fde440846",
-      "filter": "existing curated rows plus installed title IDs 13019739, 13019740; source-backed Boss47/MainLine2 chapter43/Teaching51–52 reward titles 13019734, 13019736, 13019737, 13019738",
+      "columns": 11,
+      "rows": 266,
+      "contentSha256": "69b226e2b086211b9ce785d5fab0322c28eae205b91f825b9a748617d2e25f0a",
+      "filter": "all",
       "transformation": [
-        "Existing rows and schema preserved; new rows carry Id + InitQuality only; absent quality conditions/qualities remain empty.",
-        "Theatre6PvP title grants consume no Condition rows: each added title has zero quality-condition/quality pairs; GrantScoreTitle uses the authored InitQuality directly.",
-        "appended authored title rows for Huhu reward and data-only Overclock reward; no availability override",
-        "import_client_tables.project of source rows referenced by newly reachable RewardGoods (Boss47 69536-69540, MainLine2Achievement 69541, TeachingTreasure/ShowReward 1013227-1013236) onto existing server columns; existing/local rows incl. 13019739/13019740 kept byte-identical; QualityConditions 990391-3/990409-11/990415-17 already present as Condition type 15103; new rows appended after existing rows"
+        "Project Id, InitQuality, QualityConditions, Qualities, Type, GroupId, GroupLv; arrays flattened in authored order; absent optional group metadata becomes zero.",
+        "Fixed-quality collectibles have no quality-condition pairs and use authored InitQuality; progressive collectibles resolve their conditions from Condition.tsv."
       ]
     },
     {
@@ -6747,22 +6828,23 @@
       "source": [
         "client/config/ClientConfig.json"
       ],
-      "rows": 5,
+      "rows": 6,
       "columns": 3,
-      "contentSha256": "60b6ee81d1e233f2a9c18d274727d8f583454b634419e2c7cd429da749c62cac",
+      "contentSha256": "53523c365a9bfcf43df0283a8964342656d9cac4c82dda27cfa5efbc770e62ee",
       "sourceSha256": {
         "client/config/ClientConfig.json": "e7842cd3228d2b4140d2cf454a1348ea8481d663847312057e9263d826770f85"
       },
       "naturalKey": "Key",
-      "filter": "Key in guild string-length limits",
+      "filter": "Key in guild string-length limits or MaxNameLength",
       "referencedKeys": [
         "GuildAnnouncementMaxLen",
         "GuildDeclarMaxLen",
         "GuildInterComMaxLen",
         "GuildNameMaxLen",
-        "GuildNameMinLen"
+        "GuildNameMinLen",
+        "MaxNameLength"
       ],
-      "transformation": "Select five authoritative Guild* string-length keys; source Key/Type/Value names and numeric values retained; no arrays."
+      "transformation": "Select authoritative Guild* string-length keys and MaxNameLength used by social remarks; source Key/Type/Value names and numeric values retained; no arrays."
     },
     {
       "path": "share/guild/GuildCustomName.tsv",
@@ -9514,6 +9596,12 @@
       "scopeVerified": "Grepped every PGR_DATA/en theatre4 JSON for integers >= 2**31: exactly these 6 occurrences; theatre5/theatre6 have none."
     },
     "closureScope": "Claims in this section are grounded in PGR_Data/en and PGR_Data/cn extracted tables, the shipped Lua/XTable schema and the repository table convention. Installed-bundle/binary decode evidence is out of scope here and deliberately not asserted."
+  },
+  "archiveUnlockImport": {
+    "source": "PGR_DATA/en/bytes/share/archive/{Monster,MonsterInfo,MonsterSkill,MonsterSetting,WeaponSetting,AwarenessSetting,Tag,SameNpcGroup}.json and en/bytes/client/archive/ArchiveMonsterInner.json",
+    "tables": ["share/archive/Monster.tsv", "share/archive/MonsterInfo.tsv", "share/archive/MonsterSkill.tsv", "share/archive/MonsterSetting.tsv", "share/archive/WeaponSetting.tsv", "share/archive/AwarenessSetting.tsv", "share/archive/Tag.tsv", "share/archive/SameNpcGroup.tsv", "client/archive/ArchiveMonsterInner.tsv"],
+    "scope": "All authoritative rows; identity, ownership, condition, and evaluation-tag columns only. Source rows define no unlock rewards.",
+    "capturesUsed": false
   },
   "client48Import": {
     "applicationVersion": "4.8.0",

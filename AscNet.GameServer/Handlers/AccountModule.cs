@@ -801,9 +801,9 @@ namespace AscNet.GameServer.Handlers
                 FubenEventData = new(),
                 FubenMainLine2Data = MainLine2Module.BuildLoginData(session),
                 FubenMainLineLuosaitaData = MainLineLuosaitaPayloadFactory.BuildLoginData(session.stage),
-                FubenChapterExtraLoginData = new(),
+                FubenChapterExtraLoginData = new() { TreasureData = session.player.ExtraChapterTreasures.Select(id => (object)id).ToList() },
                 FubenUrgentEventData = new(),
-                FubenShortStoryLoginData = new(),
+                FubenShortStoryLoginData = new() { TreasureData = session.player.ShortStoryTreasures.Select(id => (object)id).ToList() },
                 SignInfos = SignInModule.BuildLoginSignInfos(session.player),
                 UseBackgroundId = session.player.UseBackgroundId,
                 HaveBackgroundIds = BuildHaveBackgroundIds(session.player),
@@ -1252,9 +1252,21 @@ namespace AscNet.GameServer.Handlers
                     .ToList(),
                 MonsterUnlockIds = simulateTrainBosses
                     .Select(row => (uint)row.Id)
+                    .Concat(player.ArchiveUnlocks.Where(row => row.Kind == "Monster").Select(row => checked((uint)row.Id)))
                     .Distinct()
                     .Order()
                     .ToList(),
+                WeaponUnlockIds = ArchiveModule.UnlockedIds(player, "Weapon"),
+                AwarenessUnlockIds = ArchiveModule.UnlockedIds(player, "Awareness"),
+                MonsterInfos = ArchiveModule.UnlockedIds(player, "MonsterInfo"),
+                MonsterSkills = ArchiveModule.UnlockedIds(player, "MonsterSkill"),
+                MonsterSettings = ArchiveModule.UnlockedIds(player, "MonsterSetting"),
+                WeaponSettings = ArchiveModule.UnlockedIds(player, "WeaponSetting"),
+                AwarenessSettings = ArchiveModule.UnlockedIds(player, "AwarenessSetting"),
+                Equips = player.ArchiveEquipment.Select(row => new NotifyArchiveLoginData.NotifyArchiveLoginDataEquip
+                {
+                    Id = checked((uint)row.Id), Level = row.Level, Breakthrough = row.Breakthrough, ResonanceCount = row.ResonanceCount
+                }).ToList(),
                 UnlockComics = unlockComics,
                 UnlockCgs = player.ArchiveUnlockedCgs.Order().Select(id => checked((uint)id)).ToList(),
                 PartnerUnlockIds = player.ArchivePartnerUnlockIds.ToList(),
@@ -1301,6 +1313,8 @@ namespace AscNet.GameServer.Handlers
             if (PartnerModule.RefreshArchive(session.player, session.character))
                 session.player.SaveChecked();
             ArchiveCgModule.Reconcile(session, notify: false);
+            if (ArchiveModule.ReconcileEquipment(session))
+                session.player.Save();
 
 
             // Reconcile before NotifyLogin so repaired equipped head ids are present in the login
@@ -1339,9 +1353,10 @@ namespace AscNet.GameServer.Handlers
                     NewbieHonorReward = session.player.MissionProgress.NewbieHonorReward,
                     NewbieUnlockPeriod = 7,
                     Course = session.stage.Course,
-                    FinishedTasks = session.stage.FinishedTasks,
+                    FinishedTasks = TaskModule.BuildFinishedTaskIds(session),
                     NewPlayerRewardRecord = session.player.MissionProgress.NewPlayerRewardRecords,
                     NewbieRecvProgress = session.player.MissionProgress.NewbieRewardRecords,
+                    WeeklyTaskActivenessProgress = session.player.MissionProgress.WeeklyTaskActivenessProgress,
                     Tasks = TaskModule.BuildTaskData(session),
                 }
             };
@@ -1357,7 +1372,8 @@ namespace AscNet.GameServer.Handlers
 
             NotifyNewPlayerTaskStatus notifyNewPlayerTaskStatus = new()
             {
-                NewPlayerTaskActiveDay = session.player.PlayerData.NewPlayerTaskActiveDay
+                NewPlayerTaskActiveDay = session.player.PlayerData.NewPlayerTaskActiveDay,
+                NewPlayerTaskActiveUi = session.player.PlayerData.NewPlayerTaskActiveUi
             };
             NotifyPayInfo notifyPayInfo = BuildNotifyPayInfo();
             PayModule.GrantMailDailyRewards(session, sendPush: false);
@@ -1394,7 +1410,7 @@ namespace AscNet.GameServer.Handlers
             session.SendPush(BuildNotifyArchiveLoginData(session.player));
             session.SendPush(AwarenessModule.BuildLoginData(session.player));
             session.SendPush(notifyChatLoginData);
-            session.SendPush(new NotifySocialData());
+            session.SendPush(SocialModule.BuildLoginData(session.player));
             session.SendPush(notifyTaskData);
             session.SendPush(TaskModule.BuildActivenessStatus(session));
             session.SendPush(notifyNewPlayerTaskStatus);
@@ -1403,7 +1419,7 @@ namespace AscNet.GameServer.Handlers
             TaskModule.SendTaskSync(session);
             session.SendPush(BuildRegressionLoginData());
             session.SendPush(new NotifyAllRedEnvelope());
-            session.SendPush(new NotifyScoreTitleData { TitleInfos = session.character.ScoreTitles });
+            session.SendPush(ProfileShowcaseModule.LoginData(session));
             session.SendPush(BuildBfrtLoginData(session.player));
             session.SendPush(BiancaTheatreModule.BuildLoginData(session, DateTimeOffset.UtcNow));
             BiancaTheatreModule.SendRecoveredSettlement(session);

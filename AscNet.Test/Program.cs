@@ -80,6 +80,11 @@ namespace AscNet.Test
             try
             {
                 UseResourceWorkingDirectory();
+                if (args.Contains("--profile-compat-only"))
+                {
+                    ValidateProfileCompatibility();
+                    return;
+                }
                 if (args.Contains("--cerberus-game-compat-only"))
                 {
                     ValidateCerberusGameCompatibility();
@@ -774,6 +779,12 @@ namespace AscNet.Test
                     return;
                 }
 
+                if (args.Contains("--stage-reward-claims-compat-only"))
+                {
+                    ValidateStageRewardClaimsCompatibility();
+                    return;
+                }
+
                 if (args.Contains("--mainline2-exhibition-compat-only"))
                 {
                     ValidateMainLine2UpdateExhibitionChapterCompatibility();
@@ -1088,6 +1099,30 @@ namespace AscNet.Test
                     return;
                 }
 
+                if (args.Contains("--archive-compat-only"))
+                {
+                    ValidateArchiveCompatibility();
+                    return;
+                }
+
+                if (args.Contains("--shop-refresh-compat-only"))
+                {
+                    ValidateShopRefreshCompatibility();
+                    return;
+                }
+
+                if (args.Contains("--friends-compat-only"))
+                {
+                    ValidateFriendsCompatibility();
+                    return;
+                }
+
+                if (args.Contains("--weekly-activeness-compat-only"))
+                {
+                    ValidateWeeklyActivenessCompatibility();
+                    return;
+                }
+
                 if (args.Contains("--shop-compat-only"))
                 {
                     ValidateShopCompatibility();
@@ -1178,6 +1213,7 @@ namespace AscNet.Test
                 }
 
                 ValidateCerberusGameCompatibility();
+                ValidateProfileCompatibility();
                 ValidateMaintainerActionCompatibility();
                 ValidateUltimaAwakenCompatibility();
                 ValidateLoadingOptionCompatibility();
@@ -1192,6 +1228,7 @@ namespace AscNet.Test
                 ValidateLoginAccountCompatibility();
                 ValidateSessionClientLoopFramingCompatibility();
                 ValidateStageBookmarkCompatibility();
+                ValidateStageRewardClaimsCompatibility();
                 ValidateMainLine2UpdateExhibitionChapterCompatibility();
                 ValidateMainLine2LoginDataBsonCompatibility();
                 ValidateMainLine2ReceiveMainTreasureCompatibility();
@@ -1271,6 +1308,10 @@ namespace AscNet.Test
                 ValidateTheatre6Compatibility();
                 ValidateCharacterTowerCompatibility();
                 ValidateShopCompatibility();
+                ValidateShopRefreshCompatibility();
+                ValidateFriendsCompatibility();
+                ValidateWeeklyActivenessCompatibility();
+                ValidateArchiveCompatibility();
                 ValidateWheelchairManualPurchaseCompatibility();
                 ValidateCurrentClientNoticeFixtures();
                 ValidateCurrentClientNoticeEndpoints().GetAwaiter().GetResult();
@@ -4547,6 +4588,24 @@ namespace AscNet.Test
                 throw new InvalidDataException($"{name}: expected a positive server UTC timestamp.");
         }
 
+        private static Packet.Push ReadStartupPush(LoopbackSessionHarness harness, string name)
+        {
+            Packet packet = harness.ReadPacket(name);
+            AssertEqual(Packet.ContentType.Push, packet.Type, $"{name} packet type");
+            return MessagePackSerializer.Deserialize<Packet.Push>(packet.Content);
+        }
+
+        private static TPayload DeserializeStartupPush<TPayload>(
+            IReadOnlyDictionary<string, Packet.Push> startupPushesByName,
+            string pushName,
+            string name)
+        {
+            if (!startupPushesByName.TryGetValue(pushName, out Packet.Push? push))
+                throw new InvalidDataException($"{name}: expected {pushName} during login startup.");
+
+            return MessagePackSerializer.Deserialize<TPayload>(push.Content);
+        }
+
         private static void ValidateLoginAccountCompatibility()
         {
             ValidateLoginAccountNotifyLoginShape();
@@ -5864,24 +5923,6 @@ namespace AscNet.Test
                     throw new InvalidDataException($"{name}: expected {requiredPushName}; observed {DescribePushes(pushNames)}.");
 
                 return pushesByName;
-            }
-
-            static Packet.Push ReadStartupPush(LoopbackSessionHarness harness, string name)
-            {
-                Packet packet = harness.ReadPacket(name);
-                AssertEqual(Packet.ContentType.Push, packet.Type, $"{name} packet type");
-                return MessagePackSerializer.Deserialize<Packet.Push>(packet.Content);
-            }
-
-            static TPayload DeserializeStartupPush<TPayload>(
-                IReadOnlyDictionary<string, Packet.Push> startupPushesByName,
-                string pushName,
-                string name)
-            {
-                if (!startupPushesByName.TryGetValue(pushName, out Packet.Push? push))
-                    throw new InvalidDataException($"{name}: expected {pushName} during login startup.");
-
-                return MessagePackSerializer.Deserialize<TPayload>(push.Content);
             }
 
             static JObject DeserializeStartupPushMap(
@@ -10779,10 +10820,16 @@ namespace AscNet.Test
                 getPlayerInfoPacketId,
                 nameof(GetPlayerInfoListResponse),
                 "GetPlayerInfoListRequest response");
+            AssertEqual(0, playerInfoListResponse.Code, "GetPlayerInfoListResponse allows deleted ids without suppressing callback");
+            AssertEqual(1, playerInfoListResponse.PlayerInfoList.Count, "GetPlayerInfoListResponse omits unknown players");
+            InvokeRegisteredRequestHandler(nameof(GetPlayerInfoListRequest), harness.Session,
+                getPlayerInfoPacketId + 1000, new GetPlayerInfoListRequest { Ids = [currentPlayerId, currentPlayerId] });
+            playerInfoListResponse = ReadResponsePayload<GetPlayerInfoListResponse>(
+                harness, getPlayerInfoPacketId + 1000, nameof(GetPlayerInfoListResponse), "real player info");
             AssertEqual(0, playerInfoListResponse.Code, "GetPlayerInfoListResponse Code");
-            AssertEqual(3, playerInfoListResponse.PlayerInfoList.Count, "GetPlayerInfoListResponse distinct requested player count");
+            AssertEqual(1, playerInfoListResponse.PlayerInfoList.Count, "GetPlayerInfoListResponse distinct requested player count");
             AssertIntegerList(
-                [currentPlayerId, unknownPlayerIdA, unknownPlayerIdB],
+                [currentPlayerId],
                 playerInfoListResponse.PlayerInfoList.Select(info => (long)info.Id).ToArray(),
                 "GetPlayerInfoListResponse distinct player ids in request order");
             GetPlayerInfoListResponse.GetPlayerInfoListResponsePlayerInfo playerInfo = playerInfoListResponse.PlayerInfoList[0];
@@ -10796,12 +10843,6 @@ namespace AscNet.Test
             AssertEqual((int)medalId, playerInfo.CurrMedalId, "GetPlayerInfoListResponse current PlayerInfo CurrMedalId");
             AssertEqual(false, playerInfo.IsCancel, "GetPlayerInfoListResponse current PlayerInfo IsCancel");
             AssertEqual(0, playerInfo.DlcMultiplayerTitle, "GetPlayerInfoListResponse current PlayerInfo DlcMultiplayerTitle");
-            for (int infoIndex = 1; infoIndex < playerInfoListResponse.PlayerInfoList.Count; infoIndex++)
-            {
-                GetPlayerInfoListResponse.GetPlayerInfoListResponsePlayerInfo unknownPlayerInfo = playerInfoListResponse.PlayerInfoList[infoIndex];
-                if (string.IsNullOrWhiteSpace(unknownPlayerInfo.Name))
-                    throw new InvalidDataException($"GetPlayerInfoListResponse unknown PlayerInfo {unknownPlayerInfo.Id} Name: expected non-empty fallback display name.");
-            }
 
             const int guildRecommendPacketId = 11_106;
             InvokeRegisteredRequestHandler(nameof(GuildListRecommendRequest), harness.Session,

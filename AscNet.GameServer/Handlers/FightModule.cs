@@ -3138,7 +3138,7 @@ namespace AscNet.GameServer.Handlers
                 MaintainerActionModule.RecordFightWin(session, req.Result);
             session.fight = null;
             session.SendPush(new NotifyStageData() { StageList = new() { stageData } });
-            if (isFirstClear)
+            if (isSuccessfulSettle && (isFirstClear || TableReaderV2.Parse<AscNet.Table.V2.share.fuben.experiment.ExperimentClaimTable>().Any(claim => claim.StageId == stageData.StageId)))
                 AccountModule.PushNewlyFinishedExperiments(session, stageData.StageId);
             if (unlockStagesBefore is not null && unlockStagesAfter is not null)
             {

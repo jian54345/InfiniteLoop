@@ -30,6 +30,9 @@ namespace AscNet.Common.Database
         [BsonElement("newbie_reward_records")]
         public List<int> NewbieRewardRecords { get; set; } = new();
 
+        [BsonElement("weekly_task_activeness_progress")]
+        public List<int> WeeklyTaskActivenessProgress { get; set; } = new();
+
         [BsonElement("newbie_honor_reward")]
         public bool NewbieHonorReward { get; set; }
 

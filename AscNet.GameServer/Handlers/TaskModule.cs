@@ -2725,6 +2725,11 @@ namespace AscNet.GameServer.Handlers
                 ResetMissionType(session, 3);
                 ResetPassportTaskType(session, 2);
                 session.player.PlayerData.WeeklyActivenessRewardStatus = 0;
+                session.player.MissionProgress.WeeklyTaskActivenessProgress.Clear();
+                HashSet<int> weeklyTaggedIds = TableReaderV2.Parse<TaskTable>().Where(task => task.Tag == 1).Select(task => task.Id).ToHashSet();
+                session.player.MissionProgress.ClaimedTaskIds.RemoveAll(weeklyTaggedIds.Contains);
+                if (session.stage.FinishedTasks.RemoveAll(weeklyTaggedIds.Contains) > 0)
+                    session.stage.Save();
                 Item? weeklyActiveness = session.inventory.Items.FirstOrDefault(item => item.Id == Inventory.WeeklyActiveness);
                 if (weeklyActiveness is not null && weeklyActiveness.Count != 0)
                 {

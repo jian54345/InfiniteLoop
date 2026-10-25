@@ -354,6 +354,7 @@ namespace AscNet.Common.MsgPack
         public long DailyActivenessRewardStatus { get; set; }
         public long WeeklyActivenessRewardStatus { get; set; }
         public int NewPlayerTaskActiveDay { get; set; }
+        public int NewPlayerTaskActiveUi { get; set; }
         public List<long> Marks { get; set; } = new();
         public List<long> GuideData { get; set; } = new();
         public List<long> Communications { get; set; } = new();
@@ -786,9 +787,9 @@ namespace AscNet.Common.MsgPack
         }
 
         public List<NotifySocialDataFriendData> FriendData { get; set; } = new();
-        public List<dynamic> ApplyData { get; set; } = new();
-        public List<dynamic> Remarks { get; set; } = new();
-        public List<dynamic> BlockData { get; set; } = new();
+        public List<NotifySocialDataFriendData> ApplyData { get; set; } = new();
+        public List<SocialRemark> Remarks { get; set; } = new();
+        public List<SocialBlock> BlockData { get; set; } = new();
     }
 
 
@@ -820,6 +821,7 @@ namespace AscNet.Common.MsgPack
             public List<UInt32> Course { get; set; } = new();
             public List<Int32> FinishedTasks { get; set; } = new();
             public List<Int32> NewPlayerRewardRecord { get; set; } = new();
+            public List<int> WeeklyTaskActivenessProgress { get; set; } = new();
             [global::MessagePack.MessagePackObject(true)]
             public class NotifyTaskDataTaskDataTaskLimitIdActiveInfo
             {
@@ -849,6 +851,7 @@ namespace AscNet.Common.MsgPack
     public class NotifyNewPlayerTaskStatus
     {
         public Int32 NewPlayerTaskActiveDay { get; set; }
+        public int NewPlayerTaskActiveUi { get; set; }
     }
 
 

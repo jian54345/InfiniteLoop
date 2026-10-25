@@ -12,6 +12,8 @@ The next login deletes 105 unless this rotation already has a settlement receipt
 
 Item **62738** is also named Simulation Score in `Item.tsv`. That row is a Simulated Battlefield exchange token and one 6★ memory resonance option. It does not move the Simulation Score.
 
+Main Story collectible rewards are not bag items. For example, **13019636 — Stars Ensnared** is a collectible granted by the corresponding MainLine2 achievement reward. All collectible definitions come from `Resources/table/share/scoretitle/ScoreTitle.tsv`; fixed-quality titles use their authored initial quality, and progressive titles use their authored quality conditions. Ownership, score, quality, and acquisition time persist in the character's score-title data.
+
 ## Currencies
 
 | ID | Name | Cap | Spent by |
@@ -369,3 +371,7 @@ Booster Structural Parts cap at 9,999.
 | 220 | Huiyu | 242 | Zafkiel |
 | 221 | Guardrake | 243 | Kelpie |
 | 222 | Dreamwing | | |
+
+## Manual shop refresh costs
+
+`RefreshShopRequest` spends the selected catalog's `RefreshCostId` and `RefreshCostCount`, using the same inventory spend path (including Black Card balance handling) as purchases. It grants no item. Existing curated shops do not enable manual refresh; no currency or price has been invented to enable them.
